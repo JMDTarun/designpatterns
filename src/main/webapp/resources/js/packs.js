@@ -20,6 +20,8 @@ $(function() {
 				},
 				sortname: 'name',
 				sortorder: 'asc',
+				forceFit: true,
+		        autowidth: true,
 				height: 'auto',
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
@@ -208,6 +210,8 @@ $(function() {
 			   	pager: pager_id,
 			   	sortname: 'name',
 			    sortorder: "asc",
+			    forceFit: true,
+		        autowidth: true,
 			    height: '100%'
 			});
 		

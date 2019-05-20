@@ -39,12 +39,6 @@ public class CustomerSetTopBox {
 	@Column(name = "id")
 	private Long id;
 
-	@DateTimeFormat(pattern = "yyyy/MM/dd")
-	private Date entryDate;
-
-	@DateTimeFormat(pattern = "yyyy/MM/dd")
-	private Date installationDate;
-
 	private PaymentMode paymentMode;
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
@@ -66,6 +60,8 @@ public class CustomerSetTopBox {
 	@ManyToOne
 	@JoinColumn(name = "packId", referencedColumnName = "id")
 	private Pack pack;
+	
+	private Double packPrice;
 
 	@ManyToOne
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")

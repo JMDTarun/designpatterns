@@ -6,6 +6,8 @@ import java.util.List;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -16,6 +18,7 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.user.mngmnt.enums.CustomerType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -36,6 +39,8 @@ public class Customer {
 	private Long id;
 
 	private String name;
+	
+	private String customerCode;
 
 	private String address;
 
@@ -48,6 +53,9 @@ public class Customer {
 	private Instant createdAt;
 	
 	private Instant updatedAt;
+	
+	@Enumerated(EnumType.STRING)
+	private CustomerType customerType;
 
 	@ManyToOne()
 	@JoinColumn(name = "areaId", referencedColumnName = "id")

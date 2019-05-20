@@ -21,6 +21,8 @@ $(function() {
 				sortname: 'name',
 				sortorder: 'asc',
 				height: 'auto',
+				forceFit: true,
+		        autowidth: true,
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
 				altRows: true,

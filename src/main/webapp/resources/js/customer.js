@@ -21,6 +21,8 @@ $(function() {
 				sortname: 'name',
 				sortorder: 'asc',
 				height: 'auto',
+				forceFit: true,
+		        autowidth: true,
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
 				altRows: true,
@@ -32,6 +34,7 @@ $(function() {
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
 				closeAfterAdd: true,
+			    recreateForm: true,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
@@ -93,6 +96,23 @@ $(function() {
 				index: 'name',
 				editable: true,
 				editrules: {required: true}
+			},
+			{
+				name:'customerCode',
+				label: 'Customer Code',
+				index: 'customerCode',
+				editable: true,
+				editrules: {required: true}
+			},
+			{
+				name:'customerType',
+				label: 'Customer Type',
+				index: 'customerType',
+				editable: true,
+				editrules: {required: true},
+				edittype:'select', 
+				formatter:'select', 
+				editoptions:{value:"NORMAL:NORMAL;GOOD:GOOD"}
 			},
 			{
 				name:'address',
@@ -216,12 +236,14 @@ $(function() {
 		caption: "Customers",
 		pager : '#pagerCustomers',
 		height: 'auto',
+		forceFit: true,
+        autowidth: true,
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
 		},
 		multiselect: false,
 		subGrid: true,
-		caption: "Grid as Subgrid",
+		caption: "Customers",
 		subGridRowExpanded: function(subgrid_id, row_id) {
 			var subgrid_table_id, pager_id;
 			subgrid_table_id = subgrid_id+"_t";
@@ -229,8 +251,8 @@ $(function() {
 			$("#"+subgrid_id).html("<table id='"+subgrid_table_id+"' class='scroll'></table><div id='"+pager_id+"' class='scroll'></div>");
 			jQuery("#"+subgrid_table_id).jqGrid({
 				url:"allCustomerSetTopBoxes/"+row_id,
-				editurl: 'updatePackChannel/' + row_id,
-				colNames: ['Id','Set Top Box', "Pack", "Entry Date", "Installation Date", "Payment Mode", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency"],
+				editurl: 'updateCustomerSetTopBox/' + row_id,
+				colNames: ['Id','Set Top Box', "Pack", "Pack Price", "Payment Mode", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency"],
 				colModel: [
 					{
 						name:"id",
@@ -248,7 +270,7 @@ $(function() {
 						editrules: {required: true},
 						edittype:"select",
 						formatter: function myformatter ( cellvalue, options, rowObject ) {
-							return rowObject.name;
+							return rowObject.setTopBox.setTopBoxNumber;
 						},
 				        editoptions:{
 		                    dataUrl: "/getAllSetTopBoxes", 
@@ -269,14 +291,14 @@ $(function() {
 					},
 					{
 						name:'pack.id',
-						label: 'Street',
+						label: 'Pack',
 						index: 'pack.id',
 						editable: true,
 						edittype:"select",
 						formatter: function myformatter ( cellvalue, options, rowObject ) {
 							console.info(rowObject);
-							if(rowObject.area) {
-								return rowObject.area.name;
+							if(rowObject.pack) {
+								return rowObject.pack.name;
 							}
 							return "";
 						},
@@ -298,45 +320,28 @@ $(function() {
 					
 					},
 					{
-						name:"entryDate",
-						label: 'Entry Date',
-						index:"entryDate",
-						formatter:'date',
-						formatoptions: { newformat: 'd/m/Y'},
+						name:"packPrice",
+						label: 'Pack Price',
+						index:"packPrice",
+						formatter:'number',
 						editable: true,
-						editoptions: {
-					      dataInit: function(element) {
-					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
-					      }
-					    }
-					},
-					{
-						name:"installationDate",
-						label: 'Installation Date',
-						index:"installationDate",
-						formatter:'date',
-						formatoptions: { newformat: 'd/m/Y'},
-						editable: true,
-						editoptions: {
-					      dataInit: function(element) {
-					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
-					      }
-					    }
 					},
 					{
 						name:"paymentMode",
 						label: 'Payment Mode',
 						index:"paymentMode",
 						editable: true,
-						editrules: {required: true, value: "PREPAID;POSTPAID"},
-						edittype:"select"
+						formatter:'select',
+						edittype:"select",
+						editrules: {required: true},
+						editoptions: {value: "PREPAID:PREPAID;POSTPAID:POSTPAID"}
 					},
 					{
 						name:"paymentStartDate",
 						label: 'Payment Start Date',
 						index:"paymentStartDate",
 						formatter:'date',
-						formatoptions: { newformat: 'd/m/Y'},
+						formatoptions: { newformat: 'Y/m/d'},
 						editable: true,
 						editoptions: {
 					      dataInit: function(element) {
@@ -349,7 +354,7 @@ $(function() {
 						label: 'Billing Cycle',
 						index:"billingCycle",
 						formatter:'date',
-						formatoptions: { newformat: 'd/m/Y'},
+						formatoptions: { newformat: 'Y/m/d'},
 						editable: true,
 						editoptions: {
 					      dataInit: function(element) {
@@ -376,8 +381,10 @@ $(function() {
 						label: 'Discount Frequency',
 						index:"discountFrequency",
 						editable: true,
-						editrules: {required: true, value: "PREPAID:PREPAID;POSTPAID:POSTPAID"},
-						edittype:"select"
+						formatter:'select',
+						editrules: {required: true},
+						edittype:"select",
+						editoptions: {value: "MONTHLY:MONTHLY;ONE_TIME:ONE TIME"}
 					}
 				],
 			   	rowNum:10,
@@ -385,20 +392,82 @@ $(function() {
 			   	sortname: 'name',
 			    sortorder: "asc",
 			    height: '100%',
+			    forceFit: true,
+		        autowidth: true,
 			    subGrid: true,
-                caption: "Grid as Subgrid 12345",
+                caption: "Set Top Boxes",
                 subGridRowExpanded: function(subgrid_id3, row_id3) {
-                    var subgrid_table_id3;
+                    var subgrid_table_id3, pager_id3;
                     subgrid_table_id3 = subgrid_id3+"_t";
-                    $("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table></div>");
+                    pager_id3 = "p_"+subgrid_table_id3;
+        			$("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table><div id='"+pager_id3+"' class='scroll'></div>");
                     jQuery("#"+subgrid_table_id3).jqGrid({
                         url:"allCustomerSetTopBoxChannels/"+row_id3,
-                        colNames: ['No'],
+                        colNames: ['Id', "Channel"],
                         colModel: [
-                            {name:"id",index:"id"}
+                        	{
+        						name:"id",
+        						index:"id",
+        						formatter:'integer',
+        						editable: true,
+        						editoptions: 
+        						{disabled: true}
+        					},
+        					{
+        						name:"networkChannelId",
+        						label: 'Channel',
+        						index:"networkChannelId", 
+        						editable: true,
+        						editrules: {required: true},
+        						edittype:"select",
+        						formatter: function myformatter ( cellvalue, options, rowObject ) {
+        							console.info(rowObject);
+        							return rowObject.name;
+        						},
+        				        editoptions:{
+        		                    dataUrl: "/getAllNetworkChannels", 
+        		                           buildSelect: function(jsonOrderArray) {
+        		                                   var s = '<select>';
+        		                                   console.info(jsonOrderArray);
+        		                                   if (jsonOrderArray && jsonOrderArray.length) {
+        		                                	   var myObj = JSON.parse(jsonOrderArray);
+        		                                	   for (var key in myObj) {
+        		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
+        		                                		}
+        		                                  }
+        		                                  return s + "</select>";
+        		                          }
+        		                   }
+        					}
                             ],
-                            caption: "Grid as Subgrid 4567"
+                            caption: "Channels",
+                        	rowNum:10,
+            			   	pager: pager_id3,
+            			   	sortname: 'name',
+            			    sortorder: "asc",
+            			    height: '100%',
+            			    forceFit: true,
+            		        autowidth: true,
                     });
+                    
+                	var addOptionsSG3 = {
+        				onclickSubmit: function(params, postdata) {
+        					params.url = 'addCustomerNetworkChannel/' + row_id + '/' + row_id3;
+        				},
+        				mtype: "POST"
+        			};
+        			var delOptionsSG3 = {
+        				onclickSubmit: function(params, postdata) {
+        					params.url = 'pack/' + postdata;
+        				}
+        			};
+        			
+        			jQuery("#"+subgrid_table_id3).jqGrid('navGrid',"#"+pager_id3,
+        					{edit:false,add:true,del:true}, 
+        					{},
+        					addOptionsSG3,
+        					delOptionsSG3
+        				);
                 }
 			});
 		
@@ -411,6 +480,7 @@ $(function() {
 				onclickSubmit: function(params, postdata) {
 					params.url = 'createCustomerSetTopBox/' + row_id;
 				},
+				afterShowForm: manageCustomerType,
 				mtype: "POST"
 			};
 			var delOptionsSG = {
@@ -420,7 +490,7 @@ $(function() {
 			};
 			
 			jQuery("#"+subgrid_table_id).jqGrid('navGrid',"#"+pager_id,
-					{edit:false,add:true,del:true}, 
+					{edit:true,add:true,del:true}, 
 					{},
 					addOptionsSG,
 					delOptionsSG
@@ -445,5 +515,25 @@ $(function() {
 	);
 
 	$("#customers").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
+	
+	function manageCustomerType() {
+		billingCycleState();
+		setTimeout(function() { 
+	        // then hook the change event of the country dropdown so that it updates cities all the time  
+			$("#paymentMode").bind("change", function (e) {
+				billingCycleState();
+			});
+		}, 100);
+    }
 
+	function billingCycleState() {
+		if($("#paymentMode").val() === "PREPAID") {
+			$("#billingCycle").attr("disabled","disabled");
+			$("#billingCycle").attr("readonly","readonly");
+		} else {
+			$("#billingCycle").removeAttr("disabled","disabled");
+			$("#billingCycle").removeAttr("readonly","readonly");
+		}
+	}
+	
 });

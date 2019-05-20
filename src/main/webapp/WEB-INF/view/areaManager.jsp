@@ -18,45 +18,23 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
-	<section>
-		<div class="container">
-			<div class="row">
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="areas"></table>
-								<div id="pagerAreas"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="row">
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="subAreas"></table>
-								<div id="pagerSubAreas"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="streets"></table>
-								<div id="pagerStreets"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+	<div class="row">
+		<div class="col">
+			<table id="areas"></table>
+			<div id="pagerAreas"></div>
 		</div>
-	</section>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<table id="subAreas"></table>
+			<div id="pagerSubAreas"></div>
+		</div>
+		<div class="col">
+			<table id="streets"></table>
+			<div id="pagerStreets"></div>
+		</div>
+	</div>
 
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>

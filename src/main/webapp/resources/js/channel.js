@@ -20,6 +20,8 @@ $(function() {
 				},
 				sortname: 'name',
 				sortorder: 'asc',
+				forceFit: true,
+		        autowidth: true,
 				height: 'auto',
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
@@ -100,6 +102,8 @@ $(function() {
 		caption: "Channels",
 		pager : '#pagerChannels',
 		height: 'auto',
+		forceFit: true,
+        autowidth: true,
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
 		}

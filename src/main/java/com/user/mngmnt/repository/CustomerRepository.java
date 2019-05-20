@@ -23,7 +23,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @Query("SELECT c.customerSetTopBoxes FROM Customer c WHERE c.id = :id")
 	Page<CustomerSetTopBox> getCutomerSetTopBoxes(@Param("id") long customerId, Pageable pageRequest);
 
-    @Query("SELECT s.networkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE c.id = :id")
+    @Query("SELECT distinct s.networkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")
 	Page<NetworkChannel> getCutomerSetTopBoxChannels(@Param("id") long customerId, Pageable pageRequest);
     
     @Query("SELECT c FROM Pack p INNER JOIN p.networkChannels c WHERE c.id = :id")

@@ -1,17 +1,21 @@
 package com.user.mngmnt.model;
 
 import java.time.Instant;
-import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import com.user.mngmnt.enums.Action;
-import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.Month;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,42 +37,29 @@ public class CustomerLedgre {
 
 	private Action action;
 
-	private Date entryDate;
-
-	private Date installationDate;
-
-	private PaymentMode paymentMode;
-
-	private Date paymentStartDate;
-
-	private Date billingCycle;
-
-	private Double discount;
-
-	private Double openingBalance;
-	
 	private Instant createdAt;
 	
 	private Instant updatedAt;
+	
+	private Double amount;
+	
+	@Enumerated(EnumType.STRING)
+	private CreditDebit creditDebit;
+	
+	private String reason;
+	
+	private Month month;
 
-//	@OneToMany()
-//	@JoinColumn(name = "customerId", referencedColumnName = "id")
-//	private Customer customer;
-//
-//	@OneToMany()
-//	@JoinColumn(name = "areaId", referencedColumnName = "id")
-//	private Area area;
-//
-//	@OneToMany()
-//	@JoinColumn(name = "subAreaId", referencedColumnName = "id")
-//	private SubArea subArea;
-//
-//	@OneToMany()
-//	@JoinColumn(name = "streetId", referencedColumnName = "id")
-//	private Street street;
-//
-//	@OneToMany
-//	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
-//	private SetTopBox setTopBox;
+	@ManyToOne()
+	@JoinColumn(name = "customerId", referencedColumnName = "id")
+	private Customer customer;
+
+	@ManyToOne()
+	@JoinColumn(name = "packId", referencedColumnName = "id")
+	private Pack pack;
+	
+	@ManyToOne
+	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
+	private SetTopBox setTopBox;
 
 }

@@ -23,10 +23,22 @@
                 <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item active">
-                <a class="nav-link" href="/addNewUser">Add User</a>
+                <a class="nav-link" href="/addNewUser">User</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="/area">Area</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="/network">Network</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="/packs">Pack</a>
+            </li>
+            <li class="nav-item active">
+                <a class="nav-link" href="/customer">Customer</a>
             </li>
         </ul>
-        <div >
+        <div>
             <a style="text-align: right; color: #fff;" href="<c:url value="logout" />">Logout <i class="fa fa-sign-out fa-lg"></i>
 
             </a>

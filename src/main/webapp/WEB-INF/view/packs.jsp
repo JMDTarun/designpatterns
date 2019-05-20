@@ -18,22 +18,12 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
-	<section>
-		<div class="container">
-			<div class="row">
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="packs"></table>
-								<div id="pagerPacks"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+	<div class="row">
+		<div class="col">
+			<table id="packs"></table>
+			<div id="pagerPacks"></div>
 		</div>
-	</section>
+	</div>
 
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>

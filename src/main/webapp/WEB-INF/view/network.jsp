@@ -18,45 +18,23 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
-	<section>
-		<div class="container">
-			<div class="row">
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="networks"></table>
-								<div id="pagerNetworks"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="channels"></table>
-								<div id="pagerChannels"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="row">
-				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="channelNetworks"></table>
-								<div id="pagerChannelNetworks"></div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+	<div class="row">
+		<div class="col">
+			<table id="networks"></table>
+			<div id="pagerNetworks"></div>
 		</div>
-	</section>
+		<div class="col">
+			<table id="channels"></table>
+			<div id="pagerChannels"></div>
+		</div>
+	</div>
+
+	<div class="row">
+		<div class="col">
+			<table id="channelNetworks"></table>
+			<div id="pagerChannelNetworks"></div>
+		</div>
+	</div>
 
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>

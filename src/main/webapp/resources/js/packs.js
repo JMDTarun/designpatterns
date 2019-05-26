@@ -234,7 +234,7 @@ $(function() {
 			};
 			
 			jQuery("#"+subgrid_table_id).jqGrid('navGrid',"#"+pager_id,
-					{edit:false,add:true,del:true}, 
+					{edit:false,add:true,del:true, addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, 
 					{},
 					addOptionsSG,
 					delOptionsSG
@@ -302,7 +302,7 @@ $(function() {
 	$("#packs")
 			.jqGrid(options)
 			.navGrid('#pagerPacks',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,

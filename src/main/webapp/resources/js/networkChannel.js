@@ -55,13 +55,15 @@ $(function() {
 	var editOptions = {
 		onclickSubmit: function(params, postdata) {
 			params.url = 'networkChannel/' + postdata.id;
-		}
+		},
+		afterShowForm: manageChannelGST
 	};
 	var addOptions = {
 		onclickSubmit: function(params, postdata) {
 			params.url = 'networkChannel';
 		},
-		mtype: "POST"
+		mtype: "POST",
+		afterShowForm: manageChannelGST
 	};
 	var delOptions = {
 		onclickSubmit: function(params, postdata) {
@@ -180,7 +182,7 @@ $(function() {
 	$("#channelNetworks")
 			.jqGrid(options)
 			.navGrid('#pagerChannelNetworks',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
@@ -216,4 +218,14 @@ $(function() {
         });
     }
 	
+	function manageChannelGST() {
+		setTimeout(function() { 
+			
+			$("#monthlyRent").bind("change paste keyup", function (e) {
+				var gstValue = parseFloat(parseFloat($(this).val()) * 18 / 100);
+				$("#gst").val(gstValue);
+			});
+			
+		}, 100);
+    }
 });

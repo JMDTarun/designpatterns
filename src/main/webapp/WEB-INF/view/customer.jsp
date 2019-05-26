@@ -25,6 +25,71 @@
 		</div>
 	</div>
 
+	<div id="myDialog">
+		<input type="hidden" id="customerId">
+		<input type="hidden" id="customerSetTopBoxId">
+		<div class="row">
+			<div class="col">Status</div>
+			<div class="col">
+				<select id="status" name="status">
+					<option value="FREE">FREE</option>
+					<option value="FAULTY">FAULTY</option>
+					<option value="TEMPORARY_REMOVED">BLOCK</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Reason</div>
+			<div class="col">
+				<input type="text" name="reason" id="reason" />
+			</div>
+		</div>
+		
+		<div class="row">
+			<div class="col">Amount</div>
+			<div class="col">
+				<input type="text" name="amount" id="amount" />
+			</div>
+		</div>
+	</div>
+
+	<div id="mySelectRowDialog">
+		<div class="row">
+			<div class="col">Please Select Row To Delete</div>
+		</div>
+	</div>
+
+	<div id="myAdditionalDiscountDialog">
+		<div class="row">
+			<div class="col">Additional Discount</div>
+			<div class="col">
+				<input type="text" name="additionalDiscount" id="additionalDiscount">
+			</div>
+		</div>
+	</div>
+	
+	<div id="myAdditionalDiscountDialog">
+		<input type="hidden" id="customerId">
+		<input type="hidden" id="customerSetTopBoxId">
+		<div class="row">
+			<div class="col">Additional Discount</div>
+			<div class="col">
+				<input type="text" name="additionalDiscount" id="additionalDiscount">
+			</div>
+		</div>
+	</div>
+
+	<div id="myActiveDeactiveDialog">
+		<input type="hidden" id="customerId">
+		<input type="hidden" id="customerSetTopBoxId">
+		<div class="row">
+			<div class="col">Status</div>
+			<div class="col">
+				<input type="text" name="additionalDiscount" id="additionalDiscount">
+			</div>
+		</div>
+	</div>
+
 	<script
 		src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
 	<script

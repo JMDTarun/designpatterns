@@ -3,10 +3,18 @@ package com.user.mngmnt.controller;
 import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -39,9 +47,11 @@ import com.user.mngmnt.model.CustomerLedgre;
 import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.RemoveCustomerSetTopBox;
 import com.user.mngmnt.model.SetTopBox;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
 import com.user.mngmnt.repository.GenericRepository;
@@ -50,9 +60,6 @@ import com.user.mngmnt.repository.SetTopBoxRepository;
 
 @Controller
 public class CustomerController {
-
-	@Autowired
-	private CustomerSetTopBoxRepository customerSetTopBoxRepository;
 
 	@Autowired
 	private SetTopBoxRepository setTopBoxRepository;
@@ -66,6 +73,14 @@ public class CustomerController {
 	@Autowired
 	private CustomerRepository customerRepository;
 
+	@Autowired
+	private CustomerLedgreRepository customerLedgreRepository;
+
+	@Autowired
+	private CustomerSetTopBoxRepository customerSetTopBoxRepository;
+
+	private static DecimalFormat df = new DecimalFormat("0.00");
+
 	@GetMapping("/customer")
 	public String getCustomer() {
 		return "customer";
@@ -76,7 +91,7 @@ public class CustomerController {
 			@RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredCustomers(filters, pageRequest);
@@ -84,9 +99,9 @@ public class CustomerController {
 		return new ViewPage<>(customerRepository.findAll(pageRequest));
 	}
 
-	public ViewPage<Customer> getFilteredCustomers(String filters, PageRequest pageRequest) {
+	public ViewPage<Customer> getFilteredCustomers(String filters, PageRequest pageRequest) throws ParseException {
 		long count = customerRepository.count();
-		List<Customer> records = genericRepository.findAllWithCriteria(filters, Street.class, pageRequest);
+		List<Customer> records = genericRepository.findAllWithCriteria(filters, Customer.class, pageRequest);
 		return ViewPage.<Customer>builder().rows(records).max(pageRequest.getPageSize())
 				.page(pageRequest.getPageNumber() + 1).total(count).build();
 	}
@@ -135,6 +150,7 @@ public class CustomerController {
 
 	@RequestMapping(value = "/updateCustomerSetTopBox/{id}", method = POST)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
+	@Transactional
 	public void updateCustomerSetTopBox(@PathVariable("id") Long id,
 			@ModelAttribute CustomerSetTopBox customerSetTopBox) {
 		customerRepository.findById(id).ifPresent(n -> {
@@ -143,6 +159,8 @@ public class CustomerController {
 					.orElse(null);
 			if (dbCstb != null) {
 				customerSetTopBox.setId(dbCstb.getId());
+				manageTransactionForPakChange(customerSetTopBox, dbCstb, n);
+				manageTransactionForBillingCycleChange(customerSetTopBox, dbCstb, n);
 				BeanUtils.copyProperties(customerSetTopBox, dbCstb);
 				customerRepository.save(n);
 			}
@@ -156,8 +174,10 @@ public class CustomerController {
 		Customer customer = customerRepository.getOne(id);
 		if (customer != null) {
 			customerSetTopBox.setCreatedAt(Instant.now());
+			customerSetTopBoxRepository.save(customerSetTopBox);
 			customer.getCustomerSetTopBoxes().add(customerSetTopBox);
 			customerRepository.save(customer);
+			manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
 			updateSetTopBoxStatusToAlloted(customerSetTopBox.getSetTopBox().getId());
 			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 			final HttpHeaders headers = new HttpHeaders();
@@ -174,37 +194,110 @@ public class CustomerController {
 		setTopBoxRepository.save(setTopBox);
 	}
 
-	private void manageTransaction(CustomerSetTopBox customerSetTopBox, Customer customer) {
+	private void manageTransactionForNewCustomerSetTopBox(CustomerSetTopBox customerSetTopBox, Customer customer) {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
-		if (customerSetTopBox.getId() == null) {
-			if (customerSetTopBox.getPackPrice() > 0) {
-				customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, customerSetTopBox.getPackPrice(),
-						CreditDebit.DEBIT));
-			} else {
-				Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
-				customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, pack.getPrice(), CreditDebit.DEBIT));
+		Double packPrice = 0.0;
+		if (customerSetTopBox.getPackPrice() > 0) {
+			packPrice = customerSetTopBox.getPackPrice();
+			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, customerSetTopBox.getPackPrice(),
+					CreditDebit.DEBIT, customerSetTopBox));
+		} else {
+			Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+			packPrice = pack.getPrice();
+			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, pack.getPrice(), CreditDebit.DEBIT,
+					customerSetTopBox));
+		}
+		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
+			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
+					customerSetTopBox.getOpeningBalance(), CreditDebit.DEBIT, customerSetTopBox));
+		}
+		if (customerSetTopBox.getDiscount() != null && customerSetTopBox.getDiscount() > 0) {
+			customerLedgres.add(buildCustomerLedgre(customer, Action.DISCOUNT, customerSetTopBox.getDiscount(),
+					CreditDebit.CREDIT, customerSetTopBox));
+		}
+		// Payment Calculations
+		{
+			boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+			LocalDate entryDate = getLocalDate(customerSetTopBox.getEntryDate());
+			LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(1)
+					: getLocalDate(customerSetTopBox.getBillingCycle());
+			LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
+			long days = Duration.between(billingDate.atStartOfDay(), paymentStartDate.atStartOfDay()).toDays();
+			if (days != 0) {
+				Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
+				Double balance = days * oneDayCharge;
+				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_DISCOUNT, Math.abs(balance),
+						days > 0 ? CreditDebit.CREDIT : CreditDebit.DEBIT, customerSetTopBox));
 			}
-			if (customerSetTopBox.getOpeningBalance() > 0) {
-				customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
-						customerSetTopBox.getOpeningBalance(), CreditDebit.CREDIT));
-			}
-			if (customerSetTopBox.getDiscount() > 0) {
-				customerLedgres.add(buildCustomerLedgre(customer, Action.DISCOUNT,
-						customerSetTopBox.getOpeningBalance(), CreditDebit.CREDIT));
-			}
-			if(customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID)) {
-				Calendar cal = Calendar.getInstance();
-		        cal.setTime(customerSetTopBox.getPaymentStartDate());
-		        int days = (cal.getActualMaximum(Calendar.DATE));
-		        System.out.println(days);
+		}
+		if (customerLedgres.size() > 0) {
+			customerLedgreRepository.saveAll(customerLedgres);
+		}
+	}
+
+	private void manageTransactionForPakChange(CustomerSetTopBox customerSetTopBox,
+			CustomerSetTopBox dbCustomerSetTopBox, Customer customer) {
+		List<CustomerLedgre> customerLedgres = new ArrayList<>();
+		Double packPrice = 0.0;
+		if (customerSetTopBox.getId() != null) {
+			if (Double.compare(dbCustomerSetTopBox.getPackPrice(), customerSetTopBox.getPackPrice()) != 0) {
+				packPrice = customerSetTopBox.getPackPrice() - dbCustomerSetTopBox.getPackPrice();
+				CreditDebit type = packPrice > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT;
+				boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+				LocalDate entryDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
+				LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(entryDate.lengthOfMonth())
+						: getLocalDate(customerSetTopBox.getBillingCycle()).plusMonths(1);
+				LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
+				long days = Duration.between(paymentStartDate.atStartOfDay(), billingDate.atStartOfDay()).toDays();
+				if (days != 0) {
+					Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
+					Double balance = days * oneDayCharge;
+					customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_CHANGE, Math.abs(balance), type,
+							dbCustomerSetTopBox));
+					customerLedgreRepository.saveAll(customerLedgres);
+				}
 			}
 		}
 	}
 
-	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price,
-			CreditDebit creditDebit) {
-		return CustomerLedgre.builder().action(Action.PACK_ADD).amount(price).createdAt(Instant.now())
-				.creditDebit(creditDebit).customer(customer).build();
+	private void manageTransactionForBillingCycleChange(CustomerSetTopBox customerSetTopBox,
+			CustomerSetTopBox dbCustomerSetTopBox, Customer customer) {
+		List<CustomerLedgre> customerLedgres = new ArrayList<>();
+		if (customerSetTopBox.getId() != null && dbCustomerSetTopBox.getBillingCycle() != null) {
+			LocalDate dbBillingCycle = getLocalDate(dbCustomerSetTopBox.getBillingCycle());
+			LocalDate newBillingDate = getLocalDate(customerSetTopBox.getBillingCycle());
+			LocalDate dateForMonthDays = getLocalDate(dbCustomerSetTopBox.getBillingCycle()).plusMonths(1);
+			long monthDays = Duration.between(dbBillingCycle.atStartOfDay(), dateForMonthDays.atStartOfDay()).toDays();
+			long days = Duration.between(dbBillingCycle.atStartOfDay(), newBillingDate.atStartOfDay()).toDays();
+			if (days != 0) {
+				Double oneDayCharge = customerSetTopBox.getPackPrice() / monthDays;
+				Double balance = days * oneDayCharge;
+				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_DISCOUNT, Math.abs(balance),
+						days > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT, dbCustomerSetTopBox));
+				customerLedgreRepository.saveAll(customerLedgres);
+			}
+		}
+	}
+
+	private LocalDate getLocalDate(Date date) {
+		Instant instant = Instant.ofEpochMilli(date.getTime());
+		LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+		return localDateTime.toLocalDate();
+	}
+
+	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
+			CustomerSetTopBox customerSetTopBox) {
+		return CustomerLedgre.builder().action(action).amount(round(price, 2)).createdAt(Instant.now())
+				.creditDebit(creditDebit).customer(customer).customerSetTopBox(customerSetTopBox).build();
+	}
+
+	private static double round(double value, int places) {
+		if (places < 0)
+			throw new IllegalArgumentException();
+
+		BigDecimal bd = new BigDecimal(Double.toString(value));
+		bd = bd.setScale(places, RoundingMode.HALF_UP);
+		return bd.doubleValue();
 	}
 
 	@GetMapping("/allCustomerSetTopBoxChannels/{id}")
@@ -225,9 +318,31 @@ public class CustomerController {
 		if (customer != null) {
 			CustomerSetTopBox cstb = customer.getCustomerSetTopBoxes().stream()
 					.filter(c -> c.getId().longValue() == customerSetTopBoxId.longValue()).findFirst().get();
-			cstb.getNetworkChannels().add(NetworkChannel.builder().id(networkChannelId).build());
-
+			//cstb.getNetworkChannels().add(NetworkChannel.builder().id(networkChannelId).build());
 			customerRepository.save(customer);
+			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+			final HttpHeaders headers = new HttpHeaders();
+			headers.put("Location", singletonList(uri.toASCIIString()));
+			return new ResponseEntity<>(headers, HttpStatus.CREATED);
+		}
+		return new ResponseEntity<>(HttpStatus.CONFLICT);
+	}
+
+	@RequestMapping(value = "/removeCustomerSetTopBox/{id}", method = POST)
+	@Transactional
+	public ResponseEntity<String> removeCustomerSetTopBox(@PathVariable("id") Long id, HttpServletRequest request,
+			@ModelAttribute RemoveCustomerSetTopBox removeCustomerSetTopBox) {
+		Customer customer = customerRepository.getOne(id);
+		if (customer != null) {
+			CustomerSetTopBox dbCstb = customerSetTopBoxRepository.getOne(removeCustomerSetTopBox.getId());
+			dbCstb.getSetTopBox().setSetTopBoxStatus(removeCustomerSetTopBox.getSetTopBoxStatus());
+			dbCstb.getSetTopBox().setUpdatedAt(Instant.now());
+			dbCstb.setUpdatedAt(Instant.now());
+			customerSetTopBoxRepository.save(dbCstb);
+			if (removeCustomerSetTopBox.getAmount() != null && removeCustomerSetTopBox.getAmount().doubleValue() > 0) {
+				customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REMOVE,
+						removeCustomerSetTopBox.getAmount(), CreditDebit.CREDIT, dbCstb));
+			}
 			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 			final HttpHeaders headers = new HttpHeaders();
 			headers.put("Location", singletonList(uri.toASCIIString()));

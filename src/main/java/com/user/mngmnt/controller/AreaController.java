@@ -4,6 +4,7 @@ import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.net.URI;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.mapper.JqgridObjectMapper;
 import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.SubArea;
@@ -110,7 +112,7 @@ public class AreaController {
 			@RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredAreas(filters, pageRequest);
@@ -118,7 +120,7 @@ public class AreaController {
 		return new ViewPage<>(areaRepository.findAll(pageRequest));
 	}
 
-	public ViewPage<Area> getFilteredAreas(String filters, PageRequest pageRequest) {
+	public ViewPage<Area> getFilteredAreas(String filters, PageRequest pageRequest) throws ParseException {
 		long count = areaRepository.count();
 		List<Area> records = genericRepository.findAllWithCriteria(filters, Area.class, pageRequest);
 		return ViewPage.<Area>builder().rows(records).max(pageRequest.getPageSize())
@@ -153,7 +155,7 @@ public class AreaController {
 			@RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "wardNumber", required = false) String sort) {
+			@RequestParam(value = "sort", defaultValue = "wardNumber", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredSubAreas(filters, pageRequest);
@@ -161,23 +163,11 @@ public class AreaController {
 		return new ViewPage<>(subAreaRepository.findAll(pageRequest));
 	}
 
-	public ViewPage<SubArea> getFilteredSubAreas(String filters, PageRequest pageRequest) {
-		String qId = null;
-		String qName = null;
-
-		JqgridFilter jqgridFilter = JqgridObjectMapper.map(filters);
-		for (JqgridFilter.Rule rule : jqgridFilter.getRules()) {
-			if (rule.getField().equals("id"))
-				qId = rule.getData();
-			else if (rule.getField().equals("name"))
-				qName = rule.getData();
-		}
-		Page<SubArea> areas = null;
-		if (qId != null)
-			areas = subAreaRepository.findByIdLike("%" + qId + "%", pageRequest);
-		if (qName != null)
-			areas = subAreaRepository.findByWardNumberLike("%" + qName + "%", pageRequest);
-		return new ViewPage<>(areas);
+	public ViewPage<SubArea> getFilteredSubAreas(String filters, PageRequest pageRequest) throws ParseException {
+		long count = subAreaRepository.count();
+		List<SubArea> records = genericRepository.findAllWithCriteria(filters, SubArea.class, pageRequest);
+		return ViewPage.<SubArea>builder().rows(records).max(pageRequest.getPageSize())
+				.page(pageRequest.getPageNumber() + 1).total(count).build();
 	}
 
 	@RequestMapping(value = "/subArea/{id}", method = POST)
@@ -209,7 +199,7 @@ public class AreaController {
 			@RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredStreets(filters, pageRequest);
@@ -217,7 +207,7 @@ public class AreaController {
 		return new ViewPage<>(streetRepository.findAll(pageRequest));
 	}
 
-	public ViewPage<Street> getFilteredStreets(String filters, PageRequest pageRequest) {
+	public ViewPage<Street> getFilteredStreets(String filters, PageRequest pageRequest) throws ParseException {
 		long count = streetRepository.count();
 		List<Street> records = genericRepository.findAllWithCriteria(filters, Street.class, pageRequest);
 		return ViewPage.<Street>builder().rows(records).max(pageRequest.getPageSize())
@@ -253,14 +243,14 @@ public class AreaController {
 		return areas.stream().filter(n -> n != null && n.getName() != null)
 				.collect(Collectors.toMap(Area::getId, Area::getName));
 	}
-	
+
 	@GetMapping("/getAllSubAreas")
 	public @ResponseBody Map<Long, String> getAllSubAreas() {
 		List<SubArea> areas = subAreaRepository.findAll();
 		return areas.stream().filter(n -> n != null && n.getWardNumber() != null)
 				.collect(Collectors.toMap(SubArea::getId, SubArea::getWardNumber));
 	}
-	
+
 	@GetMapping("/getAllStreets")
 	public @ResponseBody Map<Long, String> getAllStreets() {
 		List<Street> streets = streetRepository.findAll();

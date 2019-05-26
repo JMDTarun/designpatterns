@@ -51,7 +51,7 @@ $(function() {
 	var editOptions = {
 		onclickSubmit: function(params, postdata) {
 			params.url = 'channel/' + postdata.id;
-		}
+		}	
 	};
 	var addOptions = {
 		onclickSubmit: function(params, postdata) {
@@ -112,7 +112,7 @@ $(function() {
 	$("#channels")
 			.jqGrid(options)
 			.navGrid('#pagerChannels',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
@@ -120,5 +120,5 @@ $(function() {
 	);
 
 	$("#channels").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
-
+	
 });

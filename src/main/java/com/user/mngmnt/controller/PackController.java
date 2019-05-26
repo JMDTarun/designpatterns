@@ -4,6 +4,7 @@ import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.net.URI;
+import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +31,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.mapper.JqgridObjectMapper;
+import com.user.mngmnt.model.Channel;
 import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.repository.PackRepository;
 
 @Controller
@@ -43,6 +46,9 @@ public class PackController {
 	@Autowired
 	private PackRepository packRepository;
 
+	@Autowired
+	private GenericRepository genericRepository;
+	
 	@GetMapping("/packs")
 	public String area() {
 		return "packs";
@@ -53,7 +59,7 @@ public class PackController {
 			@RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredPacks(filters, pageRequest);
@@ -61,23 +67,12 @@ public class PackController {
 		return new ViewPage<>(packRepository.findAll(pageRequest));
 	}
 
-	public ViewPage<Pack> getFilteredPacks(String filters, PageRequest pageRequest) {
-		String qId = null;
-		String qName = null;
-
-		JqgridFilter jqgridFilter = JqgridObjectMapper.map(filters);
-		for (JqgridFilter.Rule rule : jqgridFilter.getRules()) {
-			if (rule.getField().equals("id"))
-				qId = rule.getData();
-			else if (rule.getField().equals("name"))
-				qName = rule.getData();
-		}
-		Page<Pack> areas = null;
-		if (qId != null)
-			areas = packRepository.findByIdLike("%" + qId + "%", pageRequest);
-		if (qName != null)
-			areas = packRepository.findByNameLike("%" + qName + "%", pageRequest);
-		return new ViewPage<>(areas);
+	public ViewPage<Pack> getFilteredPacks(String filters, PageRequest pageRequest) throws ParseException {
+		long count = packRepository.count();
+		List<Pack> records = genericRepository.findAllWithCriteria(filters, Pack.class, pageRequest);
+		return ViewPage.<Pack>builder().rows(records).max(pageRequest.getPageSize())
+				.page(pageRequest.getPageNumber() + 1).total(count).build();
+	
 	}
 
 	@RequestMapping(value = "/pack/{id}", method = POST)
@@ -138,10 +133,10 @@ public class PackController {
 	}
 
 	@GetMapping("/getAllPacks")
-	public @ResponseBody Map<Long, String> getAllStreets() {
+	public @ResponseBody Map<Long, Pack> getAllStreets() {
 		List<Pack> packs = packRepository.findAll();
 		return packs.stream().filter(n -> n != null && n.getName() != null)
-				.collect(Collectors.toMap(Pack::getId, Pack::getName));
+				.collect(Collectors.toMap(Pack::getId, p -> p));
 	}
 	
 }

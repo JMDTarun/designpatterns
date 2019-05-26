@@ -22,14 +22,18 @@
 		<div class="container">
 			<div class="row">
 				<div class="col">
-					<div class="card-wrapper">
-						<div class="card fat">
-							<div class="card-body">
-								<table id="setTopBoxes"></table>
-								<div id="pagerSetTopBoxes"></div>
-							</div>
-						</div>
+					<div class="card-body">
+						<table id="setTopBoxes"></table>
+						<div id="pagerSetTopBoxes"></div>
 					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col">
+					<form method="POST" action="/uploadSetTopBoxesFile" enctype="multipart/form-data">
+						<input type="file" name="file" /><br />
+						<br /> <input type="submit" value="Submit" />
+					</form>
 				</div>
 			</div>
 		</div>

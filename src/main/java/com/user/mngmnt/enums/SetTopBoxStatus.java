@@ -1,5 +1,5 @@
 package com.user.mngmnt.enums;
 
 public enum SetTopBoxStatus {
-	FAULTY, FREE, TEMPORARY, ALLOTED;
+	FAULTY, FREE, BLOCK, ALLOTED;
 }

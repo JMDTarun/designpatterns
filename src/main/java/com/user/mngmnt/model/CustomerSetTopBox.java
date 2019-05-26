@@ -4,8 +4,11 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.Set;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -18,6 +21,7 @@ import javax.persistence.Table;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
 import com.user.mngmnt.enums.DiscountFrequency;
 import com.user.mngmnt.enums.PaymentMode;
 
@@ -25,6 +29,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder.Default;
 
 @Entity
 @Table(name = "CUSTOMER_SET_TOP_BOX")
@@ -42,6 +47,9 @@ public class CustomerSetTopBox {
 	private PaymentMode paymentMode;
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date entryDate;
+	
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date paymentStartDate;
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
@@ -56,6 +64,10 @@ public class CustomerSetTopBox {
 	private Instant createdAt;
 
 	private Instant updatedAt;
+	
+	@Default
+	@Enumerated(EnumType.STRING)
+	private CustomerSetTopBoxStatus customerSetTopBoxStatus = CustomerSetTopBoxStatus.ACTIVE;
 
 	@ManyToOne
 	@JoinColumn(name = "packId", referencedColumnName = "id")
@@ -63,12 +75,12 @@ public class CustomerSetTopBox {
 	
 	private Double packPrice;
 
-	@ManyToOne
+	@ManyToOne(cascade = CascadeType.ALL)
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private SetTopBox setTopBox;
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinColumn(name = "networkChannelId", referencedColumnName = "id")
 	@JsonIgnore
-	private Set<NetworkChannel> networkChannels;
+	private Set<CustomerNetworkChannel> customerNetworkChannels;
 }

@@ -118,7 +118,7 @@ $(function() {
 	$("#setTopBoxes")
 			.jqGrid(options)
 			.navGrid('#pagerSetTopBoxes',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,

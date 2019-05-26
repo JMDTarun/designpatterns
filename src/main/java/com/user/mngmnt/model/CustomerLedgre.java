@@ -35,6 +35,7 @@ public class CustomerLedgre {
 	@Column(name = "id")
 	private Long id;
 
+	@Enumerated(EnumType.STRING)
 	private Action action;
 
 	private Instant createdAt;
@@ -55,11 +56,7 @@ public class CustomerLedgre {
 	private Customer customer;
 
 	@ManyToOne()
-	@JoinColumn(name = "packId", referencedColumnName = "id")
-	private Pack pack;
-	
-	@ManyToOne
-	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
-	private SetTopBox setTopBox;
+	@JoinColumn(name = "customerSetTopBoxId", referencedColumnName = "id")
+	private CustomerSetTopBox customerSetTopBox;
 
 }

@@ -35,6 +35,9 @@
                 <a class="nav-link" href="/packs">Pack</a>
             </li>
             <li class="nav-item active">
+                <a class="nav-link" href="/setTopBox">Set Top Box</a>
+            </li>
+            <li class="nav-item active">
                 <a class="nav-link" href="/customer">Customer</a>
             </li>
         </ul>

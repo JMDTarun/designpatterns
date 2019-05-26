@@ -73,13 +73,13 @@ $(function() {
 
 	var networksData;
 	var URL = '/allCustomers';
+	var packs;
 	var options = {
 		url: URL,
 		editurl: URL,
 		height: 'auto',
-        forceFit: true,
+		forceFit: true,
         autowidth: true,
-        shrinkToFit: true,
         rowNum: 10,
 		colModel:[
 			{
@@ -252,7 +252,7 @@ $(function() {
 			jQuery("#"+subgrid_table_id).jqGrid({
 				url:"allCustomerSetTopBoxes/"+row_id,
 				editurl: 'updateCustomerSetTopBox/' + row_id,
-				colNames: ['Id','Set Top Box', "Pack", "Pack Price", "Payment Mode", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency"],
+				colNames: ['Id','Set Top Box', "Pack", "Pack Price", "Payment Mode", "Entry Date", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency"],
 				colModel: [
 					{
 						name:"id",
@@ -270,6 +270,7 @@ $(function() {
 						editrules: {required: true},
 						edittype:"select",
 						formatter: function myformatter ( cellvalue, options, rowObject ) {
+							console.info(rowObject);
 							return rowObject.setTopBox.setTopBoxNumber;
 						},
 				        editoptions:{
@@ -279,8 +280,8 @@ $(function() {
 		                                   console.info(jsonOrderArray);
 		                                   if (jsonOrderArray && jsonOrderArray.length) {
 		                                	   var myObj = JSON.parse(jsonOrderArray);
+		                                	   console.info("-------------------------");
 		                                	   console.info(myObj);
-		                                	   console.info(myObj["1895"]);
 		                                	   for (var key in myObj) {
 		                                		    s += '<option value="'+key+'">'+myObj[key]+'</option>';
 		                                		}
@@ -296,7 +297,6 @@ $(function() {
 						editable: true,
 						edittype:"select",
 						formatter: function myformatter ( cellvalue, options, rowObject ) {
-							console.info(rowObject);
 							if(rowObject.pack) {
 								return rowObject.pack.name;
 							}
@@ -306,18 +306,20 @@ $(function() {
 		                    dataUrl: "/getAllPacks", 
 		                           buildSelect: function(jsonOrderArray) {
 		                                   var s = '<select>';
+		                                   console.info("000000000000");
+		                                   console.info(jsonOrderArray);
 		                                   if (jsonOrderArray && jsonOrderArray.length) {
 		                                	   var myObj = JSON.parse(jsonOrderArray);
+		                                	   packs = myObj;
+		                                	   console.info(myObj);
 		                                	   for (var key in myObj) {
-		                                		    s += '<option value="'+key+'">'+myObj[key]+'</option>';
-		                                		}
+		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
+		                                	   }
 		                                  }
 		                                  return s + "</select>";
 		                          }
 		                   },
 						editrules: {required: true}
-					
-					
 					},
 					{
 						name:"packPrice",
@@ -335,6 +337,19 @@ $(function() {
 						edittype:"select",
 						editrules: {required: true},
 						editoptions: {value: "PREPAID:PREPAID;POSTPAID:POSTPAID"}
+					},
+					{
+						name:"entryDate",
+						label: 'Entry Date',
+						index:"entryDate",
+						formatter:'date',
+						formatoptions: { newformat: 'Y/m/d'},
+						editable: true,
+						editoptions: {
+					      dataInit: function(element) {
+					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
+					      }
+					    }
 					},
 					{
 						name:"paymentStartDate",
@@ -395,6 +410,7 @@ $(function() {
 			    forceFit: true,
 		        autowidth: true,
 			    subGrid: true,
+			    forceFit: true,
                 caption: "Set Top Boxes",
                 subGridRowExpanded: function(subgrid_id3, row_id3) {
                     var subgrid_table_id3, pager_id3;
@@ -428,7 +444,6 @@ $(function() {
         		                    dataUrl: "/getAllNetworkChannels", 
         		                           buildSelect: function(jsonOrderArray) {
         		                                   var s = '<select>';
-        		                                   console.info(jsonOrderArray);
         		                                   if (jsonOrderArray && jsonOrderArray.length) {
         		                                	   var myObj = JSON.parse(jsonOrderArray);
         		                                	   for (var key in myObj) {
@@ -447,7 +462,7 @@ $(function() {
             			    sortorder: "asc",
             			    height: '100%',
             			    forceFit: true,
-            		        autowidth: true,
+            		        autowidth: true
                     });
                     
                 	var addOptionsSG3 = {
@@ -463,7 +478,7 @@ $(function() {
         			};
         			
         			jQuery("#"+subgrid_table_id3).jqGrid('navGrid',"#"+pager_id3,
-        					{edit:false,add:true,del:true}, 
+        					{edit:false,add:true,del:true, addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, 
         					{},
         					addOptionsSG3,
         					delOptionsSG3
@@ -474,13 +489,18 @@ $(function() {
 			var editOptionsSG = {
 					onclickSubmit: function(params, postdata) {
 						params.url = 'updateCustomerSetTopBox/' + row_id;
-					}
+					},
+					afterShowForm: function (formid) {
+						manageFieldsForEdit();
+	                }
 				};
 			var addOptionsSG = {
 				onclickSubmit: function(params, postdata) {
 					params.url = 'createCustomerSetTopBox/' + row_id;
 				},
-				afterShowForm: manageCustomerType,
+				afterShowForm: function (formid) {
+					manageFieldsForAdd();
+                },
 				mtype: "POST"
 			};
 			var delOptionsSG = {
@@ -490,11 +510,30 @@ $(function() {
 			};
 			
 			jQuery("#"+subgrid_table_id).jqGrid('navGrid',"#"+pager_id,
-					{edit:true,add:true,del:true}, 
-					{},
+					{edit:true,add:true,del:false, addtext: 'Add', edittext: 'Edit'}, 
+					editOptionsSG,
 					addOptionsSG,
 					delOptionsSG
 				);
+			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
+	                {
+	                    buttonicon: "ui-icon-trash",
+	                    title: "Delete",
+	                    caption: "Delete",
+	                    position: "last",
+	                    onClickButton: function() {
+	                    	var myGrid = $("#"+subgrid_table_id);
+	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+	                    	if(selectedRowId) {
+	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
+	                    		$("#customerId").val(row_id);
+	                    		$("#customerSetTopBoxId").val(cellValue);
+		                    	$("#myDialog").dialog('open');
+	                    	} else {
+	                    		$("#mySelectRowDialog").dialog('open');
+	                    	}
+	                    }
+	                });
 		},
 		subGridRowColapsed: function(subgrid_id, row_id) {
 			// this function is called before removing the data
@@ -507,7 +546,7 @@ $(function() {
 	$("#customers")
 			.jqGrid(options)
 			.navGrid('#pagerCustomers',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
@@ -516,24 +555,87 @@ $(function() {
 
 	$("#customers").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 	
-	function manageCustomerType() {
-		billingCycleState();
+	function manageFieldsForAdd() {
 		setTimeout(function() { 
-	        // then hook the change event of the country dropdown so that it updates cities all the time  
+			billingCycleState();
+			$("#editmodcustomers").attr("width", "50%");
+			var packSelected = $("#pack\\.id").val();
+			if(packs) {
+				$("#packPrice").val(packs[packSelected].price);
+			}
+			$("#pack\\.id").bind("change", function (e) {
+				$("#packPrice").val(packs[$(this).val()].price);
+			});
+			$("#paymentMode").bind("change", function (e) {
+				billingCycleState();
+			});
+		}, 100);
+    }
+	
+	function manageFieldsForEdit() {
+		setTimeout(function() { 
+			$("#editmodcustomers").attr("width", "50%");
+			$("#paymentMode").attr("disabled","disabled");
+			$("#paymentMode").attr("readonly","readonly");
+			billingCycleState();
+			var packSelected = $("#pack\\.id").val();
+			if(packs) {
+				$("#packPrice").val(packs[packSelected].price);
+			}
+			$("#pack\\.id").bind("change", function (e) {
+				$("#packPrice").val(packs[$(this).val()].price);
+			});
 			$("#paymentMode").bind("change", function (e) {
 				billingCycleState();
 			});
 		}, 100);
     }
 
+	$("#myDialog").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		title : "A Dialog Box",
+		buttons : {
+			'OK' : function() {
+				$.post("removeCustomerSetTopBox/" + $('#customerId').val(), {
+					id : $('#customerSetTopBoxId').val(),
+					setTopBoxStatus: $("#status").val(),
+					reason: $("#reason").val(),
+					amount : $("#amount").val()
+				}).done(function(data) {
+					$(this).dialog('close');
+				});
+				// Now you have the value of the textbox, you can do something
+				// with it, maybe an AJAX call to your server!
+			},
+			'Close' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+	
+	$("#mySelectRowDialog").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		title : "Select Row",
+		buttons : {
+			'Ok' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+	
 	function billingCycleState() {
 		if($("#paymentMode").val() === "PREPAID") {
 			$("#billingCycle").attr("disabled","disabled");
 			$("#billingCycle").attr("readonly","readonly");
+			$("#billingCycle").val('');
 		} else {
+			$("#billingCycle").datepicker({ defaultDate: new Date() });
 			$("#billingCycle").removeAttr("disabled","disabled");
 			$("#billingCycle").removeAttr("readonly","readonly");
 		}
 	}
-	
 });

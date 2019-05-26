@@ -139,7 +139,7 @@ $(function() {
 	$("#subAreas")
 			.jqGrid(options)
 			.navGrid('#pagerSubAreas',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,

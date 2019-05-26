@@ -102,7 +102,7 @@ $(function() {
 	$("#networks")
 			.jqGrid(options)
 			.navGrid('#pagerNetworks',
-			{}, //options
+			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,

@@ -18,18 +18,21 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
-	<div class="row">
+	<div class="row mt-3">
 		<div class="col">
 			<table id="areas"></table>
 			<div id="pagerAreas"></div>
 		</div>
 	</div>
 
-	<div class="row">
+	<div class="row mt-3">
 		<div class="col">
 			<table id="subAreas"></table>
 			<div id="pagerSubAreas"></div>
 		</div>
+	</div>
+
+	<div class="row mt-3">
 		<div class="col">
 			<table id="streets"></table>
 			<div id="pagerStreets"></div>

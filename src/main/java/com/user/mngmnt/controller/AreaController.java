@@ -14,7 +14,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpHeaders;
@@ -29,13 +28,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriTemplate;
 
-import com.user.mngmnt.mapper.JqgridObjectMapper;
 import com.user.mngmnt.model.Area;
-import com.user.mngmnt.model.Customer;
-import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.SubArea;
 import com.user.mngmnt.model.ViewPage;

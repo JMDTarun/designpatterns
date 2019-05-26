@@ -53,12 +53,14 @@ $(function() {
 			});
 
 	var editOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'networkChannel/' + postdata.id;
 		},
 		afterShowForm: manageChannelGST
 	};
 	var addOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'networkChannel';
 		},

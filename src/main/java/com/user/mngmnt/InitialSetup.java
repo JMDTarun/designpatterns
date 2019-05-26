@@ -1,13 +1,13 @@
 package com.user.mngmnt;
 
-import com.user.mngmnt.model.RoleNames;
-import com.user.mngmnt.model.User;
-import com.user.mngmnt.service.UserService;
+import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import com.user.mngmnt.model.User;
+import com.user.mngmnt.service.UserService;
 
 @Component
 public class InitialSetup {

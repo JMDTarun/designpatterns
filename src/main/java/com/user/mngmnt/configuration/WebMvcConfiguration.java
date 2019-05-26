@@ -12,7 +12,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
-		registry.addViewController("/home").setViewName("home");
+		registry.addViewController("/customer").setViewName("customer");
 		registry.addViewController("/").setViewName("home");
 		registry.addViewController("/login").setViewName("login");
 	}
@@ -25,7 +25,7 @@ public class WebMvcConfiguration extends WebMvcConfigurationSupport {
 	@Bean
 	public InternalResourceViewResolver viewResolver() {
 		InternalResourceViewResolver resolver = new InternalResourceViewResolver();
-		resolver.setPrefix("/WEB-INF/view/");
+		resolver.setPrefix("WEB-INF/view/");
 		resolver.setSuffix(".jsp");
 
 		return resolver;

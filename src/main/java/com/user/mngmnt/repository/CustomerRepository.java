@@ -8,8 +8,8 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.user.mngmnt.model.Customer;
+import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerSetTopBox;
-import com.user.mngmnt.model.NetworkChannel;
 
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
@@ -23,8 +23,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @Query("SELECT c.customerSetTopBoxes FROM Customer c WHERE c.id = :id")
 	Page<CustomerSetTopBox> getCutomerSetTopBoxes(@Param("id") long customerId, Pageable pageRequest);
 
-    @Query("SELECT distinct s.networkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")
-	Page<NetworkChannel> getCutomerSetTopBoxChannels(@Param("id") long customerId, Pageable pageRequest);
+    @Query("SELECT distinct s.customerNetworkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")
+	Page<CustomerNetworkChannel> getCutomerSetTopBoxChannels(@Param("id") long customerId, Pageable pageRequest);
     
     @Query("SELECT c FROM Pack p INNER JOIN p.networkChannels c WHERE c.id = :id")
     CustomerSetTopBox getCutomerSetTopBoxeById(@Param("id") long id);

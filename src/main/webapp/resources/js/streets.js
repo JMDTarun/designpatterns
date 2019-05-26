@@ -52,11 +52,13 @@ $(function() {
 			});
 
 	var editOptions = {
+		width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'street/' + postdata.id;
 		}
 	};
 	var addOptions = {
+		width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'street';
 		},
@@ -148,6 +150,6 @@ $(function() {
 			{} // search options
 	);
 
-	$("#pagerStreets").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
+	$("#streets").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
 });

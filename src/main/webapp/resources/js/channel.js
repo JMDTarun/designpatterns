@@ -49,11 +49,13 @@ $(function() {
 			});
 
 	var editOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'channel/' + postdata.id;
 		}	
 	};
 	var addOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'channel';
 		},

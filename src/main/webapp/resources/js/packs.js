@@ -54,11 +54,13 @@ $(function() {
 			});
 
 	var editOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'pack/' + postdata.id;
 		}
 	};
 	var addOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'pack';
 		},
@@ -216,11 +218,13 @@ $(function() {
 			});
 		
 			var editOptionsSG = {
+					width: 700,
 					onclickSubmit: function(params, postdata) {
 						params.url = 'updatePackNetworkChannel/' + row_id;
 					}
 				};
 			var addOptionsSG = {
+					width: 700,
 				onclickSubmit: function(params, postdata) {
 					params.url = 'createPackNetworkChannel/' + row_id;
 				},

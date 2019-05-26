@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.enums.Action;
@@ -44,6 +45,7 @@ import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.enums.SetTopBoxStatus;
 import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
@@ -301,7 +303,7 @@ public class CustomerController {
 	}
 
 	@GetMapping("/allCustomerSetTopBoxChannels/{id}")
-	public @ResponseBody ViewPage<NetworkChannel> listCustomerSetTopBoxChannels(@PathVariable("id") Long id,
+	public @ResponseBody ViewPage<CustomerNetworkChannel> listCustomerSetTopBoxChannels(@PathVariable("id") Long id,
 			@RequestParam("_search") Boolean search, @RequestParam(value = "filters", required = false) String filters,
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size) {

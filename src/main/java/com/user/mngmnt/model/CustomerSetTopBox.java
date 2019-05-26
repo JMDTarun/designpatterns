@@ -75,12 +75,12 @@ public class CustomerSetTopBox {
 	
 	private Double packPrice;
 
-	@ManyToOne(cascade = CascadeType.ALL)
+	@ManyToOne
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private SetTopBox setTopBox;
 
 	@ManyToMany(fetch = FetchType.EAGER)
-	@JoinColumn(name = "networkChannelId", referencedColumnName = "id")
+	@JoinColumn(name = "customerNetworkChannelId", referencedColumnName = "id")
 	@JsonIgnore
 	private Set<CustomerNetworkChannel> customerNetworkChannels;
 }

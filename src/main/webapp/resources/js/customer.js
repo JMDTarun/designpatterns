@@ -55,11 +55,13 @@ $(function() {
 			});
 
 	var editOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'customer/' + postdata.id;
 		}
 	};
 	var addOptions = {
+			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'customer';
 		},
@@ -487,21 +489,25 @@ $(function() {
 			});
 		
 			var editOptionsSG = {
+					width: 700,
 					onclickSubmit: function(params, postdata) {
 						params.url = 'updateCustomerSetTopBox/' + row_id;
 					},
 					afterShowForm: function (formid) {
 						manageFieldsForEdit();
-	                }
+	                },
+	                width: 500
 				};
 			var addOptionsSG = {
+					width: 700,
 				onclickSubmit: function(params, postdata) {
 					params.url = 'createCustomerSetTopBox/' + row_id;
 				},
 				afterShowForm: function (formid) {
 					manageFieldsForAdd();
                 },
-				mtype: "POST"
+				mtype: "POST",
+				width: 500
 			};
 			var delOptionsSG = {
 				onclickSubmit: function(params, postdata) {

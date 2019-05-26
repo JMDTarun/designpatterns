@@ -1,3 +1,4 @@
+<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 
@@ -18,18 +19,21 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
-	<div class="row">
+	<div class="row mt-3">
 		<div class="col">
 			<table id="networks"></table>
 			<div id="pagerNetworks"></div>
 		</div>
+	</div>
+
+	<div class="row mt-3">
 		<div class="col">
 			<table id="channels"></table>
 			<div id="pagerChannels"></div>
 		</div>
 	</div>
 
-	<div class="row">
+	<div class="row mt-3">
 		<div class="col">
 			<table id="channelNetworks"></table>
 			<div id="pagerChannelNetworks"></div>

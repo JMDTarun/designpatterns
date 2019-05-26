@@ -20,7 +20,7 @@ $(function() {
 				},
 				sortname: 'wardNumber',
 				sortorder: 'asc',
-				height: 'auto',
+				height: '200',
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
 				altRows: true,
@@ -50,11 +50,13 @@ $(function() {
 			});
 
 	var editOptions = {
+		width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'subArea/' + postdata.id;
 		}
 	};
 	var addOptions = {
+		width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'subArea';
 		},
@@ -70,7 +72,7 @@ $(function() {
 	var options = {
 		url: URL,
 		editurl: URL,
-		height: 'auto',
+		height: '200',
         forceFit: true,
         autowidth: true,
         shrinkToFit: true,

@@ -16,6 +16,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -49,14 +51,17 @@ import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
 import com.user.mngmnt.model.RemoveCustomerSetTopBox;
 import com.user.mngmnt.model.SetTopBox;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
+import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
 import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
 import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.NetworkChannelRepository;
 import com.user.mngmnt.repository.PackRepository;
 import com.user.mngmnt.repository.SetTopBoxRepository;
 
@@ -80,6 +85,12 @@ public class CustomerController {
 
 	@Autowired
 	private CustomerSetTopBoxRepository customerSetTopBoxRepository;
+
+	@Autowired
+	private CustomerNetworkChannelRepository customerNetworkChannelRepository;
+	
+	@Autowired
+	private NetworkChannelRepository networkChannelRepository;
 
 	private static DecimalFormat df = new DecimalFormat("0.00");
 
@@ -180,7 +191,8 @@ public class CustomerController {
 			customer.getCustomerSetTopBoxes().add(customerSetTopBox);
 			customerRepository.save(customer);
 			manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
-			updateSetTopBoxStatusToAlloted(customerSetTopBox.getSetTopBox().getId());
+			updateSetTopBoxStatus(customerSetTopBox.getSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
+					"Assigned To Customer");
 			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 			final HttpHeaders headers = new HttpHeaders();
 			headers.put("Location", singletonList(uri.toASCIIString()));
@@ -189,10 +201,10 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
-	private void updateSetTopBoxStatusToAlloted(Long setTopBoxId) {
+	private void updateSetTopBoxStatus(Long setTopBoxId, SetTopBoxStatus setTopBoxStatus, String reason) {
 		SetTopBox setTopBox = setTopBoxRepository.getOne(setTopBoxId);
-		setTopBox.setSetTopBoxStatus(SetTopBoxStatus.ALLOTED);
-		setTopBox.setReason("Assigned To Customer");
+		setTopBox.setSetTopBoxStatus(setTopBoxStatus);
+		setTopBox.setReason(reason);
 		setTopBoxRepository.save(setTopBox);
 	}
 
@@ -202,39 +214,47 @@ public class CustomerController {
 		if (customerSetTopBox.getPackPrice() > 0) {
 			packPrice = customerSetTopBox.getPackPrice();
 			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, customerSetTopBox.getPackPrice(),
-					CreditDebit.DEBIT, customerSetTopBox));
+					CreditDebit.DEBIT, customerSetTopBox, null));
 		} else {
 			Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
 			packPrice = pack.getPrice();
 			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, pack.getPrice(), CreditDebit.DEBIT,
-					customerSetTopBox));
+					customerSetTopBox, null));
 		}
 		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
-					customerSetTopBox.getOpeningBalance(), CreditDebit.DEBIT, customerSetTopBox));
+					customerSetTopBox.getOpeningBalance(), CreditDebit.DEBIT, customerSetTopBox, null));
 		}
 		if (customerSetTopBox.getDiscount() != null && customerSetTopBox.getDiscount() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.DISCOUNT, customerSetTopBox.getDiscount(),
-					CreditDebit.CREDIT, customerSetTopBox));
+					CreditDebit.CREDIT, customerSetTopBox, null));
 		}
 		// Payment Calculations
-		{
-			boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-			LocalDate entryDate = getLocalDate(customerSetTopBox.getEntryDate());
-			LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(1)
-					: getLocalDate(customerSetTopBox.getBillingCycle());
-			LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
-			long days = Duration.between(billingDate.atStartOfDay(), paymentStartDate.atStartOfDay()).toDays();
-			if (days != 0) {
-				Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
-				Double balance = days * oneDayCharge;
-				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_DISCOUNT, Math.abs(balance),
-						days > 0 ? CreditDebit.CREDIT : CreditDebit.DEBIT, customerSetTopBox));
-			}
+		CustomerLedgre cl = customerDiscountForNewTransaction(customerSetTopBox, customer, Action.PAYMENT_START_DISCOUNT, packPrice);
+		if (cl != null) {
+			customerLedgres.add(cl);
 		}
+
 		if (customerLedgres.size() > 0) {
 			customerLedgreRepository.saveAll(customerLedgres);
 		}
+	}
+
+	private CustomerLedgre customerDiscountForNewTransaction(CustomerSetTopBox customerSetTopBox, Customer customer,
+			Action action, Double packPrice) {
+		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+		LocalDate entryDate = getLocalDate(customerSetTopBox.getEntryDate());
+		LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(1)
+				: getLocalDate(customerSetTopBox.getBillingCycle());
+		LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
+		long days = Duration.between(billingDate.atStartOfDay(), paymentStartDate.atStartOfDay()).toDays();
+		if (days != 0) {
+			Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
+			Double balance = days * oneDayCharge;
+			return buildCustomerLedgre(customer, action, Math.abs(balance),
+					days > 0 ? CreditDebit.CREDIT : CreditDebit.DEBIT, customerSetTopBox, null);
+		}
+		return null;
 	}
 
 	private void manageTransactionForPakChange(CustomerSetTopBox customerSetTopBox,
@@ -255,7 +275,7 @@ public class CustomerController {
 					Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
 					Double balance = days * oneDayCharge;
 					customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_CHANGE, Math.abs(balance), type,
-							dbCustomerSetTopBox));
+							dbCustomerSetTopBox, null));
 					customerLedgreRepository.saveAll(customerLedgres);
 				}
 			}
@@ -275,7 +295,7 @@ public class CustomerController {
 				Double oneDayCharge = customerSetTopBox.getPackPrice() / monthDays;
 				Double balance = days * oneDayCharge;
 				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_DISCOUNT, Math.abs(balance),
-						days > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT, dbCustomerSetTopBox));
+						days > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT, dbCustomerSetTopBox, null));
 				customerLedgreRepository.saveAll(customerLedgres);
 			}
 		}
@@ -288,9 +308,16 @@ public class CustomerController {
 	}
 
 	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
-			CustomerSetTopBox customerSetTopBox) {
-		return CustomerLedgre.builder().action(action).amount(round(price, 2)).createdAt(Instant.now())
-				.creditDebit(creditDebit).customer(customer).customerSetTopBox(customerSetTopBox).build();
+			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel) {
+		return CustomerLedgre.builder()
+				.action(action)
+				.amount(round(price, 2))
+				.createdAt(Instant.now())
+				.creditDebit(creditDebit)
+				.customer(customer)
+				.customerSetTopBox(customerSetTopBox)
+				.customerNetworkChannel(custpomerNetworkChannel)
+				.build();
 	}
 
 	private static double round(double value, int places) {
@@ -315,17 +342,37 @@ public class CustomerController {
 	@Transactional
 	public ResponseEntity<String> addCustomerNetworkChannel(@PathVariable("customemerId") Long customemerId,
 			@PathVariable("customerSetTopBoxId") Long customerSetTopBoxId, HttpServletRequest request,
-			@RequestParam("networkChannelId") Long networkChannelId) {
+			@RequestParam("networkChannelId") Long networkChannelId,
+			@RequestParam("paymentStartDate") @DateTimeFormat(pattern = "yyyy/MM/dd") Date paymentStartDate) {
 		Customer customer = customerRepository.getOne(customemerId);
 		if (customer != null) {
+			List<CustomerLedgre> customerLedgres = new ArrayList<>();
 			CustomerSetTopBox cstb = customer.getCustomerSetTopBoxes().stream()
 					.filter(c -> c.getId().longValue() == customerSetTopBoxId.longValue()).findFirst().get();
-			//cstb.getNetworkChannels().add(NetworkChannel.builder().id(networkChannelId).build());
-			customerRepository.save(customer);
-			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
-			final HttpHeaders headers = new HttpHeaders();
-			headers.put("Location", singletonList(uri.toASCIIString()));
-			return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			Optional<CustomerNetworkChannel> customerNetworkChannel = cstb.getCustomerNetworkChannels().stream()
+					.filter(nc -> nc.getId().longValue() == networkChannelId.longValue()).findAny();
+			if (customerNetworkChannel == null || !customerNetworkChannel.isPresent()) {
+				NetworkChannel networkChannel = networkChannelRepository.getOne(networkChannelId);
+				Double price = networkChannel.getMonthlyRent() + networkChannel.getGst();
+				CustomerNetworkChannel cnc = customerNetworkChannelRepository.save(CustomerNetworkChannel.builder()
+						.networkChannel(NetworkChannel.builder().id(networkChannelId).build())
+						.paymentStartDate(paymentStartDate).build());
+				cstb.getCustomerNetworkChannels().add(cnc);
+				customerRepository.save(customer);
+				customerLedgres
+						.add(buildCustomerLedgre(customer, Action.CHANNEL_ADD, price, CreditDebit.DEBIT, cstb, cnc));
+
+				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForNewTransaction(cstb, customer,
+						Action.CHANNEL_PAYMENT_START_DISCOUNT, price);
+				if (customerDiscountForNewTransaction != null) {
+					customerLedgres.add(customerDiscountForNewTransaction);
+				}
+				customerLedgreRepository.saveAll(customerLedgres);
+				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+				final HttpHeaders headers = new HttpHeaders();
+				headers.put("Location", singletonList(uri.toASCIIString()));
+				return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			}
 		}
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
@@ -341,9 +388,11 @@ public class CustomerController {
 			dbCstb.getSetTopBox().setUpdatedAt(Instant.now());
 			dbCstb.setUpdatedAt(Instant.now());
 			customerSetTopBoxRepository.save(dbCstb);
+			updateSetTopBoxStatus(removeCustomerSetTopBox.getId(), removeCustomerSetTopBox.getSetTopBoxStatus(),
+					removeCustomerSetTopBox.getReason());
 			if (removeCustomerSetTopBox.getAmount() != null && removeCustomerSetTopBox.getAmount().doubleValue() > 0) {
 				customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REMOVE,
-						removeCustomerSetTopBox.getAmount(), CreditDebit.CREDIT, dbCstb));
+						removeCustomerSetTopBox.getAmount(), CreditDebit.CREDIT, dbCstb, null));
 			}
 			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 			final HttpHeaders headers = new HttpHeaders();
@@ -352,4 +401,40 @@ public class CustomerController {
 		}
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
+	
+	@RequestMapping(value = "/removeCustomeNetworkChannel/{id}", method = POST)
+	@Transactional
+	public ResponseEntity<String> removeCustomerNetworkChannel(@PathVariable("id") Long id, HttpServletRequest request,
+			@ModelAttribute RemoveCustomerNetworkChannel removeCustomerNetworkChannel) {
+		Customer customer = customerRepository.getOne(id);
+		if (customer != null) {
+			List<CustomerLedgre> customerLedgres = new ArrayList<>();
+			CustomerSetTopBox cstb = customer.getCustomerSetTopBoxes().stream()
+					.filter(c -> c.getId().longValue() == removeCustomerNetworkChannel.getCustomerSetTopBoxId().longValue()).findFirst().get();
+			Optional<CustomerNetworkChannel> customerNetworkChannel = cstb.getCustomerNetworkChannels().stream()
+					.filter(nc -> nc.getId().longValue() == removeCustomerNetworkChannel.getId().longValue()).findAny();
+			if (customerNetworkChannel == null || !customerNetworkChannel.isPresent()) {
+				NetworkChannel networkChannel = networkChannelRepository.getOne(removeCustomerNetworkChannel.getId());
+				Double price = networkChannel.getMonthlyRent() + networkChannel.getGst();
+				CustomerNetworkChannel cnc = customerNetworkChannelRepository.getOne(removeCustomerNetworkChannel.getId());
+				cnc.setDeleted(true);
+				customerRepository.save(customer);
+				customerLedgres
+						.add(buildCustomerLedgre(customer, Action.CHANNEL_ADD, price, CreditDebit.DEBIT, cstb, cnc));
+
+				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForNewTransaction(cstb, customer,
+						Action.CHANNEL_PAYMENT_START_DISCOUNT, price);
+				if (customerDiscountForNewTransaction != null) {
+					customerLedgres.add(customerDiscountForNewTransaction);
+				}
+				customerLedgreRepository.saveAll(customerLedgres);
+				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+				final HttpHeaders headers = new HttpHeaders();
+				headers.put("Location", singletonList(uri.toASCIIString()));
+				return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			}
+		}
+		return new ResponseEntity<>(HttpStatus.CONFLICT);
+	}
+	
 }

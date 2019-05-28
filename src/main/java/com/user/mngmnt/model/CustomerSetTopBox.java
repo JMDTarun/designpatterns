@@ -79,7 +79,7 @@ public class CustomerSetTopBox {
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private SetTopBox setTopBox;
 
-	@ManyToMany(fetch = FetchType.EAGER)
+	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
 	@JoinColumn(name = "customerNetworkChannelId", referencedColumnName = "id")
 	@JsonIgnore
 	private Set<CustomerNetworkChannel> customerNetworkChannels;

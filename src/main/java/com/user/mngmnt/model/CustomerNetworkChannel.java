@@ -16,6 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -32,10 +33,15 @@ public class CustomerNetworkChannel {
 	@Column(name = "id")
 	private Long id;
 	
+	@Default
+	private boolean isDeleted = false;
+	
+	private String reason;
+	
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date paymentStartDate;
 	
-	@ManyToOne(cascade = CascadeType.ALL)
+	@ManyToOne(cascade = CascadeType.MERGE)
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private NetworkChannel networkChannel;
 	

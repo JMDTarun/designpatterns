@@ -421,7 +421,7 @@ $(function() {
         			$("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table><div id='"+pager_id3+"' class='scroll'></div>");
                     jQuery("#"+subgrid_table_id3).jqGrid({
                         url:"allCustomerSetTopBoxChannels/"+row_id3,
-                        colNames: ['Id', "Channel"],
+                        colNames: ['Id', "Channel", "Payment Start Date"],
                         colModel: [
                         	{
         						name:"id",
@@ -455,6 +455,19 @@ $(function() {
         		                                  return s + "</select>";
         		                          }
         		                   }
+        					},
+        					{
+        						name:"paymentStartDate",
+        						label: 'Payment Start Date',
+        						index:"paymentStartDate",
+        						formatter:'date',
+        						formatoptions: { newformat: 'Y/m/d'},
+        						editable: true,
+        						editoptions: {
+        					      dataInit: function(element) {
+        					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
+        					      }
+        					    }
         					}
                             ],
                             caption: "Channels",
@@ -471,7 +484,8 @@ $(function() {
         				onclickSubmit: function(params, postdata) {
         					params.url = 'addCustomerNetworkChannel/' + row_id + '/' + row_id3;
         				},
-        				mtype: "POST"
+        				mtype: "POST",
+        				width: 700
         			};
         			var delOptionsSG3 = {
         				onclickSubmit: function(params, postdata) {

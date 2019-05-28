@@ -56,6 +56,10 @@ public class CustomerLedgre {
 	private Customer customer;
 
 	@ManyToOne()
+	@JoinColumn(name = "customerNetworkChannelId", referencedColumnName = "id")
+	private CustomerNetworkChannel customerNetworkChannel;
+	
+	@ManyToOne()
 	@JoinColumn(name = "customerSetTopBoxId", referencedColumnName = "id")
 	private CustomerSetTopBox customerSetTopBox;
 

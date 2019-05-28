@@ -22,6 +22,7 @@ import com.user.mngmnt.enums.CustomerType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -53,6 +54,9 @@ public class Customer {
 	private Instant createdAt;
 	
 	private Instant updatedAt;
+	
+	@Default
+	private boolean isDeleted = false;
 	
 	@Enumerated(EnumType.STRING)
 	private CustomerType customerType;

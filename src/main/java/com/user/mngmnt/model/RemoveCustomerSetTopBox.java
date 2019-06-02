@@ -1,5 +1,6 @@
 package com.user.mngmnt.model;
 
+import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.SetTopBoxStatus;
 
 import lombok.Data;
@@ -10,4 +11,5 @@ public class RemoveCustomerSetTopBox {
 	private String reason;
 	private SetTopBoxStatus setTopBoxStatus;
 	private Double amount;
+	private CreditDebit creditDebit;
 }

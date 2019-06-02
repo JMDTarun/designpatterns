@@ -20,14 +20,14 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Customer findByLandLine(String landLine);
     
-    @Query("SELECT c.customerSetTopBoxes FROM Customer c WHERE c.id = :id")
+    @Query(value = "SELECT c.customerSetTopBoxes FROM Customer c WHERE c.id = :id")
 	Page<CustomerSetTopBox> getCutomerSetTopBoxes(@Param("id") long customerId, Pageable pageRequest);
 
     //@Query("SELECT distinct s.customerNetworkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")
-    @Query("SELECT distinct s.customerNetworkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")
-    Page<CustomerNetworkChannel> getCutomerSetTopBoxChannels(@Param("id") long customerId, Pageable pageRequest);
+    @Query(value = "SELECT distinct nc FROM Customer c inner join c.customerSetTopBoxes s inner join s.customerNetworkChannels nc  WHERE nc.isDeleted = 'false' and s.id = :setTopBoxId")
+    Page<CustomerNetworkChannel> getCutomerSetTopBoxChannels(@Param("setTopBoxId") long customerId, Pageable pageRequest);
     
-    @Query("SELECT c FROM Pack p INNER JOIN p.networkChannels c WHERE c.id = :id")
+    @Query(value = "SELECT c FROM Pack p INNER JOIN p.networkChannels c WHERE c.id = :id")
     CustomerSetTopBox getCutomerSetTopBoxeById(@Param("id") long id);
-    
+  
 }

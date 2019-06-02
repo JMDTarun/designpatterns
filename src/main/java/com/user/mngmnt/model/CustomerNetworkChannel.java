@@ -5,6 +5,7 @@ import java.util.Date;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -41,8 +42,8 @@ public class CustomerNetworkChannel {
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date paymentStartDate;
 	
-	@ManyToOne(cascade = CascadeType.MERGE)
-	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
+	@ManyToOne(fetch = FetchType.EAGER)
+	@JoinColumn(name = "networkChannelId", referencedColumnName = "id")
 	private NetworkChannel networkChannel;
 	
 }

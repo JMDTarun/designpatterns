@@ -9,6 +9,6 @@ public class RemoveCustomerNetworkChannel {
 	private Long id;
 	private Long customerId;
 	private Long customerSetTopBoxId;
-	private Date paymentStartDate;
+	private Date channelRemoveDate;
 	private String reason;
 }

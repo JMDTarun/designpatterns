@@ -107,14 +107,33 @@ $(function() {
 				editrules: {required: true}
 			},
 			{
-				name:'customerType',
+				name:'customerType.id',
 				label: 'Customer Type',
-				index: 'customerType',
+				index: 'customerType.id',
 				editable: true,
-				editrules: {required: true},
-				edittype:'select', 
-				formatter:'select', 
-				editoptions:{value:"NORMAL:NORMAL;GOOD:GOOD"}
+				edittype:"select",
+				formatter: function myformatter ( cellvalue, options, rowObject ) {
+					console.info(rowObject);
+					if(rowObject.customerType) {
+						return rowObject.customerType.customerType;
+					}
+					return "";
+				},
+		        editoptions:{
+                    dataUrl: "/getAllCustomerTypes", 
+                           buildSelect: function(jsonOrderArray) {
+                                   var s = '<select>';
+                                   if (jsonOrderArray && jsonOrderArray.length) {
+                                	   var myObj = JSON.parse(jsonOrderArray);
+                                	   for (var key in myObj) {
+                                		    console.log(key + ': ' + myObj[key]);
+                                		    s += '<option value="'+key+'">'+myObj[key].customerType+'</option>';
+                                		}
+                                  }
+                                  return s + "</select>";
+                          }
+                   },
+				editrules: {required: true}
 			},
 			{
 				name:'address',
@@ -421,7 +440,7 @@ $(function() {
         			$("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table><div id='"+pager_id3+"' class='scroll'></div>");
                     jQuery("#"+subgrid_table_id3).jqGrid({
                         url:"allCustomerSetTopBoxChannels/"+row_id3,
-                        colNames: ['Id', "Channel", "Payment Start Date"],
+                        colNames: ['Id', "Channel", "Entry Date", "Payment Start Date", "Deleted"],
                         colModel: [
                         	{
         						name:"id",
@@ -439,8 +458,10 @@ $(function() {
         						editrules: {required: true},
         						edittype:"select",
         						formatter: function myformatter ( cellvalue, options, rowObject ) {
-        							console.info(rowObject);
-        							return rowObject.name;
+        							if(rowObject.networkChannel) {
+        								return rowObject.networkChannel.name;
+        							}
+        							return '';
         						},
         				        editoptions:{
         		                    dataUrl: "/getAllNetworkChannels", 
@@ -457,6 +478,19 @@ $(function() {
         		                   }
         					},
         					{
+        						name:"entryDate",
+        						label: 'Entry Date',
+        						index:"entryDate",
+        						formatter:'date',
+        						formatoptions: { newformat: 'Y/m/d'},
+        						editable: true,
+        						editoptions: {
+        					      dataInit: function(element) {
+        					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
+        					      }
+        					    }
+        					},
+        					{
         						name:"paymentStartDate",
         						label: 'Payment Start Date',
         						index:"paymentStartDate",
@@ -468,6 +502,14 @@ $(function() {
         					        $(element).datepicker({dateFormat: 'yy/mm/dd'})
         					      }
         					    }
+        					},
+        					{
+        						name:"deleted",
+        						index:"deleted",
+        						formatter:'integer',
+        						editable: false,
+        						editoptions: 
+        						{disabled: true}
         					}
                             ],
                             caption: "Channels",
@@ -477,7 +519,15 @@ $(function() {
             			    sortorder: "asc",
             			    height: '100%',
             			    forceFit: true,
-            		        autowidth: true
+            		        autowidth: true,
+            		        beforeSelectRow: function (rowid, e) {
+            		        	var isDeleted = $(this).jqGrid('getCell', rowid, 'deleted');
+            		        	console.info("00000");
+            		            if (isDeleted === "1") {
+            		                return false;
+            		            }
+            		            return true;
+            		        }
                     });
                     
                 	var addOptionsSG3 = {
@@ -499,6 +549,28 @@ $(function() {
         					addOptionsSG3,
         					delOptionsSG3
         				);
+        			
+        			$("#"+subgrid_table_id3).navButtonAdd("#"+pager_id3,
+        	                {
+        	                    buttonicon: "ui-icon-trash",
+        	                    title: "Remove Channel",
+        	                    caption: "Remove Channel",
+        	                    position: "last",
+        	                    onClickButton: function() {
+        	                    	var myGrid = $("#"+subgrid_table_id3);
+        	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+        	                    	if(selectedRowId) {
+        	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
+        	                    		$("#rcCustomerId").val(row_id);
+        	                    		$("#rcCustomerSetTopBoxId").val(row_id3);
+        	                    		$("#rcCid").val(cellValue);
+        	                    		$("#channelRemoveDate").datepicker({ defaultDate: new Date() });
+        		                    	$("#channelRemoveDialog").dialog('open');
+        	                    	} else {
+        	                    		$("#mySelectRowDialog").dialog('open');
+        	                    	}
+        	                    }
+        	                });
                 }
 			});
 		
@@ -554,6 +626,27 @@ $(function() {
 	                    	}
 	                    }
 	                });
+			
+			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
+	                {
+	                    buttonicon: "ui-icon-circle-plus",
+	                    title: "Additional Discount",
+	                    caption: "Additional Discount",
+	                    position: "last",
+	                    onClickButton: function() {
+	                    	var myGrid = $("#"+subgrid_table_id);
+	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+	                    	if(selectedRowId) {
+	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
+	                    		$("#adCustomerId").val(row_id);
+	                    		$("#adCustomerSetTopBoxId").val(cellValue);
+		                    	$("#myAdditionalDiscountDialog").dialog('open');
+	                    	} else {
+	                    		$("#mySelectRowDialog").dialog('open');
+	                    	}
+	                    }
+	                });
+			
 		},
 		subGridRowColapsed: function(subgrid_id, row_id) {
 			// this function is called before removing the data
@@ -615,7 +708,7 @@ $(function() {
 		autoOpen : false,
 		modal : true,
 		position: 'center',
-		title : "A Dialog Box",
+		title : "Remove Set Top Box",
 		buttons : {
 			'OK' : function() {
 				$.post("removeCustomerSetTopBox/" + $('#customerId').val(), {
@@ -635,13 +728,87 @@ $(function() {
 		}
 	});
 	
+
+	$("#myAdditionalDiscountDialog").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		title : "Remove Set Top Box",
+		buttons : {
+			'OK' : function() {
+				$.post("addAdditionalDiscount/" + $('#adCustomerId').val(), {
+					id : $('#adCustomerSetTopBoxId').val(),
+					creditDebit: $("#creditDebit").val(),
+					reason: $("#reason").val(),
+					amount : $("#additionalDiscount").val()
+				}).done(function(data) {
+					$("#myAdditionalDiscountDialog").dialog('close');
+				});
+			},
+			'Close' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+	
 	$("#mySelectRowDialog").dialog({
 		autoOpen : false,
 		modal : true,
 		position: 'center',
-		title : "Select Row",
+		title : "Select Set Top Box",
 		buttons : {
 			'Ok' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+	
+	$("#channelRemoveDialog").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		title : "Remove Channel",
+		buttons : {
+			'OK' : function() {
+				$.post("removeCustomeNetworkChannel/" + $('#rcCustomerId').val(), {
+					customerSetTopBoxId : $('#rcCustomerSetTopBoxId').val(),
+					customerId: $("#rcCustomerId").val(),
+					id: $("#rcCid").val(),
+					channelRemoveDate: $("#channelRemoveDate").val(),
+					reason : $("#rcReason").val()
+				}).done(function(data) {
+					alert("Removed");
+					$("#channelRemoveDialog").dialog('close');
+				});
+				// Now you have the value of the textbox, you can do something
+				// with it, maybe an AJAX call to your server!
+			},
+			'Close' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+	
+	$("#myAdditionalDiscountDialog").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		title : "additionalDiscount",
+		buttons : {
+			'OK' : function() {
+				$.post("addAdditionalDiscount/" + $('#adCustomerId').val(), {
+					id : $('#adCustomerSetTopBoxId').val(),
+					customerId: $("#adCustomerId").val(),
+					reason : $("#adReason").val(),
+					creditDebit : $("#creditDebit").val(),
+					amount: $("#additionalDiscount").val()
+				}).done(function(data) {
+					$("#myAdditionalDiscountDialog").dialog('close');
+				});
+				// Now you have the value of the textbox, you can do something
+				// with it, maybe an AJAX call to your server!
+			},
+			'Close' : function() {
 				$(this).dialog('close');
 			}
 		}

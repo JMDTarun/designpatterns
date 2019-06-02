@@ -56,20 +56,55 @@
 
 	<div id="mySelectRowDialog">
 		<div class="row">
-			<div class="col">Please Select Row To Delete</div>
+			<div class="col">Please Select Set Top Box</div>
 		</div>
 	</div>
 
-	<!-- <div id="myAdditionalDiscountDialog">
+	<div id="channelRemoveDialog">
+		<input type="hidden" id="rcCid">
+		<input type="hidden" id="rcCustomerId">
+		<input type="hidden" id="rcCustomerSetTopBoxId">
+		<div class="row">
+			<div class="col">Channel Remove Date</div>
+			<div class="col">
+				<input type="text" name="channelRemoveDate" id="channelRemoveDate">
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Reason</div>
+			<div class="col">
+				<input type="text" name="rcReason" id="rcReason">
+			</div>
+		</div>
+	</div>
+
+	<div id="myAdditionalDiscountDialog">
+		<input type="hidden" id="adCustomerId">
+		<input type="hidden" id="adCustomerSetTopBoxId">
 		<div class="row">
 			<div class="col">Additional Discount</div>
 			<div class="col">
 				<input type="text" name="additionalDiscount" id="additionalDiscount">
 			</div>
 		</div>
+		<div class="row">
+			<div class="col">Credit/Debit</div>
+			<div class="col">
+				<select id="creditDebit" name="creditName">
+					<option value="CREDIT">Credit</option>
+					<option value="DEBIT">Debit</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Reason</div>
+			<div class="col">
+				<input type="text" name="adReason" id="adReason">
+			</div>
+		</div>
 	</div>
 	
-	<div id="myAdditionalDiscountDialog">
+	<!-- <div id="myAdditionalDiscountDialog">
 		<input type="hidden" id="customerId">
 		<input type="hidden" id="customerSetTopBoxId">
 		<div class="row">

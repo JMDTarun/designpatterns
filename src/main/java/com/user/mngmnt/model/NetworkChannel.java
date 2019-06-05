@@ -33,6 +33,10 @@ public class NetworkChannel {
 
     private Double gst;
     
+    private Double total;
+    
+    private Double gstPercentage;
+    
     private Instant createdAt;
 	
 	private Instant updatedAt;

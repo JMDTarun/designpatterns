@@ -20,7 +20,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     Customer findByLandLine(String landLine);
     
-    @Query(value = "SELECT c.customerSetTopBoxes FROM Customer c WHERE c.id = :id")
+    @Query(value = "SELECT s FROM Customer c inner join c.customerSetTopBoxes s WHERE s.isDeleted = 'false' and c.id = :id")
 	Page<CustomerSetTopBox> getCutomerSetTopBoxes(@Param("id") long customerId, Pageable pageRequest);
 
     //@Query("SELECT distinct s.customerNetworkChannels FROM Customer c inner join c.customerSetTopBoxes s WHERE s.id = :id")

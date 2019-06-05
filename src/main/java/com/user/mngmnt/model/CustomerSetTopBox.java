@@ -65,6 +65,22 @@ public class CustomerSetTopBox {
 
 	private Instant updatedAt;
 	
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date deactivateDate;
+	
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date activateDate;
+	
+	private String activateReason;
+	
+	private String deactivateReason;
+	
+	@Default
+	private boolean isDeleted = false;
+	
+	@Default
+	private boolean isActive = true;
+	
 	@Default
 	@Enumerated(EnumType.STRING)
 	private CustomerSetTopBoxStatus customerSetTopBoxStatus = CustomerSetTopBoxStatus.ACTIVE;

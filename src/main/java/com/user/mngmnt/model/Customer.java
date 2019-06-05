@@ -14,6 +14,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -51,6 +52,22 @@ public class Customer {
 	private Instant createdAt;
 	
 	private Instant updatedAt;
+	
+	@Default
+	private Double amountDebit = 0.0;
+	
+	@Default
+	private Double amountCredit = 0.0;
+	
+	private Double balance;
+	
+	@Default
+	@Transient
+	private Double amountDebitTemp = 0.0;
+	
+	@Default
+	@Transient
+	private Double amountCreditTemp = 0.0;
 	
 	@Default
 	private boolean isDeleted = false;

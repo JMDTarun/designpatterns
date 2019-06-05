@@ -1,6 +1,7 @@
 package com.user.mngmnt.model;
 
 import java.time.Instant;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -50,6 +51,10 @@ public class CustomerLedgre {
 	private String reason;
 	
 	private Month month;
+	
+	private Date activateDate;
+	
+	private Date deactivateDate;
 
 	@ManyToOne()
 	@JoinColumn(name = "customerId", referencedColumnName = "id")

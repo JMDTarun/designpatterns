@@ -720,7 +720,6 @@ $(function() {
 	                    	if(selectedRowId) {
 	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
 	                    		isActiveCell = myGrid.jqGrid ('getCell', selectedRowId, 'active');
-	                    		console.info('%%%%%%% '+ isActiveCell);
 	                    		if(isActiveCell == 0) {
 	                    			$("#setTopBoxAlreadyDeactive").dialog('open');
 	                    		} else {
@@ -729,6 +728,33 @@ $(function() {
 	                    			$("#deactivateDate").datepicker({ defaultDate: new Date() });
 	                    			$("#setTopBoxDeactivate").dialog('open');
 	                    		}
+	                    	} else {
+	                    		$("#mySelectRowDialog").dialog('open');
+	                    	}
+	                    }
+	                });
+			
+			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
+	                {
+	                    buttonicon: "ui-icon-trash",
+	                    title: "Replace",
+	                    caption: "Replace",
+	                    position: "last",
+	                    onClickButton: function() {
+	                    	var myGrid = $("#"+subgrid_table_id);
+	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+	                    	if(selectedRowId) {
+	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
+	                    		$("#replaceCustomerId").val(row_id);
+	                    		getAllSetTopBoxes();
+	                    		
+	                			$('#currentSetTopBox').find('option').remove().end().append('<option value="'+myGrid.jqGrid ('getCell', selectedRowId, 'setTopBoxId')+'">'+myGrid.jqGrid ('getCell', selectedRowId, 'setTopBox.id')+'</option>');
+	                			$("#currentSetTopBox").addClass("ui-widget ui-jqdialog");
+	                			$("#currentSetTopBox").select2();
+	                			$("#currentSetTopBox").attr("disabled","disabled");
+	                			$("#currentSetTopBox").attr("readonly","readonly");
+
+	                			$("#setTopBoxReplace").dialog('open');
 	                    	} else {
 	                    		$("#mySelectRowDialog").dialog('open');
 	                    	}
@@ -1057,6 +1083,32 @@ $(function() {
 		}
 	});
 	
+	$("#setTopBoxReplace").dialog({
+		autoOpen : false,
+		modal : true,
+		position: 'center',
+		width: 500,
+		title : "additionalDiscount",
+		buttons : {
+			'OK' : function() {
+				$.post("addAdditionalDiscount/" + $('#adCustomerId').val(), {
+					id : $('#adCustomerSetTopBoxId').val(),
+					customerId: $("#adCustomerId").val(),
+					reason : $("#adReason").val(),
+					creditDebit : $("#creditDebit").val(),
+					amount: $("#additionalDiscount").val()
+				}).done(function(data) {
+					$("#myAdditionalDiscountDialog").dialog('close');
+				});
+				// Now you have the value of the textbox, you can do something
+				// with it, maybe an AJAX call to your server!
+			},
+			'Close' : function() {
+				$(this).dialog('close');
+			}
+		}
+	});
+
 	function billingCycleState() {
 		if($("#paymentMode").val() === "PREPAID") {
 			$("#billingCycle").attr("disabled","disabled");
@@ -1067,5 +1119,24 @@ $(function() {
 			$("#billingCycle").removeAttr("disabled","disabled");
 			$("#billingCycle").removeAttr("readonly","readonly");
 		}
+	}
+	function getAllSetTopBoxes() {
+		$.ajax({
+		    url: '/getAllSetTopBoxes',
+		    type: 'get',
+		    async: false,
+		    success: function( data, textStatus, jQxhr ){
+    		    $("#replacedSetTopBox").find('option').remove().end().append('<option>Select Replaced Box</option>');
+    		    $("#replacedSetTopBox").addClass("ui-widget ui-jqdialog");
+    			$("#replacedSetTopBox").select2();
+     		    for (var key in data) {
+     		    	console.info(key + " ---- "+data[key]);
+     		    	$("#replacedSetTopBox").append('<option value="'+key+'">'+data[key]+'</option>')
+     		    }
+		    },
+		    error: function( jqXhr, textStatus, errorThrown ){
+		    	alert("Something Went Wrong");
+		    }
+		});
 	}
 });

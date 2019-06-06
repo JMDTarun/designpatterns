@@ -135,6 +135,47 @@
 		</div>
 	</div>
 
+	<div id="setTopBoxReplace">
+		<input type="hidden" id="replaceCustomerId"> 
+		<div class="row">
+			<div class="col">Set Top Box</div>
+			<div class="col">
+				<select id="currentSetTopBox" name="currentSetTopBox"></select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Replace With</div>
+			<div class="col">
+				<select id="replacedSetTopBox" name="replacedSetTopBox"></select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Replacement Type</div>
+			<div class="col">
+				<select id="replacementType" name="replacementType">
+					<option value="TEMPORARY">TEMPORARY</option>
+					<option value="PERMANENT">PERMANENT</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Replacement Reason</div>
+			<div class="col">
+				<select id="replacementReason" name="replacementReason">
+					<option value="FAULTY">FAULTY</option>
+					<option value="BLOCK">BLOCK</option>
+					<option value="ALLOTED">ALLOTED</option>
+				</select>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col">Replacement Charge</div>
+			<div class="col">
+				<input type="text" id="replacementCharge" name="replacementCharge">
+			</div>
+		</div>
+	</div>
+
 	<div id="myAdditionalDiscountDialog">
 		<input type="hidden" id="adCustomerId"> <input type="hidden"
 			id="adCustomerSetTopBoxId">

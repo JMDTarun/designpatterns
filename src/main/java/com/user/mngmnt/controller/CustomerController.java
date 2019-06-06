@@ -55,6 +55,7 @@ import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
 import com.user.mngmnt.model.RemoveCustomerSetTopBox;
 import com.user.mngmnt.model.SetTopBox;
 import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
+import com.user.mngmnt.model.SetTopBoxReplacement;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
@@ -560,6 +561,21 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
+	@RequestMapping(value = "/replaceSetTopBox/{id}", method = POST)
+	@Transactional
+	public ResponseEntity<String> replaceSetTopBox(@PathVariable("id") Long id, HttpServletRequest request,
+			@ModelAttribute SetTopBoxReplacement setTopBoxReplacement) {
+		Customer customer = customerRepository.getOne(id);
+		if (customer != null) {
+			saveCustomer(customer);
+			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+			final HttpHeaders headers = new HttpHeaders();
+			headers.put("Location", singletonList(uri.toASCIIString()));
+			return new ResponseEntity<>(headers, HttpStatus.CREATED);
+		}
+		return new ResponseEntity<>(HttpStatus.CONFLICT);
+	}
+	
 	@RequestMapping(value = "/deActivateSetTopBox/{id}", method = POST)
 	@Transactional
 	public ResponseEntity<String> deActivateSetTopBox(@PathVariable("id") Long id, HttpServletRequest request,

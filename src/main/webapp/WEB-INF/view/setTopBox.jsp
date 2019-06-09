@@ -1,4 +1,5 @@
-<%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
+<%@ page language="java" contentType="text/html; charset=utf-8"
+	pageEncoding="utf-8"%>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
 <%@ taglib prefix="form" uri="http://www.springframework.org/tags/form"%>
 
@@ -15,12 +16,18 @@
 	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/redmond/jquery-ui.css" />
 <link rel="stylesheet" type="text/css" media="screen"
 	href="/resources/css/ui.jqgrid.css" />
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/URI.js/1.17.0/URI.min.js"></script>
 </head>
 <body>
 
 	<jsp:include page="templates/header.jsp" />
 	<section>
 		<div class="container">
+			<div class="alert alert-success" id="successDiv">
+			</div>
+			<div class="alert alert-danger" id="errorDiv">
+			</div>
 			<div class="row">
 				<div class="col">
 					<div class="card-body">
@@ -31,9 +38,10 @@
 			</div>
 			<div class="row">
 				<div class="col">
-					<form method="POST" action="/uploadSetTopBoxesFile" enctype="multipart/form-data">
-						<input type="file" name="file" /><br />
-						<br /> <input type="submit" value="Submit" />
+					<form method="POST" action="/uploadSetTopBoxesFile"
+						enctype="multipart/form-data">
+						<input type="file" name="file" /><br /> <br /> <input
+							type="submit" value="Submit" />
 					</form>
 				</div>
 			</div>
@@ -48,7 +56,5 @@
 	<script src="/resources/js/lib/jquery.jqGrid.src.js"></script>
 
 	<script src="/resources/js/setTopBox.js"></script>
-	<!-- <script src="/resources/js/subarea.js"></script>
-	<script src="/resources/js/networkChannel.js"></script> -->
 </body>
 </html>

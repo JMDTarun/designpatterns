@@ -20,6 +20,7 @@ import com.user.mngmnt.enums.Month;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -56,6 +57,9 @@ public class CustomerLedgre {
 	
 	private Date deactivateDate;
 
+	@Default
+	private boolean isOnHold = false;
+	
 	@ManyToOne()
 	@JoinColumn(name = "customerId", referencedColumnName = "id")
 	private Customer customer;

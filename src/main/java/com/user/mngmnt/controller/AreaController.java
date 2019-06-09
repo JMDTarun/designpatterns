@@ -33,6 +33,7 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.SubArea;
 import com.user.mngmnt.model.ViewPage;
@@ -135,7 +136,7 @@ public class AreaController {
 	}
 
 	@RequestMapping(value = "/area", method = POST)
-	public ResponseEntity<String> createArea(HttpServletRequest request, @ModelAttribute Area area) {
+	public ResponseEntity<ResponseHandler> createArea(HttpServletRequest request, @ModelAttribute Area area) {
 		if (areaRepository.findByName(area.getName()) == null) {
 			area.setCreatedAt(Instant.now());
 			Area dbArea = areaRepository.save(area);
@@ -144,7 +145,11 @@ public class AreaController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Area with name already exists.")
+				.build(), HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allSubAreas")
@@ -178,7 +183,7 @@ public class AreaController {
 	}
 
 	@RequestMapping(value = "/subArea", method = POST)
-	public ResponseEntity<String> createSubArea(HttpServletRequest request, @ModelAttribute SubArea subArea) {
+	public ResponseEntity<ResponseHandler> createSubArea(HttpServletRequest request, @ModelAttribute SubArea subArea) {
 		if (subAreaRepository.findByWardNumber(subArea.getWardNumber()) == null) {
 			subArea.setCreatedAt(Instant.now());
 			SubArea dbSubArea = subAreaRepository.save(subArea);
@@ -188,7 +193,11 @@ public class AreaController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Sub Area with ward number already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allStreets")
@@ -222,7 +231,7 @@ public class AreaController {
 	}
 
 	@RequestMapping(value = "/street", method = POST)
-	public ResponseEntity<String> createStreet(HttpServletRequest request, @ModelAttribute Street street) {
+	public ResponseEntity<ResponseHandler> createStreet(HttpServletRequest request, @ModelAttribute Street street) {
 		if (streetRepository.findByStreetNumber(street.getStreetNumber()) == null) {
 			street.setCreatedAt(Instant.now());
 			Street dbStreet = streetRepository.save(street);
@@ -231,7 +240,11 @@ public class AreaController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Street with street number already exists.")
+				.build(), HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/getAllAreas")

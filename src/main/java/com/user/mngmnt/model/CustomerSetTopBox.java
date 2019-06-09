@@ -48,7 +48,7 @@ public class CustomerSetTopBox {
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date entryDate;
-	
+
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date paymentStartDate;
 
@@ -64,23 +64,23 @@ public class CustomerSetTopBox {
 	private Instant createdAt;
 
 	private Instant updatedAt;
-	
+
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date deactivateDate;
-	
+
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date activateDate;
-	
+
 	private String activateReason;
-	
+
 	private String deactivateReason;
-	
+
 	@Default
 	private boolean isDeleted = false;
-	
+
 	@Default
 	private boolean isActive = true;
-	
+
 	@Default
 	@Enumerated(EnumType.STRING)
 	private CustomerSetTopBoxStatus customerSetTopBoxStatus = CustomerSetTopBoxStatus.ACTIVE;
@@ -88,7 +88,7 @@ public class CustomerSetTopBox {
 	@ManyToOne
 	@JoinColumn(name = "packId", referencedColumnName = "id")
 	private Pack pack;
-	
+
 	private Double packPrice;
 
 	@ManyToOne
@@ -99,4 +99,10 @@ public class CustomerSetTopBox {
 	@JoinColumn(name = "customerNetworkChannelId", referencedColumnName = "id")
 	@JsonIgnore
 	private Set<CustomerNetworkChannel> customerNetworkChannels;
+	
+	@ManyToMany(fetch = FetchType.EAGER, cascade = CascadeType.MERGE)
+	@JoinColumn(name = "customerSetTopBoxReplacementId", referencedColumnName = "id")
+	@JsonIgnore
+	private Set<SetTopBoxReplacement> customerSetTopBoxReplacements;
+	
 }

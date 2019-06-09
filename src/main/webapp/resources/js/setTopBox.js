@@ -1,5 +1,29 @@
 $(function() {
 
+	$(document).ready(function () {
+		console.log(window.location.href);
+		var components = URI.parse(window.location.href);
+		console.log(components);
+		var query = URI.parseQuery(components['query']);
+		console.log(query);
+		console.log('==== '+ query['errorSetTopBoxes']);
+        if(query['errorSetTopBoxes']) {
+        	console.info("Got It.......")
+        	$("#errorDiv").text('Error! '+query['savedElements']+'/'+query['totalElements'] + ' Saved. Set Top Boxes which are not Saved(Already Exists) : '+query['errorSetTopBoxes']);
+        	$("#errorDiv").show();
+        	$("#successDiv").hide();
+        } else if(query['message']) {
+        	$("#successDiv").text('Success! '+query['message']);
+        	$("#errorDiv").hide();
+        	$("#successDiv").show();
+        } else {
+        	$("#errorDiv").hide();
+        	$("#successDiv").hide();
+        }
+    });
+	
+	
+	
 	$.extend($.jgrid.defaults, {
 				datatype: 'json',
 				jsonReader : {
@@ -33,14 +57,23 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: true,
+				closeAfterAdd: false,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
 					var url = Object.keys(data).map(function(k) {
-					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
 					}).join('&');
 					return url;
+				},
+				errorTextFormat: function (response) {
+					if(response.responseText) {
+						var obj = JSON.parse(response.responseText);
+						if(obj.errorCode && obj.errorCode != null) {
+							return obj.errorCode+" "+ obj.errorCause;
+						}
+					}
+				    return "Data Saved!";
 				}
 			});
 	$.extend($.jgrid.del, {
@@ -85,7 +118,8 @@ $(function() {
 				index: 'id',
 				formatter:'integer',
 				editable: true,
-				editoptions: {disabled: true, size:5}
+				hidden: true, 
+				editrules: { edithidden: false }
 			},
 			{
 				name:'setTopBoxNumber',

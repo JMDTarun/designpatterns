@@ -31,12 +31,26 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: true,
+				closeAfterAdd: false,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
-					delete data.oper;
-					return JSON.stringify(data);
+					var url = Object.keys(data).map(function(k) {
+						console.info(k+"!!!"+data[k]);
+					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
+					}).join('&');
+					return url;
+//					delete data.oper;
+//					return JSON.stringify(data);
+				},
+				errorTextFormat: function (response) {
+					if(response.responseText) {
+						var obj = JSON.parse(response.responseText);
+						if(obj.errorCode && obj.errorCode != null) {
+							return obj.errorCode+" "+ obj.errorCause;
+						}
+					}
+				    return "Data Saved!";
 				}
 			});
 	$.extend($.jgrid.del, {
@@ -50,7 +64,8 @@ $(function() {
 			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'area/' + postdata.id;
-		}
+		},
+		mtype: "POST"
 	};
 	var addOptions = {
 			width: 700,
@@ -81,7 +96,8 @@ $(function() {
 				index: 'id',
 				formatter:'integer',
 				editable: true,
-				editoptions: {disabled: true, size:5}
+				hidden: true, 
+				editrules: { edithidden: false }
 			},
 			{
 				name:'name',

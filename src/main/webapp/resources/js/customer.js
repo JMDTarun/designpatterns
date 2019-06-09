@@ -33,18 +33,27 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: true,
+				closeAfterAdd: false,
 			    recreateForm: true,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
 					var url = Object.keys(data).map(function(k) {
-					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
 					}).join('&');
 					return url;
 					//encodeURIComponent("id") + '=' + encodeURIComponent(data.networkChannel_id);
 					//delete data.oper;
 					//return JSON.stringify(data);
+				},
+				errorTextFormat: function (response) {
+					if(response.responseText) {
+						var obj = JSON.parse(response.responseText);
+						if(obj.errorCode && obj.errorCode != null) {
+							return obj.errorCode+" "+ obj.errorCause;
+						}
+					}
+				    return "Data Saved!";
 				}
 			});
 	$.extend($.jgrid.del, {
@@ -94,7 +103,8 @@ $(function() {
 				index: 'id',
 				formatter:'integer',
 				editable: true,
-				editoptions: {disabled: true, size:5}
+				hidden: true, 
+				editrules: { edithidden: false }
 			},
 			{
 				name:'name',
@@ -284,9 +294,8 @@ $(function() {
 						index:"id",
 						formatter:'integer',
 						editable: true,
-						editoptions: 
-						{disabled: true},
-						hidden:true
+						hidden: true, 
+						editrules: { edithidden: false }
 					},
 					{
 						name:"setTopBoxId",
@@ -505,9 +514,9 @@ $(function() {
         						name:"id",
         						index:"id",
         						formatter:'integer',
-        						editable: false,
-        						editoptions: 
-        						{disabled: true}
+        						editable: true,
+        						hidden: true, 
+        						editrules: { edithidden: false }
         					},
         					{
         						name:"networkChannelId",
@@ -743,11 +752,11 @@ $(function() {
 	                    onClickButton: function() {
 	                    	var myGrid = $("#"+subgrid_table_id);
 	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+	                    	setTopBoxGridId = myGrid;
 	                    	if(selectedRowId) {
-	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
 	                    		$("#replaceCustomerId").val(row_id);
+	                    		$("#replaceCustomerCustomerSetBoxId").val(myGrid.jqGrid ('getCell', selectedRowId, 'id'));
 	                    		getAllSetTopBoxes();
-	                    		
 	                			$('#currentSetTopBox').find('option').remove().end().append('<option value="'+myGrid.jqGrid ('getCell', selectedRowId, 'setTopBoxId')+'">'+myGrid.jqGrid ('getCell', selectedRowId, 'setTopBox.id')+'</option>');
 	                			$("#currentSetTopBox").addClass("ui-widget ui-jqdialog");
 	                			$("#currentSetTopBox").select2();
@@ -1088,17 +1097,21 @@ $(function() {
 		modal : true,
 		position: 'center',
 		width: 500,
-		title : "additionalDiscount",
+		title : "replaceSetTopBox",
 		buttons : {
 			'OK' : function() {
-				$.post("addAdditionalDiscount/" + $('#adCustomerId').val(), {
-					id : $('#adCustomerSetTopBoxId').val(),
-					customerId: $("#adCustomerId").val(),
-					reason : $("#adReason").val(),
-					creditDebit : $("#creditDebit").val(),
-					amount: $("#additionalDiscount").val()
+				$.post("replaceSetTopBox/" + $('#replaceCustomerId').val(), {
+					id : 0,
+					customerId: $("#replaceCustomerId").val(),
+					"oldSetTopBox.id": $("#currentSetTopBox").val(),
+					"replacedSetTopBox.id": $("#replacedSetTopBox").val(),
+					replacementReason : $("#replacementReason").val(),
+					replacementType : $("#replacementType").val(),
+					replacementCharge: $("#replacementCharge").val(),
+					customerSetTopBoxId: $("#replaceCustomerCustomerSetBoxId").val()
 				}).done(function(data) {
-					$("#myAdditionalDiscountDialog").dialog('close');
+					$("#setTopBoxReplace").dialog('close');
+					$(setTopBoxGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
 				// with it, maybe an AJAX call to your server!

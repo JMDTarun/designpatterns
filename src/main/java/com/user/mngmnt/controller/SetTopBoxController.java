@@ -24,6 +24,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +39,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.enums.SetTopBoxStatus;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.SetTopBox;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.GenericRepository;
@@ -89,8 +91,11 @@ public class SetTopBoxController {
 	}
 
 	@RequestMapping(value = "/setTopBox", method = POST)
-	public ResponseEntity<String> createArea(HttpServletRequest request, @ModelAttribute SetTopBox setTopBox) {
-		if (setTopBoxRepository.findBySetTopBoxNumber(setTopBox.getSetTopBoxNumber()) == null) {
+	public ResponseEntity<ResponseHandler> createArea(HttpServletRequest request, @ModelAttribute SetTopBox setTopBox) {
+		SetTopBox findBySetTopBoxNumber = setTopBoxRepository.findBySetTopBoxNumber(setTopBox.getSetTopBoxNumber());
+		SetTopBox findByCardNumber = setTopBoxRepository.findByCardNumber(setTopBox.getCardNumber());
+		SetTopBox findBySafeCode = setTopBoxRepository.findBySafeCode(setTopBox.getSafeCode());
+		if (findBySetTopBoxNumber == null && findByCardNumber == null && findBySafeCode == null) {
 			setTopBox.setCreatedAt(Instant.now());
 			SetTopBox dbSetTopBox = setTopBoxRepository.save(setTopBox);
 			URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
@@ -99,7 +104,18 @@ public class SetTopBoxController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		String rootCause = null;
+		if(findBySetTopBoxNumber != null) {
+			rootCause = "Set Top Box with name number already exists";
+		} else if(findByCardNumber != null) {
+			rootCause = "Set Top Box with card number already exists";
+		} else {
+			rootCause = "Set Top Box with safe code already exists";
+		}
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause(rootCause)
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/getAllSetTopBoxes")
@@ -110,53 +126,62 @@ public class SetTopBoxController {
 	}
 
 	@PostMapping("/uploadSetTopBoxesFile")
-	public String singleFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes) {
+	public String singleFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
+			throws IOException {
 
 		if (file.isEmpty()) {
-			redirectAttributes.addFlashAttribute("message", "Please select a file to upload");
+			redirectAttributes.addAttribute("message", "Please select a file to upload");
 			return "redirect:setTopBox";
 		}
 
-		try {
-			List<SetTopBox> setTopBoxes = new ArrayList<>();
-			BufferedReader br;
-			String line;
-			InputStream is = file.getInputStream();
-			br = new BufferedReader(new InputStreamReader(is));
-			boolean isFirstLineRead = false;
-			int setTopBoxNumberIndex = -1;
-			int cardNumberIndex = -1;
-			int safeCodeIndex = -1;
-			while ((line = br.readLine()) != null) {
-				String[] setTopBoxDetails = line.split(",");
-				if (!isFirstLineRead) {
-					for (int i = 0; i < setTopBoxDetails.length; i++) {
-						if (setTopBoxDetails[i].trim().equalsIgnoreCase("Set Top Box Number")) {
-							setTopBoxNumberIndex = i;
-						} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Card Number")) {
-							cardNumberIndex = i;
-						} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Safe Code")) {
-							safeCodeIndex = i;
-						}
+		List<SetTopBox> setTopBoxes = new ArrayList<>();
+		BufferedReader br;
+		String line;
+		InputStream is = file.getInputStream();
+		br = new BufferedReader(new InputStreamReader(is));
+		boolean isFirstLineRead = false;
+		int setTopBoxNumberIndex = -1;
+		int cardNumberIndex = -1;
+		int safeCodeIndex = -1;
+		while ((line = br.readLine()) != null) {
+			String[] setTopBoxDetails = line.split(",");
+			if (!isFirstLineRead) {
+				for (int i = 0; i < setTopBoxDetails.length; i++) {
+					if (setTopBoxDetails[i].trim().equalsIgnoreCase("Set Top Box Number")) {
+						setTopBoxNumberIndex = i;
+					} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Card Number")) {
+						cardNumberIndex = i;
+					} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Safe Code")) {
+						safeCodeIndex = i;
 					}
-					isFirstLineRead = true;
-					continue;
 				}
-				if(isFirstLineRead && setTopBoxDetails.length > 1) {
-					setTopBoxes.add(SetTopBox.builder()
-							.setTopBoxNumber(setTopBoxDetails[setTopBoxNumberIndex].trim())
-							.cardNumber(setTopBoxDetails[cardNumberIndex].trim())
-							.safeCode(setTopBoxDetails[safeCodeIndex].trim())
-							.createdAt(Instant.now())
-							.setTopBoxStatus(SetTopBoxStatus.FREE).build());
-				}
+				isFirstLineRead = true;
+				continue;
 			}
-			setTopBoxRepository.saveAll(setTopBoxes);
-			redirectAttributes.addFlashAttribute("message",
+			if (isFirstLineRead && setTopBoxDetails.length > 1) {
+				setTopBoxes.add(SetTopBox.builder().setTopBoxNumber(setTopBoxDetails[setTopBoxNumberIndex].trim())
+						.cardNumber(setTopBoxDetails[cardNumberIndex].trim())
+						.safeCode(setTopBoxDetails[safeCodeIndex].trim()).createdAt(Instant.now())
+						.setTopBoxStatus(SetTopBoxStatus.FREE).build());
+			}
+		}
+		List<SetTopBox> errorSetTopBoxes = new ArrayList<>();
+		for (SetTopBox stb : setTopBoxes) {
+			try {
+				setTopBoxRepository.save(stb);
+			} catch (Exception e) {
+				errorSetTopBoxes.add(stb);
+			}
+		}
+		if(!CollectionUtils.isEmpty(errorSetTopBoxes)) {
+			redirectAttributes.addAttribute("totalElements", setTopBoxes.size());
+			redirectAttributes.addAttribute("savedElements", setTopBoxes.size() - errorSetTopBoxes.size());
+			String errorSetTopBoxesString = errorSetTopBoxes.stream().map(SetTopBox::getSetTopBoxNumber).collect(Collectors.joining( "," ));
+			redirectAttributes.addAttribute("errorSetTopBoxes", errorSetTopBoxesString);
+			//redirectAttributes.addAttribute("partialDataSaved", errorSetTopBoxes);
+		} else {
+			redirectAttributes.addAttribute("message",
 					"You successfully uploaded '" + file.getOriginalFilename() + "'");
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 		return "redirect:/setTopBox";
 	}

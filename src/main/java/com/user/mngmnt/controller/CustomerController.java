@@ -64,6 +64,7 @@ import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
 import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.repository.NetworkChannelRepository;
 import com.user.mngmnt.repository.PackRepository;
+import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
 import com.user.mngmnt.repository.SetTopBoxRepository;
 
 @Controller
@@ -89,6 +90,9 @@ public class CustomerController {
 
 	@Autowired
 	private CustomerNetworkChannelRepository customerNetworkChannelRepository;
+	
+	@Autowired
+	private SetTopBoxReplacementRepository setTopBoxReplacementRepository;
 
 	@Autowired
 	private NetworkChannelRepository networkChannelRepository;
@@ -203,10 +207,6 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
-	private void validateCustomerSetTopBox(CustomerSetTopBox customerSetTopBox) {
-		
-	}
-	
 	private void updateSetTopBoxStatus(Long setTopBoxId, SetTopBoxStatus setTopBoxStatus, String reason) {
 		SetTopBox setTopBox = setTopBoxRepository.getOne(setTopBoxId);
 		setTopBox.setSetTopBoxStatus(setTopBoxStatus);
@@ -217,7 +217,8 @@ public class CustomerController {
 	private void manageTransactionForNewCustomerSetTopBox(CustomerSetTopBox customerSetTopBox, Customer customer) {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
 		Double packPrice = 0.0;
-		if (customerSetTopBox.getPackPrice() > 0) {
+		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+		if (customerSetTopBox.getPackPrice() > 0 && isPrepaid) {
 			packPrice = customerSetTopBox.getPackPrice();
 			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, customerSetTopBox.getPackPrice(),
 					CreditDebit.DEBIT, customerSetTopBox, null, null));
@@ -330,6 +331,7 @@ public class CustomerController {
 
 	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
 			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel, String reason) {
+		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 		if(creditDebit.equals(CreditDebit.CREDIT)) {
 			customer.setAmountCreditTemp(customer.getAmountCreditTemp() + price);
 		} else {
@@ -337,7 +339,9 @@ public class CustomerController {
 		}
 		return CustomerLedgre.builder().action(action).amount(round(price, 2)).createdAt(Instant.now())
 				.creditDebit(creditDebit).customer(customer).customerSetTopBox(customerSetTopBox)
-				.customerNetworkChannel(custpomerNetworkChannel).reason(reason).build();
+				.customerNetworkChannel(custpomerNetworkChannel).reason(reason)
+				.isOnHold(isPrepaid ? false: true)
+				.build();
 	}
 
 	private static double round(double value, int places) {
@@ -567,11 +571,59 @@ public class CustomerController {
 			@ModelAttribute SetTopBoxReplacement setTopBoxReplacement) {
 		Customer customer = customerRepository.getOne(id);
 		if (customer != null) {
-			saveCustomer(customer);
-			URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
-			final HttpHeaders headers = new HttpHeaders();
-			headers.put("Location", singletonList(uri.toASCIIString()));
-			return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			
+			CustomerSetTopBox cstb = customer.getCustomerSetTopBoxes().stream()
+					.filter(c -> c.getId().longValue() == setTopBoxReplacement.getCustomerSetTopBoxId().longValue())
+					.findFirst().get();
+			Optional<SetTopBoxReplacement> setTopBoxReplacementObj = cstb.getCustomerSetTopBoxReplacements().stream()
+					.filter(nc -> nc.getId().longValue() == setTopBoxReplacement.getId().longValue()).findAny();
+			if (setTopBoxReplacementObj == null || !setTopBoxReplacementObj.isPresent()) {
+				SetTopBoxReplacement stbr = setTopBoxReplacementRepository.save(setTopBoxReplacement);
+				cstb.getCustomerSetTopBoxReplacements().add(stbr);
+				cstb.setSetTopBox(setTopBoxReplacement.getReplacedSetTopBox());
+				cstb.setUpdatedAt(Instant.now());
+				if (setTopBoxReplacement.getReplacementCharge() != null
+						&& setTopBoxReplacement.getReplacementCharge() > 0) {
+					customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REPLACEMENT,
+							Math.abs(setTopBoxReplacement.getReplacementCharge()), CreditDebit.DEBIT, cstb, null,
+							null));
+				}
+				saveCustomer(customer);
+				updateSetTopBoxStatus(setTopBoxReplacement.getOldSetTopBox().getId(),
+						setTopBoxReplacement.getReplacementReason(),
+						setTopBoxReplacement.getReplacementReason().toString());
+				updateSetTopBoxStatus(setTopBoxReplacement.getReplacedSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
+						"Assigned To Customer");
+				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+				final HttpHeaders headers = new HttpHeaders();
+				headers.put("Location", singletonList(uri.toASCIIString()));
+				return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			}
+			
+			/*
+			CustomerSetTopBox customerSetTopBox = customerSetTopBoxRepository.getOne(setTopBoxReplacement.getCustomerSetTopBoxId());
+			if(customerSetTopBox != null) {
+				setTopBoxReplacement.setId(null);
+				customerSetTopBox.getCustomerSetTopBoxReplacements()
+					.add(setTopBoxReplacementRepository.save(setTopBoxReplacement));
+				//customerSetTopBoxRepository.save(customerSetTopBox);
+				//customerSetTopBox.setSetTopBox(setTopBoxReplacement.getReplacedSetTopBox());
+				//customerSetTopBox.setUpdatedAt(Instant.now());
+				//customerSetTopBoxRepository.save(customerSetTopBox);
+				customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REPLACEMENT,
+						Math.abs(setTopBoxReplacement.getReplacementCharge()), CreditDebit.DEBIT, customerSetTopBox,
+						null, null));
+				updateSetTopBoxStatus(setTopBoxReplacement.getOldSetTopBox().getId(),
+						setTopBoxReplacement.getReplacementReason(),
+						setTopBoxReplacement.getReplacementReason().toString());
+				updateSetTopBoxStatus(setTopBoxReplacement.getReplacedSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
+						"Assigned To Customer");
+				saveCustomer(customer);
+				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+				final HttpHeaders headers = new HttpHeaders();
+				headers.put("Location", singletonList(uri.toASCIIString()));
+				return new ResponseEntity<>(headers, HttpStatus.CREATED);
+			}*/
 		}
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}

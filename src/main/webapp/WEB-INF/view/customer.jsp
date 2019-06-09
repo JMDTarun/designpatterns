@@ -137,6 +137,8 @@
 
 	<div id="setTopBoxReplace">
 		<input type="hidden" id="replaceCustomerId"> 
+		<input type="hidden" id="replaceCustomerCustomerSetBoxId"> 
+		<input type="hidden" id="replaceCustomerId"> 
 		<div class="row">
 			<div class="col">Set Top Box</div>
 			<div class="col">

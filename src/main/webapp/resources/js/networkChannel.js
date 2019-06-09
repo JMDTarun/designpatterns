@@ -33,16 +33,25 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: true,
+				closeAfterAdd: false,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
 					var url = Object.keys(data).map(function(k) {
-					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
 					}).join('&');
 					return url;
 					//delete data.oper;
 					//return JSON.stringify(data);
+				},
+				errorTextFormat: function (response) {
+					if(response.responseText) {
+						var obj = JSON.parse(response.responseText);
+						if(obj.errorCode && obj.errorCode != null) {
+							return obj.errorCode+" "+ obj.errorCause;
+						}
+					}
+				    return "Data Saved!";
 				}
 			});
 	$.extend($.jgrid.del, {
@@ -89,7 +98,8 @@ $(function() {
 				index: 'id',
 				formatter:'integer',
 				editable: true,
-				editoptions: {disabled: true, size:5}
+				hidden: true, 
+				editrules: { edithidden: false }
 			},
 			{
 				name:'name',
@@ -108,11 +118,19 @@ $(function() {
 			},
 			{
 				name:'gst',
-				label: 'GST',
+				label: 'GST (18%)',
 				index: 'gst',
 				formatter:'number',
 				editable: true,
-				editrules: {required: true}
+				editoptions: {disabled: true}
+			},
+			{
+				name:'total',
+				label: 'Total',
+				index: 'total',
+				formatter:'number',
+				editable: true,
+				editoptions: {disabled: true}
 			},
 			{
 				name:'network.id',
@@ -222,10 +240,17 @@ $(function() {
 	
 	function manageChannelGST() {
 		setTimeout(function() { 
+			$("#gst").attr("disabled","disabled");
+			$("#gst").attr("readonly","readonly");
+			
+			$("#total").attr("disabled","disabled");
+			$("#total").attr("readonly","readonly");
 			
 			$("#monthlyRent").bind("change paste keyup", function (e) {
-				var gstValue = parseFloat(parseFloat($(this).val()) * 18 / 100);
+				var monthlyRent = parseFloat($(this).val());
+				var gstValue = parseFloat(monthlyRent * 18 / 100);
 				$("#gst").val(gstValue);
+				$("#total").val(parseFloat(monthlyRent + gstValue));
 			});
 			
 		}, 100);

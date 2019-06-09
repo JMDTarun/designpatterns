@@ -41,6 +41,7 @@ import com.user.mngmnt.model.Channel;
 import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.Network;
 import com.user.mngmnt.model.NetworkChannel;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.SubArea;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.ChannelRepository;
@@ -106,7 +107,7 @@ public class NetworkController {
 	}
 
 	@RequestMapping(value = "/network", method = POST)
-	public ResponseEntity<String> createNetwork(HttpServletRequest request, @ModelAttribute Network network) {
+	public ResponseEntity<ResponseHandler> createNetwork(HttpServletRequest request, @ModelAttribute Network network) {
 		if (networkRepository.findByName(network.getName()) == null) {
 			network.setCreatedAt(Instant.now());
 			Network dbNetwork = networkRepository.save(network);
@@ -116,7 +117,11 @@ public class NetworkController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Network with name already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allChannels")
@@ -150,7 +155,7 @@ public class NetworkController {
 	}
 
 	@RequestMapping(value = "/channel", method = POST)
-	public ResponseEntity<String> createChannel(HttpServletRequest request, @ModelAttribute Channel channel) {
+	public ResponseEntity<ResponseHandler> createChannel(HttpServletRequest request, @ModelAttribute Channel channel) {
 		if (channelRepository.findByName(channel.getName()) == null) {
 			channel.setCreatedAt(Instant.now());
 			Channel dbChannel = channelRepository.save(channel);
@@ -160,7 +165,11 @@ public class NetworkController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Channel with name already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allNetworkChannels")
@@ -196,7 +205,7 @@ public class NetworkController {
 	}
 
 	@RequestMapping(value = "/networkChannel", method = POST)
-	public ResponseEntity<String> createNetworkChannel(HttpServletRequest request,
+	public ResponseEntity<ResponseHandler> createNetworkChannel(HttpServletRequest request,
 			@ModelAttribute NetworkChannel networkChannel) {
 		if (networkChannelRepository.findByName(networkChannel.getName()) == null) {
 			networkChannel.setCreatedAt(Instant.now());
@@ -207,7 +216,10 @@ public class NetworkController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Network Channel with name already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/networkManager")

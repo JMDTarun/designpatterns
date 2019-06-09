@@ -36,6 +36,7 @@ import com.user.mngmnt.model.Channel;
 import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.GenericRepository;
@@ -87,7 +88,7 @@ public class PackController {
 	}
 
 	@RequestMapping(value = "/pack", method = POST)
-	public ResponseEntity<String> createArea(HttpServletRequest request, @ModelAttribute Pack pack) {
+	public ResponseEntity<ResponseHandler> createArea(HttpServletRequest request, @ModelAttribute Pack pack) {
 		if (packRepository.findByName(pack.getName()) == null) {
 			pack.setCreatedAt(Instant.now());
 			Pack dbPack = packRepository.save(pack);
@@ -96,7 +97,11 @@ public class PackController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Pack with name already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allPackNetworkChannels/{id}")
@@ -119,7 +124,7 @@ public class PackController {
 
 	@RequestMapping(value = "/createPackNetworkChannel/{id}", method = POST)
 	@Transactional
-	public ResponseEntity<String> createPackChannel(@PathVariable("id") Long id, HttpServletRequest request,
+	public ResponseEntity<ResponseHandler> createPackChannel(@PathVariable("id") Long id, HttpServletRequest request,
 			@RequestParam("networkChannel_id") Long networkChannelId) {
 		Pack pack = packRepository.getOne(id);
 		if (pack != null) {
@@ -130,7 +135,11 @@ public class PackController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Network Channel with name already exists.")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/getAllPacks")

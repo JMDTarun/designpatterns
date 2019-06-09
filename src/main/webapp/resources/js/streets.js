@@ -33,16 +33,24 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: true,
+				closeAfterAdd: false,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
 					var url = Object.keys(data).map(function(k) {
-					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k])
+					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
 					}).join('&');
 					return url;
+				},
+				errorTextFormat: function (response) {
+					if(response.responseText) {
+						var obj = JSON.parse(response.responseText);
+						if(obj.errorCode && obj.errorCode != null) {
+							return obj.errorCode+" "+ obj.errorCause;
+						}
+					}
+				    return "Data Saved!";
 				}
-
 			});
 	$.extend($.jgrid.del, {
 				mtype: 'DELETE',
@@ -86,7 +94,8 @@ $(function() {
 				index: 'id',
 				formatter:'integer',
 				editable: true,
-				editoptions: {disabled: true, size:5}
+				hidden: true, 
+				editrules: { edithidden: false }
 			},
 			{
 				name:'streetNumber',

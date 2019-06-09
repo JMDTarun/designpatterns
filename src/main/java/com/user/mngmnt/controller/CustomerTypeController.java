@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.model.CustomerType;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerTypeRepository;
 import com.user.mngmnt.repository.GenericRepository;
@@ -80,7 +81,7 @@ public class CustomerTypeController {
 	}
 
 	@RequestMapping(value = "/customerType", method = POST)
-	public ResponseEntity<String> createNetwork(HttpServletRequest request, @ModelAttribute CustomerType customerType) {
+	public ResponseEntity<ResponseHandler> createNetwork(HttpServletRequest request, @ModelAttribute CustomerType customerType) {
 		if (customerTypeRepository.findByCustomerType(customerType.getCustomerType()) == null) {
 			customerType.setCreatedAt(Instant.now());
 			CustomerType dbCustomerRype = customerTypeRepository.save(customerType);
@@ -90,7 +91,11 @@ public class CustomerTypeController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Customer Type already exists.")
+				.build(), HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/getAllCustomerTypes")

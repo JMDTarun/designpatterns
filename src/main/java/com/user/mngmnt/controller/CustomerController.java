@@ -218,16 +218,17 @@ public class CustomerController {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
 		Double packPrice = 0.0;
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-		if (customerSetTopBox.getPackPrice() > 0 && isPrepaid) {
+		if (customerSetTopBox.getPackPrice() > 0) {
 			packPrice = customerSetTopBox.getPackPrice();
-			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, customerSetTopBox.getPackPrice(),
-					CreditDebit.DEBIT, customerSetTopBox, null, null));
 		} else {
 			Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
 			packPrice = pack.getPrice();
-			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, pack.getPrice(), CreditDebit.DEBIT,
-					customerSetTopBox, null, null));
 		}
+		if(isPrepaid) {
+			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, packPrice,
+					CreditDebit.DEBIT, customerSetTopBox, null, null));
+		}
+		
 		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
 					customerSetTopBox.getOpeningBalance(), CreditDebit.DEBIT, customerSetTopBox, null, null));
@@ -238,7 +239,7 @@ public class CustomerController {
 		}
 		// Payment Calculations
 		CustomerLedgre cl = customerDiscountForNewTransaction(customerSetTopBox, customer,
-				Action.PAYMENT_START_DISCOUNT, packPrice);
+				Action.PAYMENT_START_ADJUSTMENT, packPrice);
 		if (cl != null) {
 			customerLedgres.add(cl);
 		}
@@ -256,6 +257,7 @@ public class CustomerController {
 				: getLocalDate(customerSetTopBox.getBillingCycle());
 		LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
 		long days = Duration.between(billingDate.atStartOfDay(), paymentStartDate.atStartOfDay()).toDays();
+
 		if (days != 0) {
 			Double oneDayCharge = packPrice / entryDate.lengthOfMonth();
 			Double balance = days * oneDayCharge;
@@ -264,7 +266,7 @@ public class CustomerController {
 		}
 		return null;
 	}
-
+	
 	private void manageTransactionForPakChange(CustomerSetTopBox customerSetTopBox,
 			CustomerSetTopBox dbCustomerSetTopBox, Customer customer) {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
@@ -276,7 +278,7 @@ public class CustomerController {
 				boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 				LocalDate entryDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
 				LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(entryDate.lengthOfMonth())
-						: getLocalDate(customerSetTopBox.getBillingCycle()).plusMonths(1);
+						: getLocalDate(customerSetTopBox.getBillingCycle())/*.plusMonths(1)*/;
 				LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
 				long days = Duration.between(paymentStartDate.atStartOfDay(), billingDate.atStartOfDay()).toDays();
 				if (days != 0) {
@@ -296,13 +298,14 @@ public class CustomerController {
 		if (customerSetTopBox.getId() != null && dbCustomerSetTopBox.getBillingCycle() != null) {
 			LocalDate dbBillingCycle = getLocalDate(dbCustomerSetTopBox.getBillingCycle());
 			LocalDate newBillingDate = getLocalDate(customerSetTopBox.getBillingCycle());
+			dbBillingCycle.withMonth(newBillingDate.getMonthValue());
 			LocalDate dateForMonthDays = getLocalDate(dbCustomerSetTopBox.getBillingCycle()).plusMonths(1);
 			long monthDays = Duration.between(dbBillingCycle.atStartOfDay(), dateForMonthDays.atStartOfDay()).toDays();
 			long days = Duration.between(dbBillingCycle.atStartOfDay(), newBillingDate.atStartOfDay()).toDays();
 			if (days != 0) {
 				Double oneDayCharge = customerSetTopBox.getPackPrice() / monthDays;
 				Double balance = days * oneDayCharge;
-				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_DISCOUNT, Math.abs(balance),
+				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_ADJUSTMENT, Math.abs(balance),
 						days > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT, dbCustomerSetTopBox, null, null));
 				if (dbCustomerSetTopBox.getCustomerNetworkChannels() != null
 						&& !CollectionUtils.isEmpty(dbCustomerSetTopBox.getCustomerNetworkChannels())) {
@@ -317,7 +320,6 @@ public class CustomerController {
 						}
 					}
 				}
-
 				customerLedgreRepository.saveAll(customerLedgres);
 			}
 		}
@@ -383,14 +385,13 @@ public class CustomerController {
 						.networkChannel(NetworkChannel.builder().id(networkChannelId).build())
 						.paymentStartDate(paymentStartDate).build());
 				cstb.getCustomerNetworkChannels().add(cnc);
-				customerLedgres.add(
-						buildCustomerLedgre(customer, Action.CHANNEL_ADD, price, CreditDebit.DEBIT, cstb, cnc, null));
-
+				if(cstb.getPaymentMode().equals(PaymentMode.PREPAID)) {
+					customerLedgres.add(
+							buildCustomerLedgre(customer, Action.CHANNEL_ADD, price, CreditDebit.DEBIT, cstb, cnc, null));
+				}
 				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForAddChannel(cstb.getPaymentMode(),
 						entryDate, cstb.getBillingCycle(), paymentStartDate, customer,
 						Action.CHANNEL_PAYMENT_START_DISCOUNT, price, cstb);
-				// customerDiscountForNewTransaction(cstb, customer,
-				// Action.CHANNEL_PAYMENT_START_DISCOUNT, price);
 				if (customerDiscountForNewTransaction != null) {
 					customerLedgres.add(customerDiscountForNewTransaction);
 				}
@@ -599,31 +600,6 @@ public class CustomerController {
 				headers.put("Location", singletonList(uri.toASCIIString()));
 				return new ResponseEntity<>(headers, HttpStatus.CREATED);
 			}
-			
-			/*
-			CustomerSetTopBox customerSetTopBox = customerSetTopBoxRepository.getOne(setTopBoxReplacement.getCustomerSetTopBoxId());
-			if(customerSetTopBox != null) {
-				setTopBoxReplacement.setId(null);
-				customerSetTopBox.getCustomerSetTopBoxReplacements()
-					.add(setTopBoxReplacementRepository.save(setTopBoxReplacement));
-				//customerSetTopBoxRepository.save(customerSetTopBox);
-				//customerSetTopBox.setSetTopBox(setTopBoxReplacement.getReplacedSetTopBox());
-				//customerSetTopBox.setUpdatedAt(Instant.now());
-				//customerSetTopBoxRepository.save(customerSetTopBox);
-				customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REPLACEMENT,
-						Math.abs(setTopBoxReplacement.getReplacementCharge()), CreditDebit.DEBIT, customerSetTopBox,
-						null, null));
-				updateSetTopBoxStatus(setTopBoxReplacement.getOldSetTopBox().getId(),
-						setTopBoxReplacement.getReplacementReason(),
-						setTopBoxReplacement.getReplacementReason().toString());
-				updateSetTopBoxStatus(setTopBoxReplacement.getReplacedSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
-						"Assigned To Customer");
-				saveCustomer(customer);
-				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
-				final HttpHeaders headers = new HttpHeaders();
-				headers.put("Location", singletonList(uri.toASCIIString()));
-				return new ResponseEntity<>(headers, HttpStatus.CREATED);
-			}*/
 		}
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
@@ -674,7 +650,7 @@ public class CustomerController {
 		LocalDate rd = getLocalDate(packRemoveDate);
 
 		LocalDate bd = isPrepaid ? rd.withDayOfMonth(rd.lengthOfMonth())
-				: getLocalDate(billingDate).withMonth(rd.getMonthValue()).plusMonths(1);
+				: getLocalDate(billingDate).withMonth(rd.getMonthValue())/*.plusMonths(1)*/;
 
 		long days = Duration.between(rd.atStartOfDay(), bd.atStartOfDay()).toDays();
 		if (days != 0) {

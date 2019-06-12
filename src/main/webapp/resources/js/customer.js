@@ -499,6 +499,25 @@ $(function() {
                 beforeSelectRow: function (rowid, e) {
 		        	setTopBoxGridId = subgrid_table_id;
 		        	setTopBoxSelectedRowId = rowid;
+		        	var myGrid = $("#"+subgrid_table_id);
+		        	isActiveCell = myGrid.jqGrid ('getCell', rowid, 'active');
+		        	if(isActiveCell == 1) {
+		        		$("#activateDeactivateButton").attr("title", "Deactivate");
+		        		$('#activateDeactivateButton').children(":first").contents().filter(function() {
+		        		    return this.nodeType == 3
+		        		}).each(function(){
+		        		    this.textContent = this.textContent.replace('Activate/Deactivate','Deactivate');
+		        		    this.textContent = this.textContent.replace('Activate','Deactivate');
+		        		});
+		        	} else {
+		        		$("#activateDeactivateButton").attr("title", "Activate");
+		        		$('#activateDeactivateButton').children(":first").contents().filter(function() {
+		        		    return this.nodeType == 3
+		        		}).each(function(){
+		        		    this.textContent = this.textContent.replace('Activate/Deactivate','Activate');
+		        		    this.textContent = this.textContent.replace('Deactivate','Activate');
+		        		});
+		        	}
 		            return true;
 		        },
                 subGridRowExpanded: function(subgrid_id3, row_id3) {
@@ -594,7 +613,13 @@ $(function() {
         				onclickSubmit: function(params, postdata) {
         					params.url = 'addCustomerNetworkChannel/' + row_id + '/' + row_id3;
         				},
+        				afterShowForm: function (formid) {
+    						manageNetworkChannels();
+    	                },
         				mtype: "POST",
+        				closeAfterAdd: true,
+        		        closeAfterEdit: true,
+        		        reloadAfterSubmit:true,
         				width: 700
         			};
         			var delOptionsSG3 = {
@@ -604,7 +629,7 @@ $(function() {
         			};
         			
         			jQuery("#"+subgrid_table_id3).jqGrid('navGrid',"#"+pager_id3,
-        					{edit:false,add:true,del:true, addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, 
+        					{reloadAfterSubmit:true,closeAfterAdd: true,closeAfterEdit: true, edit:false,add:true,del:false, search:false, addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, 
         					{},
         					addOptionsSG3,
         					delOptionsSG3
@@ -643,6 +668,9 @@ $(function() {
 					afterShowForm: function (formid) {
 						manageFieldsForEdit();
 	                },
+	                closeAfterAdd: true,
+	                closeAfterEdit: true,
+	                reloadAfterSubmit:true,
 	                width: 500
 				};
 			var addOptionsSG = {
@@ -653,6 +681,9 @@ $(function() {
 				afterShowForm: function (formid) {
 					manageFieldsForAdd();
                 },
+                closeAfterAdd: true,
+                closeAfterEdit: true,
+                reloadAfterSubmit:true,
 				mtype: "POST",
 				width: 500
 			};
@@ -663,7 +694,7 @@ $(function() {
 			};
 			
 			$("#"+subgrid_table_id).jqGrid('navGrid',"#"+pager_id,
-					{edit:true,add:true,del:false, addtext: 'Add', edittext: 'Edit'}, 
+					{reloadAfterSubmit:true,closeAfterAdd: true,closeAfterEdit: true, edit:true,add:true,del:false, search:false, addtext: 'Add', edittext: 'Edit'}, 
 					editOptionsSG,
 					addOptionsSG,
 					delOptionsSG
@@ -691,8 +722,9 @@ $(function() {
 			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
 	                {
 	                    buttonicon: "ui-icon-trash",
-	                    title: "Activate",
-	                    caption: "Activate",
+	                    title: "Activate/Deactivate",
+	                    id: "activateDeactivateButton",
+	                    caption: "Activate/Deactivate",
 	                    position: "last",
 	                    onClickButton: function() {
 	                    	var myGrid = $("#"+subgrid_table_id);
@@ -702,7 +734,10 @@ $(function() {
 	                    		idCellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
 	                    		isActiveCell = myGrid.jqGrid ('getCell', selectedRowId, 'active');
 	                    		if(isActiveCell == 1) {
-	                    			$("#setTopBoxAlreadyActive").dialog('open');
+	                    			$("#deactivateCustomerId").val(row_id);
+	                    			$("#deactivateCustomerSetTopBoxId").val(idCellValue);
+	                    			$("#deactivateDate").datepicker({ defaultDate: new Date() });
+	                    			$("#setTopBoxDeactivate").dialog('open');
 	                    		} else {
 	                    			$("#activateCustomerId").val(row_id);
 		                    		$("#activateCustomerSetTopBoxId").val(idCellValue);
@@ -716,32 +751,33 @@ $(function() {
 	                    }
 	                });
 			
-			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
-	                {
-	                    buttonicon: "ui-icon-trash",
-	                    title: "Deactivate",
-	                    caption: "Deactivate",
-	                    position: "last",
-	                    onClickButton: function() {
-	                    	var myGrid = $("#"+subgrid_table_id);
-	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
-	                    	setTopBoxGridId = myGrid;
-	                    	if(selectedRowId) {
-	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
-	                    		isActiveCell = myGrid.jqGrid ('getCell', selectedRowId, 'active');
-	                    		if(isActiveCell == 0) {
-	                    			$("#setTopBoxAlreadyDeactive").dialog('open');
-	                    		} else {
-	                    			$("#deactivateCustomerId").val(row_id);
-	                    			$("#deactivateCustomerSetTopBoxId").val(cellValue);
-	                    			$("#deactivateDate").datepicker({ defaultDate: new Date() });
-	                    			$("#setTopBoxDeactivate").dialog('open');
-	                    		}
-	                    	} else {
-	                    		$("#mySelectRowDialog").dialog('open');
-	                    	}
-	                    }
-	                });
+//			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
+//	                {
+//	                    buttonicon: "ui-icon-trash",
+//	                    id: "deactivateButton",
+//	                    title: "Deactivate",
+//	                    caption: "Deactivate",
+//	                    position: "last",
+//	                    onClickButton: function() {
+//	                    	var myGrid = $("#"+subgrid_table_id);
+//	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+//	                    	setTopBoxGridId = myGrid;
+//	                    	if(selectedRowId) {
+//	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
+//	                    		isActiveCell = myGrid.jqGrid ('getCell', selectedRowId, 'active');
+//	                    		if(isActiveCell == 0) {
+//	                    			$("#setTopBoxAlreadyDeactive").dialog('open');
+//	                    		} else {
+//	                    			$("#deactivateCustomerId").val(row_id);
+//	                    			$("#deactivateCustomerSetTopBoxId").val(cellValue);
+//	                    			$("#deactivateDate").datepicker({ defaultDate: new Date() });
+//	                    			$("#setTopBoxDeactivate").dialog('open');
+//	                    		}
+//	                    	} else {
+//	                    		$("#mySelectRowDialog").dialog('open');
+//	                    	}
+//	                    }
+//	                });
 			
 			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
 	                {
@@ -885,6 +921,12 @@ $(function() {
 		$("#setTopBox\\.id").addClass("ui-widget ui-jqdialog");
 		$("#setTopBox\\.id").select2();
 	}
+	
+	function manageNetworkChannels() {
+		setTimeout(function() { 
+			
+		}, 100);
+    }
 	
 	$("#myDialog").dialog({
 		autoOpen : false,
@@ -1143,7 +1185,6 @@ $(function() {
     		    $("#replacedSetTopBox").addClass("ui-widget ui-jqdialog");
     			$("#replacedSetTopBox").select2();
      		    for (var key in data) {
-     		    	console.info(key + " ---- "+data[key]);
      		    	$("#replacedSetTopBox").append('<option value="'+key+'">'+data[key]+'</option>')
      		    }
 		    },

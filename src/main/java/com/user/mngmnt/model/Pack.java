@@ -38,7 +38,7 @@ public class Pack {
 	private String name;
 	
 	private Double price;
-
+	
 	@ManyToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "networkChannelId", referencedColumnName = "id")
 	@JsonIgnore

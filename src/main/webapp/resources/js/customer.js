@@ -527,7 +527,7 @@ $(function() {
         			$("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table><div id='"+pager_id3+"' class='scroll'></div>");
                     jQuery("#"+subgrid_table_id3).jqGrid({
                         url:"allCustomerSetTopBoxChannels/"+row_id3,
-                        colNames: ['Id', "Channel", "Entry Date", "Payment Start Date", "Deleted"],
+                        colNames: ['Id', "Network","Channel", "Network Channel", "Entry Date", "Payment Start Date", "Deleted"],
                         colModel: [
                         	{
         						name:"id",
@@ -536,6 +536,64 @@ $(function() {
         						editable: true,
         						hidden: true, 
         						editrules: { edithidden: false }
+        					},
+        					{
+        						name:"network.id",
+        						label: 'Network',
+        						index:"network.id", 
+        						hidden: true, 
+        						editable: true, 
+        						editrules: { edithidden: true}, 
+        						hidedlg: true,
+        						edittype:"select",
+        						formatter: function myformatter ( cellvalue, options, rowObject ) {
+        							return rowObject.name;
+        						},
+        				        editoptions:{
+        		                    dataUrl: "/getAllNetworks", 
+        		                           buildSelect: function(jsonOrderArray) {
+        		                                   var s = '<select><option value="">Select Network</option>';
+        		                                   console.info(jsonOrderArray);
+        		                                   if (jsonOrderArray && jsonOrderArray.length) {
+        		                                	   var myObj = JSON.parse(jsonOrderArray);
+        		                                	   networksData = myObj;
+        		                                	   for (var key in myObj) {
+        		                                		    console.log(key + ': ' + myObj[key]);
+        		                                		    s += '<option value="'+myObj[key].id+'">'+myObj[key].name+'</option>';
+        		                                		}
+        		                                  }
+        		                                  return s + "</select>";
+        		                          }
+        		                   }
+        					},
+        					{
+        						name:"channel.id",
+        						label: 'Channel',
+        						index:"channel.id", 
+        						hidden: true, 
+        						editable: true, 
+        						editrules: { edithidden: true}, 
+        						hidedlg: true,
+        						edittype:"select",
+        						formatter: function myformatter ( cellvalue, options, rowObject ) {
+        							return rowObject.name;
+        						},
+        				        editoptions:{
+        		                    dataUrl: "/getAllChannels", 
+        		                           buildSelect: function(jsonOrderArray) {
+        		                                   var s = '<select><option value="">Select Channel</option>';
+        		                                   console.info(jsonOrderArray);
+        		                                   if (jsonOrderArray && jsonOrderArray.length) {
+        		                                	   var myObj = JSON.parse(jsonOrderArray);
+        		                                	   networksData = myObj;
+        		                                	   for (var key in myObj) {
+        		                                		    console.log(key + ': ' + myObj[key]);
+        		                                		    s += '<option value="'+myObj[key].id+'">'+myObj[key].name+'</option>';
+        		                                		}
+        		                                  }
+        		                                  return s + "</select>";
+        		                          }
+        		                   }
         					},
         					{
         						name:"networkChannelId",
@@ -554,12 +612,13 @@ $(function() {
         		                    dataUrl: "/getAllNetworkChannels", 
         		                           buildSelect: function(jsonOrderArray) {
         		                                   var s = '<select>';
-        		                                   if (jsonOrderArray && jsonOrderArray.length) {
-        		                                	   var myObj = JSON.parse(jsonOrderArray);
-        		                                	   for (var key in myObj) {
-        		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
-        		                                		}
-        		                                  }
+        		                                   s += '<option value="">Select Network Channel</option>';
+//        		                                   if (jsonOrderArray && jsonOrderArray.length) {
+//        		                                	   var myObj = JSON.parse(jsonOrderArray);
+//        		                                	   for (var key in myObj) {
+//        		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
+//        		                                		}
+//        		                                  }
         		                                  return s + "</select>";
         		                          }
         		                   }
@@ -615,6 +674,7 @@ $(function() {
         				},
         				afterShowForm: function (formid) {
     						manageNetworkChannels();
+    						populateNetworkChannels();
     	                },
         				mtype: "POST",
         				closeAfterAdd: true,
@@ -914,6 +974,64 @@ $(function() {
 		}, 100);
     }
 
+	function populateNetworkChannels() {
+		
+		setTimeout(function() { 
+			$("#network\\.id").addClass("ui-widget ui-jqdialog");
+ 			$("#network\\.id").select2();
+ 			
+			$("#channel\\.id").addClass("ui-widget ui-jqdialog");
+ 			$("#channel\\.id").select2();
+ 			
+ 			$("#networkChannelId").addClass("ui-widget ui-jqdialog");
+			$("#networkChannelId").select2();
+			
+			$("#network\\.id").bind("change", function (e) {
+				var urlStr = "getAllChannelsByNetwork/" + $("#network\\.id").val();
+				$.ajax({
+				    url: urlStr,
+				    type: 'get',
+				    async: false,
+				    success: function( data, textStatus, jQxhr) {
+		    		    $("#channel\\.id").find('option').remove().end().append('<option>Select Channel</option>');
+		    		    $("#channel\\.id").addClass("ui-widget ui-jqdialog");
+		    			$("#channel\\.id").select2();
+		     		    for (var key in data) {
+		     		    	$("#channel\\.id").append('<option value="'+data[key].id+'">'+data[key].name+'</option>')
+		     		    }
+				    },
+				    error: function( jqXhr, textStatus, errorThrown ){
+				    	alert("Something Went Wrong");
+				    }
+				});
+	        });
+			$("#channel\\.id").bind("change", function (e) {
+				var urlStr = "";
+				if($("#channel\\.id").val() != "" && $("#network\\.id").val() != "") {
+					urlStr = "getAllNetworkChannelsByChanellAndNeworkId/"+ $("#channel\\.id").val() +'/'+ $("#network\\.id").val();
+				} else if($("#channel\\.id").val() != "" && $("#network\\.id").val() == "") {
+					urlStr = "getAllNetworkChannelsByChanellId/"+ $("#channel\\.id").val();
+				}
+				$.ajax({
+				    url: urlStr,
+				    type: 'get',
+				    async: false,
+				    success: function( data, textStatus, jQxhr) {
+		    		    $("#networkChannelId").find('option').remove().end().append('<option>Select Network Channel</option>');
+		    		    $("#networkChannelId").addClass("ui-widget ui-jqdialog");
+		    			$("#networkChannelId").select2();
+		     		    for (var key in data) {
+		     		    	$("#networkChannelId").append('<option value="'+data[key].id+'">'+data[key].name+'</option>')
+		     		    }
+				    },
+				    error: function( jqXhr, textStatus, errorThrown ){
+				    	alert("Something Went Wrong");
+				    }
+				});
+	        });
+		}, 100);
+    }  
+	
 	function addSelect2() {
 		$("#pack\\.id").addClass("ui-widget ui-jqdialog");
 		$("#pack\\.id").select2();

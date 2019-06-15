@@ -15,7 +15,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpHeaders;
@@ -31,18 +30,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriTemplate;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.user.mngmnt.mapper.JqgridObjectMapper;
 import com.user.mngmnt.model.Channel;
-import com.user.mngmnt.model.JqgridFilter;
 import com.user.mngmnt.model.Network;
 import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.ResponseHandler;
-import com.user.mngmnt.model.SubArea;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.ChannelRepository;
 import com.user.mngmnt.repository.GenericRepository;
@@ -272,23 +267,54 @@ public class NetworkController {
 	}
 
 	@GetMapping("/getAllChannels")
-	public @ResponseBody Map<Long, String> getAllChannels() {
+	public @ResponseBody Map<Long, Object> getAllChannels() {
 		List<Channel> channels = channelRepository.findAll();
 		return channels.stream().filter(c -> c != null && c.getName() != null)
-				.collect(Collectors.toMap(Channel::getId, Channel::getName));
+				.collect(Collectors.toMap(Channel::getId, c -> c));
 	}
 
 	@GetMapping("/getAllNetworks")
-	public @ResponseBody Map<Long, String> getAllNetworks() {
+	public @ResponseBody Map<Long, Object> getAllNetworks() {
 		List<Network> networks = networkRepository.findAll();
-		return networks.stream().filter(n -> n != null && n.getName() != null)
-				.collect(Collectors.toMap(Network::getId, Network::getName));
+		return networks.stream().distinct().filter(n -> n != null && n.getName() != null)
+				.collect(Collectors.toMap(Network::getId, c -> c));
 	}
 
 	@GetMapping("/getAllNetworkChannels")
 	public @ResponseBody Map<Long, Object> getAllNetworkChannels() {
 		List<NetworkChannel> networkChannels = networkChannelRepository.findAll();
 		return networkChannels.stream().filter(c -> c != null && c.getName() != null)
+				.collect(Collectors.toMap(NetworkChannel::getId, c -> c));
+	}
+	
+	@GetMapping("/getAllChannelsByNetwork/{id}")
+	public @ResponseBody Map<Long, Object> getAllChannelsByNetwork(@PathVariable("id") Long id) {
+		List<Channel> channels = networkChannelRepository.getChannels(id);
+		return channels.stream().distinct().filter(c -> c != null && c.getName() != null)
+				.collect(Collectors.toMap(Channel::getId, c -> c));
+	}
+	
+	@GetMapping("/getAllNetworkChannelsByChanellAndNeworkId/{channelId}/{networkId}")
+	public @ResponseBody Map<Long, Object> getAllNetworkChannelsByChanellAndNeworkId(
+			@PathVariable("channelId") Long channelId, @PathVariable("networkId") Long networkId) {
+		List<NetworkChannel> networkChannels = networkChannelRepository.getNetworkChannels(channelId, networkId);
+		return networkChannels.stream().distinct().filter(c -> c != null && c.getName() != null)
+				.collect(Collectors.toMap(NetworkChannel::getId, c -> c));
+	}
+	
+	@GetMapping("/getAllNetworkChannelsByChanellId/{channelId}")
+	public @ResponseBody Map<Long, Object> getAllNetworkChannelsByChanellId(
+			@PathVariable("channelId") Long channelId) {
+		List<NetworkChannel> networkChannels = networkChannelRepository.getNetworkChannelsByChannelId(channelId);
+		return networkChannels.stream().distinct().filter(c -> c != null && c.getName() != null)
+				.collect(Collectors.toMap(NetworkChannel::getId, c -> c));
+	}
+	
+	@GetMapping("/getAllNetworkChannelsByNetworkId/{networkId}")
+	public @ResponseBody Map<Long, Object> getAllNetworkChannelsByNetworklId(
+			@PathVariable("networkId") Long networkId) {
+		List<NetworkChannel> networkChannels = networkChannelRepository.getNetworkChannelsByNetworkId(networkId);
+		return networkChannels.stream().distinct().filter(c -> c != null && c.getName() != null)
 				.collect(Collectors.toMap(NetworkChannel::getId, c -> c));
 	}
 }

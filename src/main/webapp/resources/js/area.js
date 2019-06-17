@@ -112,8 +112,8 @@ $(function() {
 				index: 'name2',
 				editable: true,
 				editrules: {required: true}
-			},
-			{
+			}
+			/*{
 				name:'areaCode',
 				label: 'Area Code',
 				index: 'areaCode',
@@ -133,7 +133,7 @@ $(function() {
 				index: 'lcoName',
 				editable: true,
 				editrules: {required: true}
-			}
+			}*/
 		],
 		caption: "Areas",
 		pager : '#pagerAreas',
@@ -146,13 +146,15 @@ $(function() {
 	$("#areas")
 			.jqGrid(options)
 			.navGrid('#pagerAreas',
-			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
+			{addtext: 'Add', search:false, edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
 			{} // search options
 	);
 
+	$("#pagerAreas").css({"height":"55"});
+	
 	$("#areas").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
 });

@@ -39,6 +39,12 @@ public class Pack {
 	
 	private Double price;
 	
+	private Double gst;
+    
+    private Double total;
+    
+    private Double gstPercentage;
+	
 	@ManyToMany(fetch = FetchType.EAGER)
     @JoinColumn(name = "networkChannelId", referencedColumnName = "id")
 	@JsonIgnore

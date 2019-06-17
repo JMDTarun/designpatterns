@@ -105,21 +105,12 @@ $(function() {
 				index: 'name',
 				editable: true,
 				editrules: {required: true}
-			},
-			{
-				name:'price',
-				label: 'Price',
-				index: 'price',
-				editable: true,
-				formatter:'number',
-				editrules: {required: true}
 			}
 		],
 		caption: "Channels",
 		pager : '#pagerChannels',
 		height: 'auto',
 		forceFit: true,
-        autowidth: true,
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
 		}
@@ -128,13 +119,15 @@ $(function() {
 	$("#channels")
 			.jqGrid(options)
 			.navGrid('#pagerChannels',
-			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
+			{addtext: 'Add', search:false, edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
 			{} // search options
 	);
 
+	$("#pagerChannels").css({"height":"55"});
+	
 	$("#channels").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 	
 });

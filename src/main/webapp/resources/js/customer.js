@@ -127,7 +127,6 @@ $(function() {
 				editable: true,
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
-					console.info(rowObject);
 					if(rowObject.customerType) {
 						return rowObject.customerType.customerType;
 					}
@@ -140,7 +139,6 @@ $(function() {
                                    if (jsonOrderArray && jsonOrderArray.length) {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   for (var key in myObj) {
-                                		    console.log(key + ': ' + myObj[key]);
                                 		    s += '<option value="'+key+'">'+myObj[key].customerType+'</option>';
                                 		}
                                   }
@@ -154,14 +152,17 @@ $(function() {
 				label: 'Address',
 				index: 'address',
 				editable: true,
-				editrules: {required: true}
+				hidden: true, 
+				editrules: {required: true, edithidden: true},
+				hidedlg: true
 			},
 			{
 				name:'city',
 				label: 'City',
 				index: 'city',
 				editable: true,
-				editrules: {required: true}
+				hidden: true, 
+				editrules: {required: true, edithidden: true},
 			},
 			{
 				name:'mobile',
@@ -175,7 +176,8 @@ $(function() {
 				label: 'Land Line',
 				index: 'landLine',
 				editable: true,
-				editrules: {required: true}
+				hidden: true, 
+				editrules: {required: true, edithidden: true},
 			},			
 			{
 				name:'area.id',
@@ -184,7 +186,6 @@ $(function() {
 				editable: true,
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
-					console.info(rowObject);
 					if(rowObject.area) {
 						return rowObject.area.name;
 					}
@@ -197,7 +198,6 @@ $(function() {
                                    if (jsonOrderArray && jsonOrderArray.length) {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   for (var key in myObj) {
-                                		    console.log(key + ': ' + myObj[key]);
                                 		    s += '<option value="'+key+'">'+myObj[key]+'</option>';
                                 		}
                                   }
@@ -214,7 +214,6 @@ $(function() {
 				editable: true,
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
-					console.info(rowObject);
 					if(rowObject.area) {
 						return rowObject.area.name;
 					}
@@ -244,7 +243,6 @@ $(function() {
 				editable: true,
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
-					console.info(rowObject);
 					if(rowObject.area) {
 						return rowObject.area.name;
 					}
@@ -283,6 +281,7 @@ $(function() {
 			var subgrid_table_id, pager_id;
 			subgrid_table_id = subgrid_id+"_t";
 			pager_id = "p_"+subgrid_table_id;
+			$("#pagerCustomers").css("filter","blur(10px)");
 			$("#"+subgrid_id).html("<table id='"+subgrid_table_id+"' class='scroll'></table><div id='"+pager_id+"' class='scroll'></div>");
 			jQuery("#"+subgrid_table_id).jqGrid({
 				url:"allCustomerSetTopBoxes/"+row_id,
@@ -381,7 +380,6 @@ $(function() {
 	                                   if (jsonOrderArray && jsonOrderArray.length) {
 	                                	   var myObj = JSON.parse(jsonOrderArray);
 	                                	   packs = myObj;
-	                                	   console.info(myObj);
 	                                	   for (var key in myObj) {
 	                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
 	                                	   }
@@ -524,10 +522,11 @@ $(function() {
                     var subgrid_table_id3, pager_id3;
                     subgrid_table_id3 = subgrid_id3+"_t";
                     pager_id3 = "p_"+subgrid_table_id3;
+        			$("#"+pager_id).css("filter","blur(10px)");
         			$("#"+subgrid_id3).html("<table id='"+subgrid_table_id3+"' class='scroll'></table><div id='"+pager_id3+"' class='scroll'></div>");
                     jQuery("#"+subgrid_table_id3).jqGrid({
                         url:"allCustomerSetTopBoxChannels/"+row_id3,
-                        colNames: ['Id', "Network","Channel", "Network Channel", "Entry Date", "Payment Start Date", "Deleted"],
+                        colNames: ['Id', "Network","Channel", "Network Channel", "Rent", "Entry Date", "Payment Start Date", "Deleted"],
                         colModel: [
                         	{
         						name:"id",
@@ -553,12 +552,10 @@ $(function() {
         		                    dataUrl: "/getAllNetworks", 
         		                           buildSelect: function(jsonOrderArray) {
         		                                   var s = '<select><option value="">Select Network</option>';
-        		                                   console.info(jsonOrderArray);
         		                                   if (jsonOrderArray && jsonOrderArray.length) {
         		                                	   var myObj = JSON.parse(jsonOrderArray);
         		                                	   networksData = myObj;
         		                                	   for (var key in myObj) {
-        		                                		    console.log(key + ': ' + myObj[key]);
         		                                		    s += '<option value="'+myObj[key].id+'">'+myObj[key].name+'</option>';
         		                                		}
         		                                  }
@@ -582,12 +579,10 @@ $(function() {
         		                    dataUrl: "/getAllChannels", 
         		                           buildSelect: function(jsonOrderArray) {
         		                                   var s = '<select><option value="">Select Channel</option>';
-        		                                   console.info(jsonOrderArray);
         		                                   if (jsonOrderArray && jsonOrderArray.length) {
         		                                	   var myObj = JSON.parse(jsonOrderArray);
         		                                	   networksData = myObj;
         		                                	   for (var key in myObj) {
-        		                                		    console.log(key + ': ' + myObj[key]);
         		                                		    s += '<option value="'+myObj[key].id+'">'+myObj[key].name+'</option>';
         		                                		}
         		                                  }
@@ -622,6 +617,21 @@ $(function() {
         		                                  return s + "</select>";
         		                          }
         		                   }
+        					},
+        					{
+        						name:"total",
+        						label: 'Rent',
+        						index:"total",
+        						formatter: function myformatter ( cellvalue, options, rowObject ) {
+        							if(rowObject.networkChannel) {
+        								return rowObject.networkChannel.total;
+        							}
+        							return 0.0;
+        						},
+        						editable: false,
+        						hidden: false, 
+        						editrules: { edithidden: true }, 
+        						hidedlg: false
         					},
         					{
         						name:"entryDate",
@@ -717,6 +727,9 @@ $(function() {
         	                    	}
         	                    }
         	                });
+                }, 
+                subGridRowColapsed: function(subgrid_id, row_id) {
+                	$("#"+pager_id).css("filter","blur(0px)");
                 }
 			});
 		
@@ -811,34 +824,6 @@ $(function() {
 	                    }
 	                });
 			
-//			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
-//	                {
-//	                    buttonicon: "ui-icon-trash",
-//	                    id: "deactivateButton",
-//	                    title: "Deactivate",
-//	                    caption: "Deactivate",
-//	                    position: "last",
-//	                    onClickButton: function() {
-//	                    	var myGrid = $("#"+subgrid_table_id);
-//	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
-//	                    	setTopBoxGridId = myGrid;
-//	                    	if(selectedRowId) {
-//	                    		cellValue = myGrid.jqGrid ('getCell', selectedRowId, 'id');
-//	                    		isActiveCell = myGrid.jqGrid ('getCell', selectedRowId, 'active');
-//	                    		if(isActiveCell == 0) {
-//	                    			$("#setTopBoxAlreadyDeactive").dialog('open');
-//	                    		} else {
-//	                    			$("#deactivateCustomerId").val(row_id);
-//	                    			$("#deactivateCustomerSetTopBoxId").val(cellValue);
-//	                    			$("#deactivateDate").datepicker({ defaultDate: new Date() });
-//	                    			$("#setTopBoxDeactivate").dialog('open');
-//	                    		}
-//	                    	} else {
-//	                    		$("#mySelectRowDialog").dialog('open');
-//	                    	}
-//	                    }
-//	                });
-			
 			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
 	                {
 	                    buttonicon: "ui-icon-trash",
@@ -868,6 +853,7 @@ $(function() {
 		},
 		subGridRowColapsed: function(subgrid_id, row_id) {
 			// this function is called before removing the data
+			$("#pagerCustomers").css("filter","blur(0px)");
 			var subgrid_table_id;
 			subgrid_table_id = subgrid_id+"_t";
 			jQuery("#"+subgrid_table_id).remove();
@@ -957,7 +943,6 @@ $(function() {
 			//$("#setTopBox\\.id").val(myGrid.jqGrid ('getCell', selectedRowId, 'setTopBox.id'));
 			$("#setTopBox\\.id").attr("disabled","disabled");
 			$("#setTopBox\\.id").attr("readonly","readonly");
-			console.info("!!!!! "+myGrid.jqGrid ('getCell', selectedRowId, 'setTopBoxId'));
 
 			addSelect2();
 			billingCycleState();

@@ -19,14 +19,12 @@
 <body>
 
 	<jsp:include page="templates/header.jsp" />
+	
 	<div class="row mt-3">
 		<div class="col">
 			<table id="networks"></table>
 			<div id="pagerNetworks"></div>
 		</div>
-	</div>
-
-	<div class="row mt-3">
 		<div class="col">
 			<table id="channels"></table>
 			<div id="pagerChannels"></div>

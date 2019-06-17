@@ -150,13 +150,15 @@ $(function() {
 	$("#subAreas")
 			.jqGrid(options)
 			.navGrid('#pagerSubAreas',
-			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
+			{addtext: 'Add', search:false, edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
 			{} // search options
 	);
 
+	$("#pagerSubAreas").css({"height":"55"});
+	
 	$("#subAreas").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
 });

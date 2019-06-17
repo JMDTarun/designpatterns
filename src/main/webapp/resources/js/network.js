@@ -118,13 +118,15 @@ $(function() {
 	$("#networks")
 			.jqGrid(options)
 			.navGrid('#pagerNetworks',
-			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
+			{addtext: 'Add', search:false, edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
 			{} // search options
 	);
 
+	$("#pagerNetworks").css({"height":"55"});
+	
 	$("#networks").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
 });

@@ -153,7 +153,7 @@ $(function() {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   for (var key in myObj) {
                                 		    console.log(key + ': ' + myObj[key]);
-                                		    s += '<option value="'+key+'">'+myObj[key]+'</option>';
+                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
                                 		}
                                   }
                                   return s + "</select>";
@@ -182,7 +182,7 @@ $(function() {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   for (var key in myObj) {
                                 		    console.log(key + ': ' + myObj[key]);
-                                		    s += '<option value="'+key+'">'+myObj[key]+'</option>';
+                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
                                 		}
                                   }
                                   return s + "</select>";

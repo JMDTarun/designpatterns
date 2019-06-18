@@ -16,7 +16,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -53,6 +55,7 @@ import com.user.mngmnt.model.NetworkChannel;
 import com.user.mngmnt.model.Pack;
 import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
 import com.user.mngmnt.model.RemoveCustomerSetTopBox;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.SetTopBox;
 import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
 import com.user.mngmnt.model.SetTopBoxReplacement;
@@ -126,19 +129,31 @@ public class CustomerController {
 
 	@RequestMapping(value = "/customer/{id}", method = POST)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void updateStreet(@PathVariable("id") Long id, @ModelAttribute Customer customer) {
-		customerRepository.findById(id).ifPresent(n -> {
-			customer.setUpdatedAt(Instant.now());
-			customer.setId(n.getId());
+	public ResponseEntity<ResponseHandler> updateStreet(@PathVariable("id") Long id, @ModelAttribute Customer customer) {
+		Optional<Customer> dbCustomer = customerRepository.findById(id);
+		if(dbCustomer.isPresent()) {
+			Customer c = dbCustomer.get();
 			//customerRepository.save(customer);
+			if(!customer.getCustomerCode().equals(c.getCustomerCode())) {
+				if (customerRepository.findByCustomerCode(customer.getCustomerCode()) != null) {
+					return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+							.errorCode(HttpStatus.CONFLICT.value())
+							.errorCause("Customer with Customer Code already exist")
+							.build(), HttpStatus.CONFLICT);
+				}
+			}
+			customer.setUpdatedAt(Instant.now());
+			customer.setId(c.getId());
 			saveCustomer(customer);
-		});
+		}
+		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
 
 	@RequestMapping(value = "/customer", method = POST)
-	public ResponseEntity<String> createCustomer(HttpServletRequest request, @ModelAttribute Customer customer) {
-		if (customerRepository.findByName(customer.getMobile()) == null) {
+	public ResponseEntity<ResponseHandler> createCustomer(HttpServletRequest request, @ModelAttribute Customer customer) {
+		if (customerRepository.findByCustomerCode(customer.getCustomerCode()) == null) {
 			customer.setCreatedAt(Instant.now());
+			
 			Customer dbCustomer = saveCustomer(customer);
 			URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
 					dbCustomer.getId());
@@ -146,7 +161,11 @@ public class CustomerController {
 			headers.put("Location", singletonList(uri.toASCIIString()));
 			return new ResponseEntity<>(headers, HttpStatus.CREATED);
 		}
-		return new ResponseEntity<>(HttpStatus.CONFLICT);
+		//return new ResponseEntity<>(HttpStatus.CONFLICT);
+		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+				.errorCode(HttpStatus.CONFLICT.value())
+				.errorCause("Customer with Customer Code already exist")
+				.build(), HttpStatus.CONFLICT);
 	}
 
 	@GetMapping("/allCustomerSetTopBoxes/{id}")
@@ -435,7 +454,7 @@ public class CustomerController {
 			dbCstb.setUpdatedAt(Instant.now());
 			dbCstb.setDeleted(true);
 			customerSetTopBoxRepository.save(dbCstb);
-			updateSetTopBoxStatus(removeCustomerSetTopBox.getId(), removeCustomerSetTopBox.getSetTopBoxStatus(),
+			updateSetTopBoxStatus(dbCstb.getSetTopBox().getId(), removeCustomerSetTopBox.getSetTopBoxStatus(),
 					removeCustomerSetTopBox.getReason());
 			if (removeCustomerSetTopBox.getAmount() != null && removeCustomerSetTopBox.getAmount().doubleValue() > 0) {
 				customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_REMOVE,
@@ -642,6 +661,18 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
+	@GetMapping("/getCustomerCode")
+	public @ResponseBody Integer getCustomerCode() {
+		return customerRepository.getCustomerCount();
+	}
+	
+	@GetMapping("/getAllCustomers")
+	public @ResponseBody Map<Long, Customer> getAllCustomers() {
+		List<Customer> customers = customerRepository.findAll();
+		return customers.stream().filter(n -> n != null)
+				.collect(Collectors.toMap(Customer::getId, c -> c));
+	}
+	
 	private CustomerLedgre customerDiscountForRemoveChannelOrActiveDeactiveSetTopBox(PaymentMode paymentMode,
 			Date billingDate, Date packRemoveDate, Customer customer, Action action, Double packPrice,
 			CustomerSetTopBox customerSetTopBox, CreditDebit creditDebit) {

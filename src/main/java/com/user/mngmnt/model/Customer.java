@@ -62,6 +62,9 @@ public class Customer {
 	private Double balance;
 	
 	@Default
+	private boolean deleted = false;
+	
+	@Default
 	@Transient
 	private Double amountDebitTemp = 0.0;
 	

@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.Month;
 
 import lombok.AllArgsConstructor;
@@ -48,6 +49,9 @@ public class CustomerLedgre {
 	
 	@Enumerated(EnumType.STRING)
 	private CreditDebit creditDebit;
+	
+	@Enumerated(EnumType.STRING)
+	private CustomerLedgreEntry customerLedgreEntry;
 	
 	private String reason;
 	

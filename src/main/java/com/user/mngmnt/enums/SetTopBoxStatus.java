@@ -24,8 +24,8 @@ public enum SetTopBoxStatus {
 //
 //
 //customer
-//customer code implementation
-//hide c type, address, city, landline Done
+//customer code implementation ## done
+//hide c type, address, city, landline ##Done
 //
-//channel monthly rent show at col 2
+//channel monthly rent show at col 2 ##Done
 //

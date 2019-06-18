@@ -30,4 +30,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @Query(value = "SELECT c FROM Pack p INNER JOIN p.networkChannels c WHERE c.id = :id")
     CustomerSetTopBox getCutomerSetTopBoxeById(@Param("id") long id);
   
+    @Query(value = "SELECT count(c) FROM Customer c WHERE c.isDeleted = 'false'")
+    Integer getCustomerCount();
+
+    @Query(value = "SELECT c FROM Customer c WHERE c.deleted = 'false' and c.customerCode = :customerCode")
+    Customer findByCustomerCode(@Param("customerCode") String customerCode);
+    
 }

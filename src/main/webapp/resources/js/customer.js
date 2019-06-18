@@ -33,8 +33,9 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: false,
+				closeAfterAdd: true,
 			    recreateForm: true,
+			    reloadAfterSubmit:true,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
@@ -69,10 +70,20 @@ $(function() {
 			params.url = 'customer/' + postdata.id;
 		}
 	};
+	
 	var addOptions = {
 			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'customer';
+		},
+		afterShowForm: function (formid) {
+			getCustomerCode();
+        },
+        afterSubmit: function (response, postdata) {
+			setTimeout(function() { 
+				$("#add_customers").click();
+			}, 100);
+			return [true, '', response.responseText];
 		},
 		mtype: "POST"
 	};
@@ -95,7 +106,7 @@ $(function() {
 		height: $("#customerContainer").height(),
 		forceFit: true,
         autowidth: true,
-        rowNum: 10,
+        rowNum: 20,
 		colModel:[
 			{
 				name:'id',
@@ -495,9 +506,9 @@ $(function() {
 			    forceFit: true,
                 caption: "Set Top Boxes",
                 beforeSelectRow: function (rowid, e) {
-		        	setTopBoxGridId = subgrid_table_id;
 		        	setTopBoxSelectedRowId = rowid;
 		        	var myGrid = $("#"+subgrid_table_id);
+		        	setTopBoxGridId = myGrid;
 		        	isActiveCell = myGrid.jqGrid ('getCell', rowid, 'active');
 		        	if(isActiveCell == 1) {
 		        		$("#activateDeactivateButton").attr("title", "Deactivate");
@@ -608,12 +619,12 @@ $(function() {
         		                           buildSelect: function(jsonOrderArray) {
         		                                   var s = '<select>';
         		                                   s += '<option value="">Select Network Channel</option>';
-//        		                                   if (jsonOrderArray && jsonOrderArray.length) {
-//        		                                	   var myObj = JSON.parse(jsonOrderArray);
-//        		                                	   for (var key in myObj) {
-//        		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
-//        		                                		}
-//        		                                  }
+        		                                   if (jsonOrderArray && jsonOrderArray.length) {
+        		                                	   var myObj = JSON.parse(jsonOrderArray);
+        		                                	   for (var key in myObj) {
+        		                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
+        		                                		}
+        		                                  }
         		                                  return s + "</select>";
         		                          }
         		                   }
@@ -690,7 +701,7 @@ $(function() {
         				closeAfterAdd: true,
         		        closeAfterEdit: true,
         		        reloadAfterSubmit:true,
-        				width: 700
+        				width: 400
         			};
         			var delOptionsSG3 = {
         				onclickSubmit: function(params, postdata) {
@@ -933,7 +944,7 @@ $(function() {
 	
 	function manageFieldsForEdit() {
 		setTimeout(function() {
-			var myGrid = $("#"+setTopBoxGridId);
+			var myGrid = $(setTopBoxGridId);
 			selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
 			$("#editmodcustomers").attr("width", "50%");
 			$("#paymentMode").attr("disabled","disabled");
@@ -959,6 +970,23 @@ $(function() {
 		}, 100);
     }
 
+	function getCustomerCode() {
+		setTimeout(function() { 
+			$.ajax({
+			    url: "getCustomerCode",
+			    type: 'get',
+			    async: false,
+			    success: function( data, textStatus, jQxhr) {
+	    		    $("#customerCode").val(parseInt(data)  +1);
+			    },
+			    error: function( jqXhr, textStatus, errorThrown ){
+			    	alert("Something Went Wrong");
+			    }
+			});
+		}, 100);
+		
+	}
+	
 	function populateNetworkChannels() {
 		
 		setTimeout(function() { 
@@ -972,9 +1000,14 @@ $(function() {
 			$("#networkChannelId").select2();
 			
 			$("#network\\.id").bind("change", function (e) {
-				var urlStr = "getAllChannelsByNetwork/" + $("#network\\.id").val();
+				var channelUrlStr = "getAllChannelsByNetwork/" + $("#network\\.id").val();
+				var networkChannelUrlStr = "getAllNetworkChannelsByNetworkId/"+$(this).val();
+				if($(this).val() == "") {
+					channelUrlStr = "getAllChannels";
+					networkChannelUrlStr = "getAllNetworkChannels";
+				}
 				$.ajax({
-				    url: urlStr,
+				    url: channelUrlStr,
 				    type: 'get',
 				    async: false,
 				    success: function( data, textStatus, jQxhr) {
@@ -989,20 +1022,43 @@ $(function() {
 				    	alert("Something Went Wrong");
 				    }
 				});
+				
+				$.ajax({
+				    url: networkChannelUrlStr,
+				    type: 'get',
+				    async: false,
+				    success: function( data, textStatus, jQxhr) {
+				    	$("#networkChannelId").find('option').remove().end().append('<option value="">Select Network Channel</option>');
+		    		    $("#networkChannelId").addClass("ui-widget ui-jqdialog");
+		    			$("#networkChannelId").select2();
+		     		    for (var key in data) {
+		     		    	$("#networkChannelId").append('<option value="'+data[key].id+'">'+data[key].name+'</option>')
+		     		    }
+				    },
+				    error: function( jqXhr, textStatus, errorThrown ){
+				    	alert("Something Went Wrong");
+				    }
+				});
 	        });
+			
 			$("#channel\\.id").bind("change", function (e) {
 				var urlStr = "";
-				if($("#channel\\.id").val() != "" && $("#network\\.id").val() != "") {
-					urlStr = "getAllNetworkChannelsByChanellAndNeworkId/"+ $("#channel\\.id").val() +'/'+ $("#network\\.id").val();
-				} else if($("#channel\\.id").val() != "" && $("#network\\.id").val() == "") {
-					urlStr = "getAllNetworkChannelsByChanellId/"+ $("#channel\\.id").val();
+				if($(this).val() != "" && $(this).val() != "Select Channel" && $("#network\\.id").val() != "") {
+					urlStr = "getAllNetworkChannelsByChanellAndNeworkId/"+ $(this).val() +'/'+ $("#network\\.id").val();
+				} else if($(this).val() != "" && $(this).val() != "Select Channel" && $("#network\\.id").val() == "") {
+					urlStr = "getAllNetworkChannelsByChanellId/"+ $(this).val();
+				} else if(($(this).val() == "" || $(this).val() == "Select Channel") && $("#network\\.id").val() != "") {
+					urlStr = "getAllNetworkChannelsByNetworkId/" + $("#network\\.id").val();
+				} else {
+					urlStr = "getAllNetworkChannels";
 				}
+				
 				$.ajax({
 				    url: urlStr,
 				    type: 'get',
 				    async: false,
 				    success: function( data, textStatus, jQxhr) {
-		    		    $("#networkChannelId").find('option').remove().end().append('<option>Select Network Channel</option>');
+		    		    $("#networkChannelId").find('option').remove().end().append('<option value="">Select Network Channel</option>');
 		    		    $("#networkChannelId").addClass("ui-widget ui-jqdialog");
 		    			$("#networkChannelId").select2();
 		     		    for (var key in data) {
@@ -1044,7 +1100,8 @@ $(function() {
 					reason: $("#reason").val(),
 					amount : $("#amount").val()
 				}).done(function(data) {
-					$(this).dialog('close');
+					$("#myDialog").dialog('close');
+					$("#myDialog").dialog('refresh');
 					$(setTopBoxGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
@@ -1069,6 +1126,7 @@ $(function() {
 					amount : $("#additionalDiscount").val()
 				}).done(function(data) {
 					$("#myAdditionalDiscountDialog").dialog('close');
+					$("#myAdditionalDiscountDialog").dialog('refresh');
 				});
 			},
 			'Close' : function() {
@@ -1090,6 +1148,7 @@ $(function() {
 					amount : $("#additionalCharge").val()
 				}).done(function(data) {
 					$("#myAdditionalChargeDialog").dialog('close');
+					$("#myAdditionalChargeDialog").dialog('refresh');
 				});
 			},
 			'Close' : function() {
@@ -1149,6 +1208,7 @@ $(function() {
 					reason : $("#rcReason").val()
 				}).done(function(data) {
 					$("#channelRemoveDialog").dialog('close');
+					$('#channelRemoveDialog').dialog("refresh");
 					$(channelGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
@@ -1175,6 +1235,7 @@ $(function() {
 					reason : $("#activateReason").val()
 				}).done(function(data) {
 					$("#setTopBoxActivate").dialog('close');
+					$('#setTopBoxActivate').dialog("refresh");
 					$(setTopBoxGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
@@ -1201,6 +1262,7 @@ $(function() {
 					reason : $("#deactivateReason").val()
 				}).done(function(data) {
 					$("#setTopBoxDeactivate").dialog('close');
+					$("#setTopBoxDeactivate").dialog('refresh');
 					$(setTopBoxGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
@@ -1227,6 +1289,7 @@ $(function() {
 					amount: $("#additionalDiscount").val()
 				}).done(function(data) {
 					$("#myAdditionalDiscountDialog").dialog('close');
+					$("#myAdditionalDiscountDialog").dialog('refresh');
 				});
 				// Now you have the value of the textbox, you can do something
 				// with it, maybe an AJAX call to your server!
@@ -1256,13 +1319,14 @@ $(function() {
 					customerSetTopBoxId: $("#replaceCustomerCustomerSetBoxId").val()
 				}).done(function(data) {
 					$("#setTopBoxReplace").dialog('close');
+					$("#setTopBoxReplace").dialog('refresh');
 					$(setTopBoxGridId).trigger( 'reloadGrid' );
 				});
 				// Now you have the value of the textbox, you can do something
 				// with it, maybe an AJAX call to your server!
 			},
 			'Close' : function() {
-				$(this).dialog('close');
+				$("#setTopBoxReplace").dialog('close');
 			}
 		}
 	});

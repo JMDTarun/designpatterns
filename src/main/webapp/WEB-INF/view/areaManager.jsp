@@ -28,12 +28,6 @@
 			<div id="pagerSubAreas"></div>
 		</div>
 	</div>
-	<!-- <div class="row mt-3">
-		<div class="col">
-			<table id="subAreas"></table>
-			<div id="pagerSubAreas"></div>
-		</div>
-	</div> -->
 	<div class="row mt-3">
 		<div class="col">
 			<table id="streets"></table>

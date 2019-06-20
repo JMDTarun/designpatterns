@@ -5,10 +5,7 @@ $(function() {
 		var components = URI.parse(window.location.href);
 		console.log(components);
 		var query = URI.parseQuery(components['query']);
-		console.log(query);
-		console.log('==== '+ query['errorSetTopBoxes']);
         if(query['errorSetTopBoxes']) {
-        	console.info("Got It.......")
         	$("#errorDiv").text('Error! '+query['savedElements']+'/'+query['totalElements'] + ' Saved. Set Top Boxes which are not Saved(Already Exists) : '+query['errorSetTopBoxes']);
         	$("#errorDiv").show();
         	$("#successDiv").hide();
@@ -21,8 +18,6 @@ $(function() {
         	$("#successDiv").hide();
         }
     });
-	
-	
 	
 	$.extend($.jgrid.defaults, {
 				datatype: 'json',
@@ -84,13 +79,13 @@ $(function() {
 			});
 
 	var editOptions = {
-			width: 700,
+			width: 400,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'setTopBox/' + postdata.id;
 		}
 	};
 	var addOptions = {
-			width: 700,
+			width: 400,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'setTopBox';
 		},
@@ -140,6 +135,15 @@ $(function() {
 				label: 'Safe Code',
 				index: 'safeCode',
 				editable: true,
+				editrules: {required: true}
+			},
+			{
+				name:'setTopBoxStatus',
+				label: 'Status',
+				index: 'setTopBoxStatus',
+				editable: true,
+				edittype:"select",
+		        editoptions:{ value: 'FAULTY:FAULTY;FREE:FREE;BLOCK:BLOCK;ALLOTED:ALLOTED;ACTIVATE:ACTIVATE;DE_ACTIVATE:DE ACTIVATE' },
 				editrules: {required: true}
 			}
 		],

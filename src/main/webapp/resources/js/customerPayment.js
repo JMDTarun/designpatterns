@@ -31,7 +31,7 @@ $(function() {
 
 	$.extend($.jgrid.edit, {
 				closeAfterEdit: true,
-				closeAfterAdd: false,
+				closeAfterAdd: true,
 				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
 				mtype: 'POST',
 				serializeEditData: function(data) {
@@ -69,6 +69,15 @@ $(function() {
 			width: 700,
 		onclickSubmit: function(params, postdata) {
 			params.url = 'customerPayment';
+		},
+		afterShowForm: function (formid) {
+			selectToFields();
+        },
+        afterSubmit: function (response, postdata) {
+			setTimeout(function() { 
+				$('#add_customerPayments').click();
+			}, 200);
+			return [true, '', response.responseText];
 		},
 		mtype: "POST"
 	};
@@ -113,6 +122,7 @@ $(function() {
                     dataUrl: "/getAllCustomers", 
                            buildSelect: function(jsonOrderArray) {
                                    var s = '<select>';
+                                   s += '<option value="">Select Customer</option>';
                                    if (jsonOrderArray && jsonOrderArray.length) {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   for (var key in myObj) {
@@ -124,27 +134,26 @@ $(function() {
                    },
 				editrules: {required: true}
 			},
-			/*{
-				name:'areaCode',
-				label: 'Area Code',
-				index: 'areaCode',
+			{
+				name:"paymentDate",
+				label: 'Payment Date',
+				index:"paymentDate",
+				formatter:'date',
+				formatoptions: { newformat: 'Y/m/d'},
 				editable: true,
-				editrules: {required: true}
+				editoptions: {
+			      dataInit: function(element) {
+			        $(element).datepicker({dateFormat: 'yy/mm/dd'})
+			      }
+			    }
 			},
 			{
-				name:'lcoCode',
-				label: 'Lco Code',
-				index: 'lcoCode',
+				name:"amount",
+				label: 'Amount',
+				index:"amount",
+				formatter:'number',
 				editable: true,
-				editrules: {required: true}
-			},
-			{
-				name:'lcoName',
-				label: 'Lco Name',
-				index: 'lcoName',
-				editable: true,
-				editrules: {required: true}
-			}*/
+			}
 		],
 		caption: "Customer Payments",
 		pager : '#pagerCustomerPayments',
@@ -168,4 +177,12 @@ $(function() {
 	
 	$("#customerPayments").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
+	function selectToFields() {
+		setTimeout(function() { 
+			console.info("Getting here!!!");
+			$("#customer\\.id").addClass("ui-widget ui-jqdialog");
+			$("#customer\\.id").select2();
+			$("#customer\\.id").select2('open');
+		}, 200);
+	}
 });

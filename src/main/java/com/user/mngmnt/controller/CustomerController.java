@@ -45,6 +45,7 @@ import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.enums.SetTopBoxStatus;
 import com.user.mngmnt.model.Customer;
@@ -237,12 +238,12 @@ public class CustomerController {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
 		Double packPrice = 0.0;
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+		Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+		packPrice = pack.getTotal();
 		if (customerSetTopBox.getPackPrice() > 0) {
+			customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
 			packPrice = customerSetTopBox.getPackPrice();
-		} else {
-			Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
-			packPrice = pack.getPrice();
-		}
+		} 
 		if(isPrepaid) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, packPrice,
 					CreditDebit.DEBIT, customerSetTopBox, null, null));
@@ -292,6 +293,8 @@ public class CustomerController {
 		Double packPrice = 0.0;
 		if (customerSetTopBox.getId() != null) {
 			if (Double.compare(dbCustomerSetTopBox.getPackPrice(), customerSetTopBox.getPackPrice()) != 0) {
+				Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+				customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
 				packPrice = customerSetTopBox.getPackPrice() - dbCustomerSetTopBox.getPackPrice();
 				CreditDebit type = packPrice > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT;
 				boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
@@ -362,6 +365,7 @@ public class CustomerController {
 				.creditDebit(creditDebit).customer(customer).customerSetTopBox(customerSetTopBox)
 				.customerNetworkChannel(custpomerNetworkChannel).reason(reason)
 				.isOnHold(isPrepaid ? false: true)
+				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
 	}
 
@@ -662,8 +666,8 @@ public class CustomerController {
 	}
 
 	@GetMapping("/getCustomerCode")
-	public @ResponseBody Integer getCustomerCode() {
-		return customerRepository.getCustomerCount();
+	public @ResponseBody Long getCustomerCode() {
+		return customerRepository.count();
 	}
 	
 	@GetMapping("/getAllCustomers")

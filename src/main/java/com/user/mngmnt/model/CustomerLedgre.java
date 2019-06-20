@@ -13,6 +13,9 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
+
+import org.springframework.format.annotation.DateTimeFormat;
 
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
@@ -43,9 +46,10 @@ public class CustomerLedgre {
 
 	private Instant createdAt;
 	
-	private Instant updatedAt;
-	
 	private Double amount;
+	
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date paymentDate;
 	
 	@Enumerated(EnumType.STRING)
 	private CreditDebit creditDebit;

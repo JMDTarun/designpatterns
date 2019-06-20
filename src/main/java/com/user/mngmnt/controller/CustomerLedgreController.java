@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.util.UriTemplate;
 
+import com.user.mngmnt.enums.Action;
+import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.model.CustomerLedgre;
 import com.user.mngmnt.model.ResponseHandler;
@@ -74,7 +76,6 @@ public class CustomerLedgreController {
 		if(dbCustomerLedgre.isPresent()) {
 			CustomerLedgre c = dbCustomerLedgre.get();
 			//customerRepository.save(customer);
-			customerLedgre.setUpdatedAt(Instant.now());
 			customerLedgre.setId(c.getId());
 			customerLedgreRepository.save(customerLedgre);
 		}
@@ -85,6 +86,10 @@ public class CustomerLedgreController {
 	public ResponseEntity<ResponseHandler> createCustomerPayment(HttpServletRequest request,
 			@ModelAttribute CustomerLedgre customerLedgre) {
 		customerLedgre.setCreatedAt(Instant.now());
+		customerLedgre.setAction(Action.PAYMENT_CREDIT);
+		customerLedgre.setCustomerLedgreEntry(CustomerLedgreEntry.MANUAL);
+		customerLedgre.setCreditDebit(CreditDebit.CREDIT);
+		customerLedgre.setOnHold(false);
 		CustomerLedgre dbCustomerLedgre = customerLedgreRepository.save(customerLedgre);
 		URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
 				dbCustomerLedgre.getId());

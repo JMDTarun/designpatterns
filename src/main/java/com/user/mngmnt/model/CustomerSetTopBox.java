@@ -17,6 +17,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -91,6 +92,9 @@ public class CustomerSetTopBox {
 
 	private Double packPrice;
 
+	@Default
+	private Double packPriceDifference = 0.0;
+	
 	@ManyToOne
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private SetTopBox setTopBox;

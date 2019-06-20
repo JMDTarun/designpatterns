@@ -931,10 +931,10 @@ $(function() {
 			
 			var packSelected = $("#pack\\.id").val();
 			if(packs) {
-				$("#packPrice").val(packs[packSelected].price);
+				$("#packPrice").val(packs[packSelected].total);
 			}
 			$("#pack\\.id").bind("change", function (e) {
-				$("#packPrice").val(packs[$(this).val()].price);
+				$("#packPrice").val(packs[$(this).val()].total);
 			});
 			$("#paymentMode").bind("change", function (e) {
 				billingCycleState();
@@ -957,12 +957,9 @@ $(function() {
 
 			addSelect2();
 			billingCycleState();
-			var packSelected = $("#pack\\.id").val();
-			if(packs) {
-				$("#packPrice").val(packs[packSelected].price);
-			}
+			
 			$("#pack\\.id").bind("change", function (e) {
-				$("#packPrice").val(packs[$(this).val()].price);
+				$("#packPrice").val(packs[$(this).val()].total);
 			});
 			$("#paymentMode").bind("change", function (e) {
 				billingCycleState();

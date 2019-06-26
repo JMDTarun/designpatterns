@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -30,10 +31,12 @@ import org.springframework.web.util.UriTemplate;
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
 import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
+import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.GenericRepository;
 
 @Controller
@@ -41,6 +44,10 @@ public class CustomerLedgreController {
 
 	@Autowired
 	private CustomerLedgreRepository customerLedgreRepository;
+	
+	@Autowired
+	private CustomerRepository customerRepository;
+	
 	@Autowired
 	private GenericRepository genericRepository;
 	
@@ -83,6 +90,7 @@ public class CustomerLedgreController {
 	}
 
 	@RequestMapping(value = "/customerPayment", method = POST)
+	@Transactional
 	public ResponseEntity<ResponseHandler> createCustomerPayment(HttpServletRequest request,
 			@ModelAttribute CustomerLedgre customerLedgre) {
 		customerLedgre.setCreatedAt(Instant.now());
@@ -91,6 +99,10 @@ public class CustomerLedgreController {
 		customerLedgre.setCreditDebit(CreditDebit.CREDIT);
 		customerLedgre.setOnHold(false);
 		CustomerLedgre dbCustomerLedgre = customerLedgreRepository.save(customerLedgre);
+		Customer customer = customerRepository.getOne(customerLedgre.getCustomer().getId());
+		customer.setAmountCredit(customer.getAmountCredit() + customerLedgre.getAmount());
+		customer.setBalance(customer.getAmountCredit() - customer.getAmountDebit());
+		customerRepository.save(customer);
 		URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
 				dbCustomerLedgre.getId());
 		final HttpHeaders headers = new HttpHeaders();

@@ -1,5 +1,5 @@
 package com.user.mngmnt.enums;
 
 public enum PaymentMode {
-	PREPAID, POSTPAID;
+	PREPAID, POSTPAID, CASH, CHEQUE;
 }

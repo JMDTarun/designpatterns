@@ -13,7 +13,6 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -21,6 +20,8 @@ import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.Month;
+import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.PaymentType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,6 +54,19 @@ public class CustomerLedgre {
 	
 	@Enumerated(EnumType.STRING)
 	private CreditDebit creditDebit;
+	
+	@Enumerated(EnumType.STRING)
+	private PaymentMode paymentMode;
+	
+	@Enumerated(EnumType.STRING)
+	private PaymentType paymentType;
+	
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+	private Date chequeDate;
+	
+	private String chequeNumber;
+	
+	private String machineId;
 	
 	@Enumerated(EnumType.STRING)
 	private CustomerLedgreEntry customerLedgreEntry;

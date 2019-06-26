@@ -63,6 +63,9 @@ $(function() {
 		onclickSubmit: function(params, postdata) {
 			params.url = 'customerPayment/' + postdata.id;
 		},
+		afterShowForm: function (formid) {
+			manageFields();
+        },
 		mtype: "POST"
 	};
 	var addOptions = {
@@ -72,6 +75,7 @@ $(function() {
 		},
 		afterShowForm: function (formid) {
 			selectToFields();
+			manageFields();
         },
         afterSubmit: function (response, postdata) {
 			setTimeout(function() { 
@@ -88,6 +92,7 @@ $(function() {
 	};
 
 	var URL = '/allCustomerPayments';
+	var allCustomers;
 	var options = {
 		url: URL,
 		editurl: URL,
@@ -95,7 +100,7 @@ $(function() {
         forceFit: true,
         autowidth: true,
         shrinkToFit: true,
-        rowNum: 10,
+        rowNum: 50,
 		colModel:[
 			{
 				name:'id',
@@ -113,8 +118,8 @@ $(function() {
 				editable: true,
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
-					if(rowObject.customerType) {
-						return rowObject.customerType.customerType;
+					if(rowObject) {
+						return rowObject.customer.name;
 					}
 					return "";
 				},
@@ -125,14 +130,34 @@ $(function() {
                                    s += '<option value="">Select Customer</option>';
                                    if (jsonOrderArray && jsonOrderArray.length) {
                                 	   var myObj = JSON.parse(jsonOrderArray);
+                                	   allCustomers = myObj;
                                 	   for (var key in myObj) {
-                                		    s += '<option value="'+key+'">'+myObj[key].customerCode + ' - '+ myObj[key].name+'</option>';
+                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
                                 		}
                                   }
                                   return s + "</select>";
                           }
                    },
 				editrules: {required: true}
+			},
+			{
+				name:"customerCode",
+				label: 'Customer Code',
+				index:"customerCode",
+				formatter: function myformatter ( cellvalue, options, rowObject ) {
+					if(rowObject) {
+						return rowObject.customer.customerCode;
+					}
+					return "";
+				},
+				editable: true,
+			},
+			{
+				name:"amount",
+				label: 'Amount',
+				index:"amount",
+				formatter:'number',
+				editable: true,
 			},
 			{
 				name:"paymentDate",
@@ -148,11 +173,41 @@ $(function() {
 			    }
 			},
 			{
-				name:"amount",
-				label: 'Amount',
-				index:"amount",
-				formatter:'number',
+				name:'paymentType',
+				label: 'Payment Type',
+				index: 'paymentType',
 				editable: true,
+				edittype:"select",
+		        editoptions:{ value: 'RENTAL:RENTAL;BOX:BOX' },
+				editrules: {required: true}
+			},
+			{
+				name:'paymentMode',
+				label: 'Payment Mode',
+				index: 'paymentMode',
+				editable: true,
+				edittype:"select",
+		        editoptions:{ value: 'CASH:CASH;CHEQUE:CHEQUE' },
+				editrules: {required: true}
+			},
+			{
+				name:"chequeDate",
+				label: 'Cheque Date',
+				index:"chequeDate",
+				formatter:'date',
+				formatoptions: { newformat: 'Y/m/d'},
+				editable: true,
+				editoptions: {
+			      dataInit: function(element) {
+			        $(element).datepicker({dateFormat: 'yy/mm/dd'})
+			      }
+			    }
+			},
+			{
+				name:"chequeNumber",
+				label: 'Cheque Number',
+				index:"chequeNumber",
+				editable: true
 			}
 		],
 		caption: "Customer Payments",
@@ -179,10 +234,41 @@ $(function() {
 
 	function selectToFields() {
 		setTimeout(function() { 
-			console.info("Getting here!!!");
 			$("#customer\\.id").addClass("ui-widget ui-jqdialog");
 			$("#customer\\.id").select2();
 			$("#customer\\.id").select2('open');
+		}, 200);
+	}
+	
+	function manageFields() {
+		setTimeout(function() { 
+			$("#customerCode").attr("disabled","disabled");
+			$("#customerCode").attr("readonly","readonly");
+			if($("#paymentMode").val() == "CASH") {
+				$("#chequeNumber").attr("disabled","disabled");
+				$("#chequeNumber").attr("readonly","readonly");
+				$("#chequeDate").attr("disabled","disabled");
+				$("#chequeDate").attr("readonly","readonly");
+			}
+			
+			$("#customer\\.id").bind("change", function (e) {
+				var selectedId = $(this).val();
+				$("#customerCode").val(allCustomers[selectedId].customerCode);
+			});
+			
+			$("#paymentMode").bind("change", function (e) {
+				if($(this).val() == "CASH") {
+					$("#chequeNumber").attr("disabled","disabled");
+					$("#chequeNumber").attr("readonly","readonly");
+					$("#chequeDate").attr("disabled","disabled");
+					$("#chequeDate").attr("readonly","readonly");
+				} else {
+					$("#chequeNumber").removeAttr("disabled","disabled");
+					$("#chequeNumber").removeAttr("readonly","readonly");
+					$("#chequeDate").removeAttr("disabled","disabled");
+					$("#chequeDate").removeAttr("readonly","readonly");
+				}
+			});
 		}, 200);
 	}
 });

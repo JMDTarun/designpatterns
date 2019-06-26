@@ -297,7 +297,7 @@ $(function() {
 			jQuery("#"+subgrid_table_id).jqGrid({
 				url:"allCustomerSetTopBoxes/"+row_id,
 				editurl: 'updateCustomerSetTopBox/' + row_id,
-				colNames: ['Id', 'Set Top box Id', 'Activate Date', 'Deactivate Date', 'Set Top Box', "Pack", "Pack Price", "Payment Mode", "Entry Date", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency", "Active"],
+				colNames: ['Id', 'Set Top box Id', 'Activate Date', 'Deactivate Date', 'Set Top Box', "Pack", "Pack Price", "Box Price", "Payment Mode", "Entry Date", "Payment Start Date", "Billing Cycle", "Opening Balance", "Discount", "Discount Frequency", "Active"],
 				colModel: [
 					{
 						name:"id",
@@ -410,6 +410,13 @@ $(function() {
 						name:"packPrice",
 						label: 'Pack Price',
 						index:"packPrice",
+						formatter:'number',
+						editable: true,
+					},
+					{
+						name:"setTopBoxPrice",
+						label: 'Box Price',
+						index:"setTopBoxPrice",
 						formatter:'number',
 						editable: true,
 					},
@@ -755,7 +762,7 @@ $(function() {
 	                closeAfterAdd: true,
 	                closeAfterEdit: true,
 	                reloadAfterSubmit:true,
-	                width: 500
+	                width: 700
 				};
 			var addOptionsSG = {
 					width: 700,
@@ -769,7 +776,7 @@ $(function() {
                 closeAfterEdit: true,
                 reloadAfterSubmit:true,
 				mtype: "POST",
-				width: 500
+				width: 700
 			};
 			var delOptionsSG = {
 				onclickSubmit: function(params, postdata) {
@@ -1301,7 +1308,7 @@ $(function() {
 		autoOpen : false,
 		modal : true,
 		position: 'center',
-		width: 500,
+		width: 700,
 		title : "replaceSetTopBox",
 		buttons : {
 			'OK' : function() {

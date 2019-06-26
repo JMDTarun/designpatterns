@@ -143,7 +143,7 @@ $(function() {
 				index: 'setTopBoxStatus',
 				editable: true,
 				edittype:"select",
-		        editoptions:{ value: 'FAULTY:FAULTY;FREE:FREE;BLOCK:BLOCK;ALLOTED:ALLOTED;ACTIVATE:ACTIVATE;DE_ACTIVATE:DE ACTIVATE' },
+		        editoptions:{ value: 'FREE:FREE;FAULTY:FAULTY;BLOCK:BLOCK;ALLOTED:ALLOTED;ACTIVATE:ACTIVATE;DE_ACTIVATE:DE ACTIVATE' },
 				editrules: {required: true}
 			}
 		],

@@ -200,8 +200,9 @@ public class CustomerController {
 				customerSetTopBox.setId(dbCstb.getId());
 				manageTransactionForPakChange(customerSetTopBox, dbCstb, n);
 				manageTransactionForBillingCycleChange(customerSetTopBox, dbCstb, n);
+				manageTransactionForBoxPriceChange(customerSetTopBox, dbCstb, n);
 				BeanUtils.copyProperties(customerSetTopBox, dbCstb);
-				saveCustomer(n);			
+				saveCustomer(n);	
 			}
 		});
 	}
@@ -257,6 +258,12 @@ public class CustomerController {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.DISCOUNT, customerSetTopBox.getDiscount(),
 					CreditDebit.CREDIT, customerSetTopBox, null, null));
 		}
+		
+		if(customerSetTopBox.getSetTopBoxPrice() > 0) {
+			customerLedgres.add(buildCustomerLedgre(customer, Action.SET_TOP_BOX_PRICE, customerSetTopBox.getSetTopBoxPrice(),
+					CreditDebit.DEBIT, customerSetTopBox, null, null));
+		}
+		
 		// Payment Calculations
 		CustomerLedgre cl = customerDiscountForNewTransaction(customerSetTopBox, customer,
 				Action.PAYMENT_START_ADJUSTMENT, packPrice);
@@ -285,6 +292,15 @@ public class CustomerController {
 					days > 0 ? CreditDebit.CREDIT : CreditDebit.DEBIT, customerSetTopBox, null, null);
 		}
 		return null;
+	}
+	
+	private void manageTransactionForBoxPriceChange(CustomerSetTopBox customerSetTopBox,
+			CustomerSetTopBox dbCustomerSetTopBox, Customer customer) {
+		if (Double.compare(dbCustomerSetTopBox.getSetTopBoxPrice(), customerSetTopBox.getSetTopBoxPrice()) != 0) {
+			Double difference = dbCustomerSetTopBox.getSetTopBoxPrice() - customerSetTopBox.getSetTopBoxPrice();
+			customerLedgreRepository.save(buildCustomerLedgre(customer, Action.SET_TOP_BOX_PRICE_CHANGE, Math.abs(difference),
+					difference > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT, dbCustomerSetTopBox, null, null));
+		}
 	}
 	
 	private void manageTransactionForPakChange(CustomerSetTopBox customerSetTopBox,

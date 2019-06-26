@@ -17,7 +17,6 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -28,9 +27,9 @@ import com.user.mngmnt.enums.PaymentMode;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Builder.Default;
 
 @Entity
 @Table(name = "CUSTOMER_SET_TOP_BOX")
@@ -94,6 +93,9 @@ public class CustomerSetTopBox {
 
 	@Default
 	private Double packPriceDifference = 0.0;
+	
+	@Default
+	private Double setTopBoxPrice = 0.0;
 	
 	@ManyToOne
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")

@@ -143,9 +143,17 @@ public class CustomerController {
 							.build(), HttpStatus.CONFLICT);
 				}
 			}
-			customer.setUpdatedAt(Instant.now());
-			customer.setId(c.getId());
-			saveCustomer(customer);
+			c.setUpdatedAt(Instant.now());
+			c.setName(customer.getName());
+			c.setAddress(customer.getAddress());
+			c.setCustomerCode(customer.getCustomerCode());
+			c.setCity(customer.getCity());
+			c.setMobile(customer.getMobile());
+			c.setLandLine(customer.getLandLine());
+			c.setArea(customer.getArea());
+			c.setSubArea(customer.getSubArea());
+			c.setStreet(customer.getStreet());
+			saveCustomer(c);
 		}
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
@@ -201,6 +209,7 @@ public class CustomerController {
 				manageTransactionForPakChange(customerSetTopBox, dbCstb, n);
 				manageTransactionForBillingCycleChange(customerSetTopBox, dbCstb, n);
 				manageTransactionForBoxPriceChange(customerSetTopBox, dbCstb, n);
+				customerSetTopBox.setCustomerNetworkChannels(dbCstb.getCustomerNetworkChannels());
 				BeanUtils.copyProperties(customerSetTopBox, dbCstb);
 				saveCustomer(n);	
 			}

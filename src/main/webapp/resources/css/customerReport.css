@@ -1,0 +1,15 @@
+.reportFilters {
+    display: flex;
+    padding: 20px;
+    flex-grow: 1;
+    flex-wrap: wrap;
+}
+
+.reportFilters > * {
+	padding-right: 25px;
+	width: 25%;
+}
+
+.buttonPadding {
+	padding: 20;
+}

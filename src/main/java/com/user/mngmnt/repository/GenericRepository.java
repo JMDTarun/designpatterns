@@ -5,8 +5,16 @@ import java.util.List;
 
 import org.springframework.data.domain.PageRequest;
 
+import com.user.mngmnt.model.ResportSearchCriteria;
+
 public interface GenericRepository<T> {
 
 	List<T> findAllWithCriteria(String criteriaJson, Class<T> c, PageRequest pageRequest) throws ParseException;
+
+	List<T> findAllWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c, PageRequest pageRequest)
+			throws ParseException, NoSuchFieldException;
+
+	Integer findCountWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c)
+			throws ParseException, NoSuchFieldException;
 	
 }

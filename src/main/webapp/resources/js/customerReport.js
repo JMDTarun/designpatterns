@@ -206,6 +206,11 @@ $(function() {
 	$("#selectCustomerStatus").addClass("ui-widget ui-jqdialog");
 	$("#selectCustomerStatus").select2();
 	
+	$("#downloadAnchor").click(function(){
+		var urlStr = 'downloadCustomerReport?'+getUrlParams();
+		$(this).attr("href", urlStr);
+    });
+		
 	$("#submitFilters").click(function(){
         var urlStr = 'customerReport?'+getUrlParams();
     	$("#customerReport").setGridParam({

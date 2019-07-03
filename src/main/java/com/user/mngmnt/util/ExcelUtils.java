@@ -19,21 +19,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class ExcelUtils {
 
-	public static <T> ByteArrayInputStream writeToExcelInMultiSheets(final String fileName, final String sheetName,
-			final List<T> data) {
-		File file = null;
-		FileOutputStream fos = null;
+	@SuppressWarnings("resource")
+	public static <T> ByteArrayInputStream writeToExcelInMultiSheets(final List<T> data) {
 		XSSFWorkbook workbook = null;
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		try {
-			file = new File(fileName);
-			Sheet sheet = null;
-			if (file.exists()) {
-				workbook = (XSSFWorkbook) WorkbookFactory.create(new FileInputStream(file));
-			} else {
-				workbook = new XSSFWorkbook();
-			}
-			sheet = workbook.getSheetAt(0);
+			workbook = new XSSFWorkbook();
+			Sheet sheet = workbook.createSheet();
 			List<String> fieldNames = getFieldNamesForClass(data.get(0).getClass());
 			int rowCount = 0;
 			int columnCount = 0;

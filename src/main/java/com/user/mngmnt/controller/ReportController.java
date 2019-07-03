@@ -90,11 +90,10 @@ public class ReportController {
 			.totalSetTopBoxes(cr.getTotalSetTopBoxes()).totalChannels(cr.getTotalChannels()).build());
 		}
 		
-		ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets("customerReport.xlsx", "Customer Report",
-				cutomerReportColumns);
+		ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(cutomerReportColumns);
 		HttpHeaders headers = new HttpHeaders();
 	    // set filename in header
-	    headers.add("Content-Disposition", "attachment; filename=users.xlsx");
+	    headers.add("Content-Disposition", "attachment; filename=CustomerReport.xlsx");
 	    return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
 	}
 

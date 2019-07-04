@@ -1,6 +1,7 @@
 package com.user.mngmnt.repository;
 
 import java.time.Month;
+import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,7 +23,6 @@ public interface CustomerLedgreRepository extends JpaRepository<CustomerLedgre, 
 
 	CustomerLedgre findByCustomerAndCustomerSetTopBoxAndActionAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, Action action, String month);
 
-	CustomerLedgre findByCustomerAndCustomerSetTopBoxAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, Action action, String month);
-
+	List<CustomerLedgre> findByCustomerAndCustomerSetTopBoxAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, String month);
 	
 }

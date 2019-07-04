@@ -5,7 +5,10 @@ import static java.util.Collections.singletonList;
 import java.net.URI;
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Month;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 
@@ -64,8 +67,20 @@ public class UtilityController {
 						boolean isPrepaid = cstb.getPaymentMode().equals(PaymentMode.PREPAID) ? true : false;
 						if (isPrepaid && customerLedgre == null) {
 							addEntriesToCustomerLedgre(mth, c, cstb, false);
-						} else if (!isPrepaid && cstb.getBillingCycle().compareTo(new Date()) <= 0) {
-							if(customerLedgre != null) {
+						} else if (!isPrepaid) {
+							System.out.println(getLocalDate(cstb.getBillingCycle()).withMonth(month));
+							System.out.println(getLocalDate(cstb.getBillingCycle()).withMonth(month)
+									.compareTo(getLocalDate(new Date())));
+							System.out.println(getLocalDate(new Date()));
+							if(getLocalDate(new Date()).compareTo(getLocalDate(cstb.getBillingCycle()).withMonth(month)) >= 0) {
+								Month previousMonth = Month.of(month - 1);
+								List<CustomerLedgre> customerLedgres = customerLedgreRepository.findByCustomerAndCustomerSetTopBoxAndMonth(c, cstb, previousMonth.toString());
+								customerLedgres.stream().forEach(cl -> {
+									cl.setOnHold(false);
+									customerLedgreRepository.save(cl);
+								});
+								addEntriesToCustomerLedgre(mth, c, cstb, true);
+							} else if(customerLedgre != null) {
 								customerLedgre.setOnHold(false);
 								customerLedgreRepository.save(customerLedgre);
 							} else {
@@ -112,4 +127,9 @@ public class UtilityController {
 		});
 	}
 	
+	private LocalDate getLocalDate(Date date) {
+		Instant instant = Instant.ofEpochMilli(date.getTime());
+		LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+		return localDateTime.toLocalDate();
+	}
 }

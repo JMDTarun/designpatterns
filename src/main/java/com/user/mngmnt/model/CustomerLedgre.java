@@ -1,6 +1,7 @@
 package com.user.mngmnt.model;
 
 import java.time.Instant;
+import java.time.Month;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -19,7 +20,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
-import com.user.mngmnt.enums.Month;
 import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.enums.PaymentType;
 
@@ -73,7 +73,7 @@ public class CustomerLedgre {
 	
 	private String reason;
 	
-	private Month month;
+	private String month;
 	
 	private Date activateDate;
 	

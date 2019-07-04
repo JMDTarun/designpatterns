@@ -1,12 +1,17 @@
 package com.user.mngmnt.repository;
 
+import java.time.Month;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerSetTopBox;
 
 @Repository
 public interface CustomerLedgreRepository extends JpaRepository<CustomerLedgre, Long> {
@@ -15,4 +20,9 @@ public interface CustomerLedgreRepository extends JpaRepository<CustomerLedgre, 
 
 	long countByCustomerLedgreEntry(CustomerLedgreEntry customerLedgreEntry);
 
+	CustomerLedgre findByCustomerAndCustomerSetTopBoxAndActionAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, Action action, String month);
+
+	CustomerLedgre findByCustomerAndCustomerSetTopBoxAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, Action action, String month);
+
+	
 }

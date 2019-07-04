@@ -12,8 +12,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -255,7 +257,7 @@ public class CustomerController {
 			packPrice = customerSetTopBox.getPackPrice();
 		} 
 		if(isPrepaid) {
-			customerLedgres.add(buildCustomerLedgre(customer, Action.PACK_ADD, packPrice,
+			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice,
 					CreditDebit.DEBIT, customerSetTopBox, null, null));
 		}
 		
@@ -386,9 +388,19 @@ public class CustomerController {
 		} else {
 			customer.setAmountDebitTemp(customer.getAmountDebitTemp() + price);
 		}
-		return CustomerLedgre.builder().action(action).amount(round(price, 2)).createdAt(Instant.now())
-				.creditDebit(creditDebit).customer(customer).customerSetTopBox(customerSetTopBox)
-				.customerNetworkChannel(custpomerNetworkChannel).reason(reason)
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(customerSetTopBox.getEntryDate());
+		
+		return CustomerLedgre.builder()
+				.action(action)
+				.amount(round(price, 2))
+				.createdAt(Instant.now())
+				.month(Month.of(cal.get(Calendar.MONTH)).toString())
+				.creditDebit(creditDebit)
+				.customer(customer)
+				.customerSetTopBox(customerSetTopBox)
+				.customerNetworkChannel(custpomerNetworkChannel)
+				.reason(reason)
 				.isOnHold(isPrepaid ? false: true)
 				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
@@ -435,7 +447,7 @@ public class CustomerController {
 				cstb.getCustomerNetworkChannels().add(cnc);
 				if(cstb.getPaymentMode().equals(PaymentMode.PREPAID)) {
 					customerLedgres.add(
-							buildCustomerLedgre(customer, Action.CHANNEL_ADD, price, CreditDebit.DEBIT, cstb, cnc, null));
+							buildCustomerLedgre(customer, Action.MONTHLY_CHANNEL_PRICE, price, CreditDebit.DEBIT, cstb, cnc, null));
 				}
 				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForAddChannel(cstb.getPaymentMode(),
 						entryDate, cstb.getBillingCycle(), paymentStartDate, customer,

@@ -25,4 +25,6 @@ public interface CustomerLedgreRepository extends JpaRepository<CustomerLedgre, 
 
 	List<CustomerLedgre> findByCustomerAndCustomerSetTopBoxAndMonth(Customer customer, CustomerSetTopBox customerSetTopBox, String month);
 	
+	List<CustomerLedgre> findByCustomerLedgreEntryAndMonth(CustomerLedgreEntry customerLedgreEntry, String month);
+
 }

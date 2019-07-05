@@ -77,7 +77,7 @@
 		</div>
 		
 		<div class="buttonPadding">
-			<a id="downloadAnchor" target="_blank" href="javascript(void);">Download Excel</a>
+			<a id="downloadAnchor" class="btn btn-info" target="_blank" href="javascript(void);">Download Excel</a>
 		</div>
 	</div>
 

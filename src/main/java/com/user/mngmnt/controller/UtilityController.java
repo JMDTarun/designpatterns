@@ -57,8 +57,6 @@ public class UtilityController {
 		Month mth = Month.of(month);
 		List<Customer> customers = customerRepository.findAll();
 		customers.stream().filter(c -> !c.isDeleted()).forEach(c -> {
-			System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-			System.out.println(c.getCustomerSetTopBoxes().size());
 			c.getCustomerSetTopBoxes().stream()
 					.filter(cstb -> CustomerSetTopBoxStatus.ACTIVE.equals(cstb.getCustomerSetTopBoxStatus()))
 					.forEach(cstb -> {
@@ -131,5 +129,18 @@ public class UtilityController {
 		Instant instant = Instant.ofEpochMilli(date.getTime());
 		LocalDateTime localDateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
 		return localDateTime.toLocalDate();
+	}
+	
+	@GetMapping("/revertUtility")
+	@Transactional
+	public @ResponseBody ResponseEntity<String> revertTransacions(@RequestParam("month") Integer month,
+			HttpServletRequest request) throws ParseException {
+		Month mth = Month.of(month);
+		List<CustomerLedgre> customerLedgresToDelete = customerLedgreRepository.findByCustomerLedgreEntryAndMonth(CustomerLedgreEntry.UTILITY, mth.toString());
+		customerLedgreRepository.deleteAll(customerLedgresToDelete);
+		final HttpHeaders headers = new HttpHeaders();
+		URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
+		headers.put("Location", singletonList(uri.toASCIIString()));
+		return new ResponseEntity<>(headers, HttpStatus.CREATED);
 	}
 }

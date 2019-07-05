@@ -31,6 +31,11 @@
 
 	<jsp:include page="templates/header.jsp" />
 
+	<div class="alert alert-success" id="success-alert">
+		<button type="button" class="close" data-dismiss="alert">x</button>
+		<strong>Success! </strong> Done with utility.
+	</div>
+
 	<div class="reportFilters">
 		<div>
 			<label>Select Month</label> 
@@ -54,7 +59,11 @@
 		</div>
 		
 		<div class="buttonPadding">
-			<button type="button" class="btn btn-primary" id=runUtility>Submit</button>
+			<button type="button" class="btn btn-primary" id=runUtility>Run Utility</button>
+		</div>
+		
+		<div class="buttonPadding">
+			<button type="button" class="btn btn-danger" id=revertUtility>Revert Utility</button>
 		</div>
 	</div>
 

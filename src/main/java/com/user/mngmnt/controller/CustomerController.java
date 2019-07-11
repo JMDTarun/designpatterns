@@ -1,8 +1,15 @@
 package com.user.mngmnt.controller;
 
+import static com.user.mngmnt.util.DateCalculationUtil.DATE_FORMATTER;
 import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -16,8 +23,11 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,6 +35,12 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
+import com.user.mngmnt.enums.DiscountFrequency;
+import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.CustomerType;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -39,10 +55,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriTemplate;
 
 import com.user.mngmnt.enums.Action;
@@ -739,6 +758,145 @@ public class CustomerController {
 		customer.setAmountCredit(customer.getAmountCredit() + customer.getAmountCreditTemp());
 		customer.setAmountDebit(customer.getAmountDebit() + customer.getAmountDebitTemp());
 		return customerRepository.save(customer);
+	}
+
+	private Area parseArea(CSVRecord record){
+		return Area.builder()
+			.name(record.get("area name"))
+			.name2(record.get("area name2"))
+			.areaCode(record.get("area code"))
+			.lcoCode(record.get("lco code"))
+			.lcoName(record.get("lco name"))
+			.build();
+	}
+
+	public static final String CUSTOMER_SETOP_BOX_COLUMN_FORMAT = "{index} setop box {name}";
+
+	private String getCustomerSetopBoxColumnName(String column, int index) {
+		return CUSTOMER_SETOP_BOX_COLUMN_FORMAT.replace("{index}", String.valueOf(index)).replace("{name}", column);
+	}
+
+	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecord record) {
+		int index =1;
+		List<CustomerSetTopBox> customerSetTopBoxes = new ArrayList<>();
+		while (record.isMapped(getCustomerSetopBoxColumnName("payment mode", index))){
+			try {
+				customerSetTopBoxes.add(CustomerSetTopBox.builder()
+					.paymentMode(PaymentMode.valueOf(record.get(getCustomerSetopBoxColumnName("payment mode", index))))
+					.activateDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("activation date", index))))
+					.activateReason(record.get(getCustomerSetopBoxColumnName("activation reason", index)))
+					.billingCycle(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("billing Cycle", index))))
+					.customerSetTopBoxStatus(CustomerSetTopBoxStatus.valueOf(record.get(getCustomerSetopBoxColumnName("status", index))))
+					.deactivateDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("deactivation date", index))))
+					.deactivateReason(record.get(getCustomerSetopBoxColumnName("deactivation reason", index)))
+					.discount(Double.valueOf(record.get(getCustomerSetopBoxColumnName("discount", index))))
+					.discountFrequency(DiscountFrequency.valueOf(record.get(getCustomerSetopBoxColumnName("discount frequency", index))))
+					.isActive(Boolean.valueOf(record.get(getCustomerSetopBoxColumnName("active", index))))
+					.openingBalance(Double.valueOf(record.get(getCustomerSetopBoxColumnName("opening balance", index))))
+					.entryDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("entry date", index))))
+					.pack(Pack.builder()
+						.name(record.get(getCustomerSetopBoxColumnName("pack name", index)))
+						.build())
+					.packPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price", index))))
+					.packPriceDifference(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price difference", index))))
+					.paymentStartDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("payment start date", index))))
+					.setTopBox(SetTopBox.builder()
+						.setTopBoxNumber(record.get(getCustomerSetopBoxColumnName("number", index)))
+						.cardNumber(record.get(getCustomerSetopBoxColumnName("card number", index)))
+						.safeCode(record.get(getCustomerSetopBoxColumnName("safe code", index)))
+						.build())
+					.setTopBoxPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("price", index))))
+					.build());
+				index++;
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+
+		}
+		return customerSetTopBoxes;
+	}
+
+	@PostMapping("/uploadCustomerFile")
+	public String customerFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
+		throws IOException {
+
+		if (file.isEmpty()) {
+			redirectAttributes.addAttribute("message", "Please select a file to upload");
+			return "redirect:setTopBox";
+		}
+
+		Reader in = new InputStreamReader(file.getInputStream());
+		Iterable<CSVRecord> records = CSVFormat.RFC4180.withFirstRecordAsHeader().withIgnoreHeaderCase().parse(in);
+		List<Customer> customers = new ArrayList<>();
+			records.forEach(customer -> {
+				customers.add(Customer.builder()
+					.name(customer.get("name"))
+					.address(customer.get("address"))
+					.amountCredit(Double.valueOf(customer.get("amount credit")))
+					.amountDebit(Double.valueOf(customer.get("amount debit")))
+					.balance(Double.valueOf(customer.get("balance")))
+					.city(customer.get("city"))
+					.customerCode(customer.get("code"))
+					.customerType(CustomerType.builder()
+						.
+						.build()
+					)
+					.area(parseArea(customer))
+					.customerSetTopBoxes(parseCustomerSetopBox(customer))
+					.build());
+			});
+//		for (CSVRecord record : records) {
+//			String id = record.get("ID");
+//			String customerNo = record.get("CustomerNo");
+//			String name = record.get("Name");
+//		}
+//		br = new BufferedReader(new InputStreamReader(is));
+//		boolean isFirstLineRead = false;
+//		int setTopBoxNumberIndex = -1;
+//		int cardNumberIndex = -1;
+//		int safeCodeIndex = -1;
+//		while ((line = br.readLine()) != null) {
+//			String[] setTopBoxDetails = line.split(",");
+//			if (!isFirstLineRead) {
+//				for (int i = 0; i < setTopBoxDetails.length; i++) {
+//					if (setTopBoxDetails[i].trim().equalsIgnoreCase("Set Top Box Number")) {
+//						setTopBoxNumberIndex = i;
+//					} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Card Number")) {
+//						cardNumberIndex = i;
+//					} else if (setTopBoxDetails[i].trim().equalsIgnoreCase("Safe Code")) {
+//						safeCodeIndex = i;
+//					}
+//				}
+//				isFirstLineRead = true;
+//				continue;
+//			}
+//			if (isFirstLineRead && setTopBoxDetails.length > 1) {
+//				customers.add(SetTopBox.builder().setTopBoxNumber(setTopBoxDetails[setTopBoxNumberIndex].trim())
+//					.cardNumber(setTopBoxDetails[cardNumberIndex].trim())
+//					.safeCode(setTopBoxDetails[safeCodeIndex].trim()).createdAt(Instant.now())
+//					.setTopBoxStatus(SetTopBoxStatus.FREE).build());
+//			}
+//		}
+		List<SetTopBox> errorSetTopBoxes = new ArrayList<>();
+//		for (Customer stb : customers) {
+//			try {
+//				setTopBoxRepository.save(stb);
+//			} catch (Exception e) {
+//				errorSetTopBoxes.add(stb);
+//			}
+//		}
+		if(!CollectionUtils.isEmpty(errorSetTopBoxes)) {
+			redirectAttributes.addAttribute("totalElements", customers.size());
+			redirectAttributes.addAttribute("savedElements", customers.size() - errorSetTopBoxes.size());
+			String errorSetTopBoxesString = errorSetTopBoxes.stream().map(SetTopBox::getSetTopBoxNumber).collect(Collectors.joining( "," ));
+			redirectAttributes.addAttribute("errorSetTopBoxes", errorSetTopBoxesString);
+			//redirectAttributes.addAttribute("partialDataSaved", errorSetTopBoxes);
+		} else {
+			redirectAttributes.addAttribute("message",
+				"You successfully uploaded '" + file.getOriginalFilename() + "'");
+		}
+		return "redirect:/setTopBox";
 	}
 	
 }

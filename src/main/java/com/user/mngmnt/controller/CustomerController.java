@@ -944,7 +944,10 @@ public class CustomerController {
 					customerSetTopBox.setPack(pack);
 				}
 			}
-			customerRepository.save(customer);
+			customer = customerRepository.save(customer);
+			for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
+				manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
+			}
 			}catch (Exception e){
 				e.printStackTrace();
 				errorCutomers.add(customer);

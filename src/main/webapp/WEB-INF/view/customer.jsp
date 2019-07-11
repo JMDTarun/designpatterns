@@ -34,6 +34,15 @@
 				<div id="pagerCustomers"></div>
 			</div>
 		</div>
+		<div class="row">
+        		<div class="col">
+        			<form method="POST" action="/uploadCustomerFile"
+        				enctype="multipart/form-data">
+        				<input type="file" name="file" /><br /> <br /> <input
+        					type="submit" value="Submit" />
+        			</form>
+        		</div>
+        	</div>
 	</div>
 	<div id="myDialog">
 		<input type="hidden" id="customerId"> <input type="hidden"

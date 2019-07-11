@@ -1,36 +1,42 @@
 package com.user.mngmnt.controller;
 
-import static com.user.mngmnt.util.DateCalculationUtil.DATE_FORMATTER;
-import static java.util.Collections.singletonList;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URI;
-import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.ZoneId;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
-
+import com.user.mngmnt.enums.Action;
+import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
 import com.user.mngmnt.enums.DiscountFrequency;
-import com.user.mngmnt.model.*;
-import com.user.mngmnt.repository.*;
+import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.SetTopBoxStatus;
+import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.Customer;
+import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerNetworkChannel;
+import com.user.mngmnt.model.CustomerSetTopBox;
+import com.user.mngmnt.model.CustomerType;
+import com.user.mngmnt.model.NetworkChannel;
+import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
+import com.user.mngmnt.model.RemoveCustomerSetTopBox;
+import com.user.mngmnt.model.ResponseHandler;
+import com.user.mngmnt.model.SetTopBox;
+import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
+import com.user.mngmnt.model.SetTopBoxReplacement;
+import com.user.mngmnt.model.Street;
+import com.user.mngmnt.model.SubArea;
+import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.AreaRepository;
+import com.user.mngmnt.repository.CustomerLedgreRepository;
+import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
+import com.user.mngmnt.repository.CustomerRepository;
+import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
+import com.user.mngmnt.repository.CustomerTypeRepository;
+import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.NetworkChannelRepository;
+import com.user.mngmnt.repository.PackRepository;
+import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
+import com.user.mngmnt.repository.SetTopBoxRepository;
+import com.user.mngmnt.repository.StreetRepository;
+import com.user.mngmnt.repository.SubAreaRepository;
 import javassist.NotFoundException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -57,11 +63,34 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriTemplate;
 
-import com.user.mngmnt.enums.Action;
-import com.user.mngmnt.enums.CreditDebit;
-import com.user.mngmnt.enums.CustomerLedgreEntry;
-import com.user.mngmnt.enums.PaymentMode;
-import com.user.mngmnt.enums.SetTopBoxStatus;
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URI;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static com.user.mngmnt.util.DateCalculationUtil.DATE_FORMATTER;
+import static java.util.Collections.singletonList;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @Controller
 public class CustomerController {
@@ -114,10 +143,10 @@ public class CustomerController {
 
 	@GetMapping("/allCustomers")
 	public @ResponseBody ViewPage<Customer> listCustomers(@RequestParam("_search") Boolean search,
-			@RequestParam(value = "filters", required = false) String filters,
-			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
+														  @RequestParam(value = "filters", required = false) String filters,
+														  @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+														  @RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
+														  @RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredCustomers(filters, pageRequest);
@@ -183,10 +212,10 @@ public class CustomerController {
 
 	@GetMapping("/allCustomerSetTopBoxes/{id}")
 	public @ResponseBody ViewPage<CustomerSetTopBox> listCustomerSetTopBoxes(@PathVariable("id") Long id,
-			@RequestParam("_search") Boolean search, @RequestParam(value = "filters", required = false) String filters,
-			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+																			 @RequestParam("_search") Boolean search, @RequestParam(value = "filters", required = false) String filters,
+																			 @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+																			 @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+																			 @RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredPackNetworkChannels(filters, pageRequest);

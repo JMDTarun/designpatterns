@@ -126,11 +126,6 @@ $(function() {
 				index: 'customer.mobile'
 			},
 			{
-				name:'customer.mobile',
-				label: 'Mobile',
-				index: 'customer.mobile'
-			},
-			{
 				name:'status',
 				label: 'Is Active',
 				index: 'status'
@@ -139,6 +134,11 @@ $(function() {
 				name:'monthlyTotal',
 				label: 'M Total',
 				index: 'monthlyTotal'
+			},
+			{
+				name:'totalSetTopBoxes',
+				label: 'Set Top Box Count',
+				index: 'totalSetTopBoxes'
 			},
 			{
 				name:'channelTotal',
@@ -165,20 +165,6 @@ $(function() {
 					{edit:false,add:false,del:false, search:false}
 	);
 
-	$("#customerReport").navButtonAdd("#pagerCustomerReport",
-            {
-                buttonicon: "ui-icon-document",
-                title: "Download",
-                id: "downloadReport",
-                caption: "Download",
-                position: "last",
-                onClickButton: function() {
-                	$.ajax({url: "downloadCustomerReport", success: function(result){
-                		
-                	  }});
-                }
-            });
-	
 	$.ajax({url: "getAllAreas", success: function(result){
 		$("#selectArea").addClass("ui-widget ui-jqdialog");
 		$("#selectArea").select2();
@@ -205,6 +191,9 @@ $(function() {
 	
 	$("#selectCustomerStatus").addClass("ui-widget ui-jqdialog");
 	$("#selectCustomerStatus").select2();
+	
+	$("#selectAssignedSetTopBoxes").addClass("ui-widget ui-jqdialog");
+	$("#selectAssignedSetTopBoxes").select2();
 	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerReport?'+getUrlParams();
@@ -235,6 +224,9 @@ $(function() {
         }
         if($("#totalCharge").val() !== "") {
         	urlStr += encodeURIComponent("monthlyCharge") + '=' + encodeURIComponent($("#totalCharge").val()) + "&";
+        }
+        if($("#selectAssignedSetTopBoxes").val() !== "") {
+        	urlStr += encodeURIComponent("assignedSetTopBoxes") + '=' + encodeURIComponent($("#selectAssignedSetTopBoxes").val()) + "&";
         }
         return urlStr;
 	}

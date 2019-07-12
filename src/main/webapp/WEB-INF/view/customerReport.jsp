@@ -72,6 +72,17 @@
 				<input type="text" id="totalCharge">
 			</span>
 		</div>
+		<div>
+			<label>Assigned Set Top Boxes</label> 
+			<span> 
+				<select id="selectAssignedSetTopBoxes">
+					<option value="">ALL</option>
+					<option value="1">Only Box Issue</option>
+					<option value="0">Box Not Issue</option>
+				</select>
+			</span>
+		</div>
+		
 		<div class="buttonPadding">
 			<button type="button" class="btn btn-primary" id="submitFilters">Submit</button>
 		</div>

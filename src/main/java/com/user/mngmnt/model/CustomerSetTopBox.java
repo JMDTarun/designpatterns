@@ -97,6 +97,8 @@ public class CustomerSetTopBox {
 	@Default
 	private Double setTopBoxPrice = 0.0;
 	
+	private Integer paymentDay;
+	
 	@ManyToOne
 	@JoinColumn(name = "setTopBoxId", referencedColumnName = "id")
 	private SetTopBox setTopBox;

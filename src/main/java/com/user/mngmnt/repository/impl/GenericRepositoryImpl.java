@@ -3,7 +3,9 @@ package com.user.mngmnt.repository.impl;
 import java.lang.reflect.Field;
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +16,7 @@ import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
@@ -34,6 +37,8 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	@PersistenceContext
 	private EntityManager entityManager;
 
+	private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+	
 	private Map<String, String> fieldsMap = new HashMap<>();
 
 	{
@@ -47,6 +52,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		fieldsMap.put("streetId", "street.id");
 		fieldsMap.put("customerStatus", "customerSetTopBoxes.customerSetTopBoxStatus");
 		fieldsMap.put("monthlyCharge", "customerSetTopBoxes.packPrice");
+		fieldsMap.put("assignedSetTopBoxes", "customerSetTopBoxes");
 	}
 
 	@Override
@@ -56,7 +62,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		Root<T> root = criteriaQuery.from(c);
 		JqgridFilter jqgridFilter = JqgridObjectMapper.map(criteriaJson);
 		Predicate[] predicates = new Predicate[jqgridFilter.getRules().size()];
-
+		
 		for (int i = 0; i < jqgridFilter.getRules().size(); i++) {
 			String field = jqgridFilter.getRules().get(i).getField();
 			Class<?> propertyClass = ReflectionUtils.getPropertyClass(c,
@@ -125,11 +131,51 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 				String field = fields.get(i).getName();
 				String fieldValue = (field == null) ? null
 						: String.valueOf(ReflectionUtils.getPropertyValue(resportSearchCriteria, field));
-
+				
 				if (field != null && !"null".equals(fieldValue) && fieldValue != null) {
+					
+					if (field.equalsIgnoreCase("assignedSetTopBoxes")) {
+						field = fieldsMap.get(field);
+						int setTopBoxesAssigned = Integer.parseInt(fieldValue);
+						if(setTopBoxesAssigned > 0) {
+							predicatesList.add(builder.ge(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
+						} else {
+							predicatesList.add(builder.le(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
+						}
+						continue;
+					} else if (field.equalsIgnoreCase("dateBetween")) {
+						String[] fieldsAndDates = fieldValue.split("_");
+						field = fieldsMap.get(fieldsAndDates[0]);
+						Path<Date> path = null;
+						if(field.contains(".")) {
+							path = root.join(field.substring(0, field.indexOf(".")))
+							.get(field.substring(field.indexOf(".") + 1, field.length()));
+						} else {
+							path = root.get(field);
+						}
+						predicatesList.add(builder.greaterThanOrEqualTo(path, sdf.parse(fieldsAndDates[1])));
+						if(fieldsAndDates.length == 3) {
+							predicatesList.add(builder.lessThanOrEqualTo(path, sdf.parse(fieldsAndDates[2])));
+						}
+						continue;
+					} else if(field.equalsIgnoreCase("numberBewtween")) {
+						String[] fieldsAndNumber = fieldValue.split("_");
+						field = fieldsMap.get(fieldsAndNumber[0]);
+						Path<Number> path = null;
+						if(field.contains(".")) {
+							path = root.join(field.substring(0, field.indexOf(".")))
+							.get(field.substring(field.indexOf(".") + 1, field.length()));
+						} else {
+							path = root.get(field);
+						}
+						predicatesList.add(builder.ge(path, NumberFormat.getInstance().parse(fieldsAndNumber[1])));
+						if(fieldsAndNumber.length == 3) {
+							predicatesList.add(builder.le(path, NumberFormat.getInstance().parse(fieldsAndNumber[2])));
+						}
+					}
+					
 					field = fieldsMap.get(fields.get(i).getName());
 					Class<?> propertyClass = ReflectionUtils.getPropertyClass(c, field);
-
 					boolean isNumber = false;
 					boolean isEnum = false;
 					if (Number.class.isAssignableFrom(propertyClass)) {

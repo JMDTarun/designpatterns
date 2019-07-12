@@ -58,7 +58,9 @@ public class UtilityController {
 		List<Customer> customers = customerRepository.findAll();
 		customers.stream().filter(c -> !c.isDeleted()).forEach(c -> {
 			c.getCustomerSetTopBoxes().stream()
-					.filter(cstb -> CustomerSetTopBoxStatus.ACTIVE.equals(cstb.getCustomerSetTopBoxStatus()))
+					.filter(cstb -> CustomerSetTopBoxStatus.ACTIVE.equals(cstb.getCustomerSetTopBoxStatus())
+							&& getLocalDate(Date.from(cstb.getCreatedAt()))
+							.compareTo(getLocalDate(Date.from(cstb.getCreatedAt())).withMonth(month)) < 0)
 					.forEach(cstb -> {
 						CustomerLedgre customerLedgre = customerLedgreRepository
 								.findByCustomerAndCustomerSetTopBoxAndActionAndMonth(c, cstb, Action.MONTHLY_PACK_PRICE, mth.toString());
@@ -66,10 +68,6 @@ public class UtilityController {
 						if (isPrepaid && customerLedgre == null) {
 							addEntriesToCustomerLedgre(mth, c, cstb, false);
 						} else if (!isPrepaid) {
-							System.out.println(getLocalDate(cstb.getBillingCycle()).withMonth(month));
-							System.out.println(getLocalDate(cstb.getBillingCycle()).withMonth(month)
-									.compareTo(getLocalDate(new Date())));
-							System.out.println(getLocalDate(new Date()));
 							if(getLocalDate(new Date()).compareTo(getLocalDate(cstb.getBillingCycle()).withMonth(month)) >= 0) {
 								Month previousMonth = Month.of(month - 1);
 								List<CustomerLedgre> customerLedgres = customerLedgreRepository.findByCustomerAndCustomerSetTopBoxAndMonth(c, cstb, previousMonth.toString());
@@ -77,12 +75,13 @@ public class UtilityController {
 									cl.setOnHold(false);
 									customerLedgreRepository.save(cl);
 								});
-								addEntriesToCustomerLedgre(mth, c, cstb, true);
-							} else if(customerLedgre != null) {
-								customerLedgre.setOnHold(false);
-								customerLedgreRepository.save(customerLedgre);
+								if(customerLedgre == null) {
+									addEntriesToCustomerLedgre(mth, c, cstb, true);
+								} 
 							} else {
-								addEntriesToCustomerLedgre(mth, c, cstb, true);
+								if(customerLedgre == null) {
+									addEntriesToCustomerLedgre(mth, c, cstb, true);
+								}
 							}
 						}
 					});

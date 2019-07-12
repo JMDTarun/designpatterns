@@ -13,4 +13,8 @@ public class ResportSearchCriteria {
 	private Integer streetId;
 	private String customerStatus;
 	private Double monthlyCharge;
+	private Integer countSetTopBoxes;
+	private Integer assignedSetTopBoxes;
+	private String dateBetween;
+	private String numberBewtween;
 }

@@ -48,6 +48,7 @@ import org.springframework.web.util.UriTemplate;
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
 import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.enums.SetTopBoxStatus;
 import com.user.mngmnt.model.Customer;
@@ -256,6 +257,7 @@ public class CustomerController {
 			customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
 			packPrice = customerSetTopBox.getPackPrice();
 		} 
+		
 		if(isPrepaid) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice,
 					CreditDebit.DEBIT, customerSetTopBox, null, null));
@@ -293,6 +295,7 @@ public class CustomerController {
 		LocalDate entryDate = getLocalDate(customerSetTopBox.getEntryDate());
 		LocalDate billingDate = isPrepaid ? entryDate.withDayOfMonth(1)
 				: getLocalDate(customerSetTopBox.getBillingCycle());
+		customerSetTopBox.setPaymentDay(billingDate.getDayOfMonth());
 		LocalDate paymentStartDate = getLocalDate(customerSetTopBox.getPaymentStartDate());
 		long days = Duration.between(billingDate.atStartOfDay(), paymentStartDate.atStartOfDay()).toDays();
 
@@ -395,7 +398,7 @@ public class CustomerController {
 				.action(action)
 				.amount(round(price, 2))
 				.createdAt(Instant.now())
-				.month(Month.of(cal.get(Calendar.MONTH)).toString())
+				.month(Month.of(cal.get(Calendar.MONTH) + 1).toString())
 				.creditDebit(creditDebit)
 				.customer(customer)
 				.customerSetTopBox(customerSetTopBox)
@@ -599,6 +602,7 @@ public class CustomerController {
 			dbCstb.setUpdatedAt(Instant.now());
 			dbCstb.setActivateDate(setTopBoxActivateDeavtivate.getDate());
 			dbCstb.setActive(true);
+			dbCstb.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.ACTIVE);
 			dbCstb.setActivateReason(setTopBoxActivateDeavtivate.getReason());
 			customerSetTopBoxRepository.save(dbCstb);
 			Double price = dbCstb.getPackPrice();
@@ -675,6 +679,7 @@ public class CustomerController {
 			dbCstb.setUpdatedAt(Instant.now());
 			dbCstb.setDeactivateDate(setTopBoxActivateDeavtivate.getDate());
 			dbCstb.setDeactivateReason(setTopBoxActivateDeavtivate.getReason());
+			dbCstb.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.DEACTIVE);
 			dbCstb.setActive(false);
 			customerSetTopBoxRepository.save(dbCstb);
 			Double price = dbCstb.getPackPrice();

@@ -37,7 +37,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class CustomerSetTopBox {
+public class CustomerSetTopBox extends Auditable{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -60,10 +60,6 @@ public class CustomerSetTopBox {
 	private Double discount;
 
 	private DiscountFrequency discountFrequency;
-
-	private Instant createdAt;
-
-	private Instant updatedAt;
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date deactivateDate;

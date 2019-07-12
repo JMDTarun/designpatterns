@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class Area {
+public class Area extends Auditable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,8 +36,4 @@ public class Area {
     private String lcoCode;
 
     private String lcoName;
-
-    private Instant createdAt;
-	
-	private Instant updatedAt;
 }

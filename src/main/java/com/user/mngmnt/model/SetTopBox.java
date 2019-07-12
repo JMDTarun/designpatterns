@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class SetTopBox {
+public class SetTopBox extends Auditable{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,8 +36,6 @@ public class SetTopBox {
 	@Column(unique = true)
 	private String cardNumber;
 	private String safeCode;
-    private Instant createdAt;
-	private Instant updatedAt;
 	@Default
 	@Enumerated(EnumType.STRING)
 	private SetTopBoxStatus setTopBoxStatus = SetTopBoxStatus.FREE;

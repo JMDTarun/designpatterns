@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class CustomerType {
+public class CustomerType  extends Auditable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -28,6 +28,4 @@ public class CustomerType {
 	private Long id;
 	private String customerType;
 	private Double maxAmount;
-	private Instant createdAt;
-	private Instant updatedAt;
 }

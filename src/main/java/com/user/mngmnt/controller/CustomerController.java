@@ -1,8 +1,75 @@
 package com.user.mngmnt.controller;
 
-import static java.util.Collections.singletonList;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import com.user.mngmnt.enums.Action;
+import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
+import com.user.mngmnt.enums.DiscountFrequency;
+import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.SetTopBoxStatus;
+import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.Customer;
+import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerNetworkChannel;
+import com.user.mngmnt.model.CustomerSetTopBox;
+import com.user.mngmnt.model.CustomerType;
+import com.user.mngmnt.model.NetworkChannel;
+import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
+import com.user.mngmnt.model.RemoveCustomerSetTopBox;
+import com.user.mngmnt.model.ResponseHandler;
+import com.user.mngmnt.model.SetTopBox;
+import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
+import com.user.mngmnt.model.SetTopBoxReplacement;
+import com.user.mngmnt.model.Street;
+import com.user.mngmnt.model.SubArea;
+import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.AreaRepository;
+import com.user.mngmnt.repository.CustomerLedgreRepository;
+import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
+import com.user.mngmnt.repository.CustomerRepository;
+import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
+import com.user.mngmnt.repository.CustomerTypeRepository;
+import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.NetworkChannelRepository;
+import com.user.mngmnt.repository.PackRepository;
+import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
+import com.user.mngmnt.repository.SetTopBoxRepository;
+import com.user.mngmnt.repository.StreetRepository;
+import com.user.mngmnt.repository.SubAreaRepository;
+import javassist.NotFoundException;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
+import org.hibernate.Hibernate;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.jpa.provider.HibernateUtils;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriTemplate;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -17,61 +84,15 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
-
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.util.UriTemplate;
-
-import com.user.mngmnt.enums.Action;
-import com.user.mngmnt.enums.CreditDebit;
-import com.user.mngmnt.enums.CustomerLedgreEntry;
-import com.user.mngmnt.enums.PaymentMode;
-import com.user.mngmnt.enums.SetTopBoxStatus;
-import com.user.mngmnt.model.Customer;
-import com.user.mngmnt.model.CustomerLedgre;
-import com.user.mngmnt.model.CustomerNetworkChannel;
-import com.user.mngmnt.model.CustomerSetTopBox;
-import com.user.mngmnt.model.NetworkChannel;
-import com.user.mngmnt.model.Pack;
-import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
-import com.user.mngmnt.model.RemoveCustomerSetTopBox;
-import com.user.mngmnt.model.ResponseHandler;
-import com.user.mngmnt.model.SetTopBox;
-import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
-import com.user.mngmnt.model.SetTopBoxReplacement;
-import com.user.mngmnt.model.ViewPage;
-import com.user.mngmnt.repository.CustomerLedgreRepository;
-import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
-import com.user.mngmnt.repository.CustomerRepository;
-import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
-import com.user.mngmnt.repository.GenericRepository;
-import com.user.mngmnt.repository.NetworkChannelRepository;
-import com.user.mngmnt.repository.PackRepository;
-import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
-import com.user.mngmnt.repository.SetTopBoxRepository;
+import static com.user.mngmnt.util.DateCalculationUtil.stringToDate;
+import static java.util.Collections.singletonList;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @Controller
 public class CustomerController {
@@ -103,6 +124,18 @@ public class CustomerController {
 	@Autowired
 	private NetworkChannelRepository networkChannelRepository;
 
+	@Autowired
+	private AreaRepository areaRepository;
+
+	@Autowired
+	private SubAreaRepository subAreaRepository;
+
+	@Autowired
+	private StreetRepository streetRepository;
+
+	@Autowired
+	private CustomerTypeRepository customerTypeRepository;
+
 	private static DecimalFormat df = new DecimalFormat("0.00");
 
 	@GetMapping("/customer")
@@ -112,10 +145,10 @@ public class CustomerController {
 
 	@GetMapping("/allCustomers")
 	public @ResponseBody ViewPage<Customer> listCustomers(@RequestParam("_search") Boolean search,
-			@RequestParam(value = "filters", required = false) String filters,
-			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-			@RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
+														  @RequestParam(value = "filters", required = false) String filters,
+														  @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+														  @RequestParam(value = "size", defaultValue = "10", required = false) Integer size,
+														  @RequestParam(value = "sort", defaultValue = "name", required = false) String sort) throws ParseException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredCustomers(filters, pageRequest);
@@ -181,10 +214,10 @@ public class CustomerController {
 
 	@GetMapping("/allCustomerSetTopBoxes/{id}")
 	public @ResponseBody ViewPage<CustomerSetTopBox> listCustomerSetTopBoxes(@PathVariable("id") Long id,
-			@RequestParam("_search") Boolean search, @RequestParam(value = "filters", required = false) String filters,
-			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
-			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
+																			 @RequestParam("_search") Boolean search, @RequestParam(value = "filters", required = false) String filters,
+																			 @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+																			 @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+																			 @RequestParam(value = "sort", defaultValue = "name", required = false) String sort) {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		if (search) {
 			return getFilteredPackNetworkChannels(filters, pageRequest);
@@ -250,7 +283,7 @@ public class CustomerController {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
 		Double packPrice = 0.0;
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-		Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+		Pack pack = packRepository.findById(customerSetTopBox.getPack().getId()).get();
 		packPrice = pack.getTotal();
 		if (customerSetTopBox.getPackPrice() > 0) {
 			customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
@@ -395,13 +428,13 @@ public class CustomerController {
 				.action(action)
 				.amount(round(price, 2))
 				.createdAt(Instant.now())
-				.month(Month.of(cal.get(Calendar.MONTH)).toString())
+				.month(Month.of(cal.get(Calendar.MONTH)+1).toString())
 				.creditDebit(creditDebit)
 				.customer(customer)
 				.customerSetTopBox(customerSetTopBox)
 				.customerNetworkChannel(custpomerNetworkChannel)
 				.reason(reason)
-				.isOnHold(isPrepaid ? false: true)
+				.isOnHold(!isPrepaid)
 				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
 	}
@@ -739,6 +772,199 @@ public class CustomerController {
 		customer.setAmountCredit(customer.getAmountCredit() + customer.getAmountCreditTemp());
 		customer.setAmountDebit(customer.getAmountDebit() + customer.getAmountDebitTemp());
 		return customerRepository.save(customer);
+	}
+
+	private Area parseArea(CSVRecord record){
+		return Area.builder()
+			.name(record.get("area name"))
+			.name2(record.get("area name 2"))
+			.areaCode(record.get("area code"))
+			.lcoCode(record.get("lco code"))
+			.lcoName(record.get("lco name"))
+			.build();
+	}
+
+	public static final String CUSTOMER_SETOP_BOX_COLUMN_FORMAT = "{index} setop box {name}";
+
+	private String getCustomerSetopBoxColumnName(String column, int index) {
+		return CUSTOMER_SETOP_BOX_COLUMN_FORMAT.replace("{index}", String.valueOf(index)).replace("{name}", column);
+	}
+
+	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecord record) {
+		int index =1;
+		List<CustomerSetTopBox> customerSetTopBoxes = new ArrayList<>();
+		while (record.isSet(getCustomerSetopBoxColumnName("payment mode", index))){
+			try {
+				customerSetTopBoxes.add(CustomerSetTopBox.builder()
+					.paymentMode(PaymentMode.valueOf(record.get(getCustomerSetopBoxColumnName("payment mode", index))))
+					.activateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("activation date", index))))
+					.activateReason(record.get(getCustomerSetopBoxColumnName("activation reason", index)))
+					.billingCycle(stringToDate(record.get(getCustomerSetopBoxColumnName("billing Cycle", index))))
+					.customerSetTopBoxStatus(CustomerSetTopBoxStatus.valueOf(record.get(getCustomerSetopBoxColumnName("status", index))))
+					.deactivateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("deactivation date", index))))
+					.deactivateReason(record.get(getCustomerSetopBoxColumnName("deactivation reason", index)))
+					.discount(Double.valueOf(record.get(getCustomerSetopBoxColumnName("discount", index))))
+					.discountFrequency(DiscountFrequency.valueOf(record.get(getCustomerSetopBoxColumnName("discount frequency", index))))
+					.isActive(Boolean.valueOf(record.get(getCustomerSetopBoxColumnName("active", index))))
+					.openingBalance(Double.valueOf(record.get(getCustomerSetopBoxColumnName("opening balance", index))))
+					.entryDate(stringToDate(record.get(getCustomerSetopBoxColumnName("entry date", index))))
+					.pack(Pack.builder()
+						.name(record.get(getCustomerSetopBoxColumnName("pack name", index)))
+						.build())
+					.packPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price", index))))
+					.packPriceDifference(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price difference", index))))
+					.paymentStartDate(stringToDate(record.get(getCustomerSetopBoxColumnName("payment start date", index))))
+					.setTopBox(SetTopBox.builder()
+						.setTopBoxNumber(record.get(getCustomerSetopBoxColumnName("number", index)))
+						.cardNumber(record.get(getCustomerSetopBoxColumnName("card number", index)))
+						.safeCode(record.get(getCustomerSetopBoxColumnName("safe code", index)))
+						.build())
+					.setTopBoxPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("price", index))))
+					.build());
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			index++;
+		}
+		return customerSetTopBoxes;
+	}
+
+	@PostMapping("/uploadCustomerFile")
+	public String customerFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
+		throws IOException {
+
+		if (file.isEmpty()) {
+			redirectAttributes.addAttribute("message", "Please select a file to upload");
+			return "redirect:customer";
+		}
+
+		Reader in = new InputStreamReader(file.getInputStream());
+		Iterable<CSVRecord> records = CSVFormat.RFC4180
+				.withFirstRecordAsHeader()
+				.withIgnoreSurroundingSpaces()
+				.withIgnoreHeaderCase()
+				.parse(in);
+		List<Customer> customers = new ArrayList<>();
+			records.forEach(customer -> {
+				customers.add(Customer.builder()
+					.name(customer.get("name"))
+					.address(customer.get("address"))
+					.amountCredit(Double.valueOf(customer.get("amount credit")))
+					.amountDebit(Double.valueOf(customer.get("amount debit")))
+					.balance(Double.valueOf(customer.get("balance")))
+					.city(customer.get("city"))
+					.customerCode(customer.get("code"))
+					.customerType(CustomerType.builder()
+						.customerType(customer.get("type"))
+						.maxAmount(Double.valueOf(customer.get("max amount")))
+						.build()
+					)
+					.landLine(customer.get("landline"))
+					.mobile(customer.get("mobile"))
+					.street(Street.builder()
+							.area(parseArea(customer))
+							.streetNumber(customer.get("street number"))
+							.streetNumber2(customer.get("street number 2"))
+							.build())
+					.subArea(SubArea.builder()
+							.wardNumber(customer.get("ward number"))
+							.wardNumber2(customer.get("ward number 2"))
+							.area(parseArea(customer))
+								.build())
+					.area(parseArea(customer))
+					.customerSetTopBoxes(parseCustomerSetopBox(customer))
+					.build());
+			});
+		Map<String, Area> areaMap = new HashMap<>();
+		Map<String, Street> streetMap = new HashMap<>();
+		Map<String, SubArea> subAreaMap = new HashMap<>();
+		Map<String, CustomerType> customerTypeMap = new HashMap<>();
+		Map<String, Pack> packMap = new HashMap<>();
+		Map<String, SetTopBox> setTopBoxMap = new HashMap<>();
+		List<Customer> errorCutomers = new ArrayList<>();
+		for(Customer customer: customers){
+			try{
+			Area area = areaMap.get(customer.getArea().getName());
+			if(area == null) {
+				area = areaRepository.findByName(customer.getArea().getName());
+				if(area == null) {
+					area = areaRepository.save(customer.getArea());
+				}
+				areaMap.put(area.getName(), area);
+			}
+			customer.setArea(area);
+			customer.getSubArea().setArea(area);
+			customer.getStreet().setArea(area);
+			SubArea subArea = subAreaMap.get(customer.getSubArea().getWardNumber());
+			if(subArea == null) {
+				subArea = subAreaRepository.findByWardNumber(customer.getSubArea().getWardNumber());
+				if(subArea == null) {
+					subArea = subAreaRepository.save(customer.getSubArea());
+				}
+				subAreaMap.put(subArea.getWardNumber(), subArea);
+			}
+			customer.setSubArea(subArea);
+			Street street = streetMap.get(customer.getStreet().getStreetNumber());
+			if(street == null) {
+				street = streetRepository.findByStreetNumber(customer.getStreet().getStreetNumber());
+				if(street == null) {
+					street = streetRepository.save(customer.getStreet());
+				}
+				streetMap.put(street.getStreetNumber(), street);
+			}
+			customer.setStreet(street);
+			CustomerType type = customerTypeMap.get(customer.getCustomerType().getCustomerType());
+			if(type == null) {
+				type = customerTypeRepository.findByCustomerType(customer.getCustomerType().getCustomerType());
+				if(type == null) {
+					type = customerTypeRepository.save(customer.getCustomerType());
+				}
+				customerTypeMap.put(type.getCustomerType(), type);
+			}
+			customer.setCustomerType(type);
+			if(!customer.getCustomerSetTopBoxes().isEmpty()){
+				for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
+					SetTopBox setTopBox = setTopBoxMap.get(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+					if(setTopBox == null) {
+						setTopBox = setTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+						if(setTopBox == null) {
+							setTopBox = setTopBoxRepository.save(customerSetTopBox.getSetTopBox());
+						}
+						setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+					}
+					customerSetTopBox.setSetTopBox(setTopBox);
+					Pack pack = packMap.get(customerSetTopBox.getPack().getName());
+					if(pack == null) {
+						pack = packRepository.findByName(customerSetTopBox.getPack().getName());
+						if(pack == null) {
+							throw new NotFoundException("Pack not found");
+						}
+						packMap.put(pack.getName(), pack);
+					}
+					customerSetTopBox.setPack(pack);
+				}
+			}
+			customer = customerRepository.save(customer);
+			for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
+				manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
+			}
+			}catch (Exception e){
+				e.printStackTrace();
+				errorCutomers.add(customer);
+			}
+		}
+
+		if(!CollectionUtils.isEmpty(errorCutomers)) {
+			redirectAttributes.addAttribute("totalElements", customers.size());
+			redirectAttributes.addAttribute("savedElements", customers.size() - errorCutomers.size());
+			String errorSetTopBoxesString = errorCutomers.stream().map(Customer::getName).collect(Collectors.joining( "," ));
+			redirectAttributes.addAttribute("errorSetTopBoxes", errorSetTopBoxesString);
+		} else {
+			redirectAttributes.addAttribute("message",
+				"You successfully uploaded '" + file.getOriginalFilename() + "'");
+		}
+		return "redirect:/customer";
 	}
 	
 }

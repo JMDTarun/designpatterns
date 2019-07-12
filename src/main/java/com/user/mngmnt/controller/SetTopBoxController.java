@@ -161,7 +161,7 @@ public class SetTopBoxController {
 			if (isFirstLineRead && setTopBoxDetails.length > 1) {
 				setTopBoxes.add(SetTopBox.builder().setTopBoxNumber(setTopBoxDetails[setTopBoxNumberIndex].trim())
 						.cardNumber(setTopBoxDetails[cardNumberIndex].trim())
-						.safeCode(setTopBoxDetails[safeCodeIndex].trim()).createdAt(Instant.now())
+						.safeCode(setTopBoxDetails[safeCodeIndex].trim())
 						.setTopBoxStatus(SetTopBoxStatus.FREE).build());
 			}
 		}

@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class Street {
+public class Street extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -36,9 +36,5 @@ public class Street {
     @ManyToOne()
     @JoinColumn(name = "areaId", referencedColumnName = "id")
     private Area area;
-
-    private Instant createdAt;
-	
-	private Instant updatedAt;
 
 }

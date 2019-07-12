@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class Customer {
+public class Customer extends Auditable{
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
@@ -48,10 +48,6 @@ public class Customer {
 	private String mobile;
 
 	private String landLine;
-	
-	private Instant createdAt;
-	
-	private Instant updatedAt;
 	
 	@Default
 	private Double amountDebit = 0.0;

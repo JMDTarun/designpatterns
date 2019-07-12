@@ -40,11 +40,13 @@ import com.user.mngmnt.repository.SubAreaRepository;
 import javassist.NotFoundException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.jpa.provider.HibernateUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -88,7 +90,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.user.mngmnt.util.DateCalculationUtil.DATE_FORMATTER;
+import static com.user.mngmnt.util.DateCalculationUtil.stringToDate;
 import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -281,7 +283,7 @@ public class CustomerController {
 		List<CustomerLedgre> customerLedgres = new ArrayList<>();
 		Double packPrice = 0.0;
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-		Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+		Pack pack = packRepository.findById(customerSetTopBox.getPack().getId()).get();
 		packPrice = pack.getTotal();
 		if (customerSetTopBox.getPackPrice() > 0) {
 			customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
@@ -426,13 +428,13 @@ public class CustomerController {
 				.action(action)
 				.amount(round(price, 2))
 				.createdAt(Instant.now())
-				.month(Month.of(cal.get(Calendar.MONTH)).toString())
+				.month(Month.of(cal.get(Calendar.MONTH)+1).toString())
 				.creditDebit(creditDebit)
 				.customer(customer)
 				.customerSetTopBox(customerSetTopBox)
 				.customerNetworkChannel(custpomerNetworkChannel)
 				.reason(reason)
-				.isOnHold(isPrepaid ? false: true)
+				.isOnHold(!isPrepaid)
 				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
 	}
@@ -791,27 +793,27 @@ public class CustomerController {
 	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecord record) {
 		int index =1;
 		List<CustomerSetTopBox> customerSetTopBoxes = new ArrayList<>();
-		while (record.isMapped(getCustomerSetopBoxColumnName("payment mode", index))){
+		while (record.isSet(getCustomerSetopBoxColumnName("payment mode", index))){
 			try {
 				customerSetTopBoxes.add(CustomerSetTopBox.builder()
 					.paymentMode(PaymentMode.valueOf(record.get(getCustomerSetopBoxColumnName("payment mode", index))))
-					.activateDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("activation date", index))))
+					.activateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("activation date", index))))
 					.activateReason(record.get(getCustomerSetopBoxColumnName("activation reason", index)))
-					.billingCycle(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("billing Cycle", index))))
+					.billingCycle(stringToDate(record.get(getCustomerSetopBoxColumnName("billing Cycle", index))))
 					.customerSetTopBoxStatus(CustomerSetTopBoxStatus.valueOf(record.get(getCustomerSetopBoxColumnName("status", index))))
-					.deactivateDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("deactivation date", index))))
+					.deactivateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("deactivation date", index))))
 					.deactivateReason(record.get(getCustomerSetopBoxColumnName("deactivation reason", index)))
 					.discount(Double.valueOf(record.get(getCustomerSetopBoxColumnName("discount", index))))
 					.discountFrequency(DiscountFrequency.valueOf(record.get(getCustomerSetopBoxColumnName("discount frequency", index))))
 					.isActive(Boolean.valueOf(record.get(getCustomerSetopBoxColumnName("active", index))))
 					.openingBalance(Double.valueOf(record.get(getCustomerSetopBoxColumnName("opening balance", index))))
-					.entryDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("entry date", index))))
+					.entryDate(stringToDate(record.get(getCustomerSetopBoxColumnName("entry date", index))))
 					.pack(Pack.builder()
 						.name(record.get(getCustomerSetopBoxColumnName("pack name", index)))
 						.build())
 					.packPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price", index))))
 					.packPriceDifference(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price difference", index))))
-					.paymentStartDate(DATE_FORMATTER.parse(record.get(getCustomerSetopBoxColumnName("payment start date", index))))
+					.paymentStartDate(stringToDate(record.get(getCustomerSetopBoxColumnName("payment start date", index))))
 					.setTopBox(SetTopBox.builder()
 						.setTopBoxNumber(record.get(getCustomerSetopBoxColumnName("number", index)))
 						.cardNumber(record.get(getCustomerSetopBoxColumnName("card number", index)))
@@ -819,12 +821,11 @@ public class CustomerController {
 						.build())
 					.setTopBoxPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("price", index))))
 					.build());
-				index++;
 			}
 			catch (Exception e) {
 				e.printStackTrace();
 			}
-
+			index++;
 		}
 		return customerSetTopBoxes;
 	}

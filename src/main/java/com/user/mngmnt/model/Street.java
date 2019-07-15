@@ -29,6 +29,7 @@ public class Street extends Auditable {
     @Column(name = "id")
     private Long id;
 
+    @Column(unique = true)
     private String streetNumber;
 
     private String streetNumber2;

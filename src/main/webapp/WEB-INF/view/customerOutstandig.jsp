@@ -34,80 +34,63 @@
 	<div class="reportFilters">
 		<div>
 			<label>Area</label> 
-			<select id="selectArea">
-					<option value="">Select Area</option>
-			</select>
+			<span> 
+				<select id="selectArea">
+						<option value="">Select Area</option>
+				</select>
+			</span>
 		</div>
 		<div>
 			<label>Sub Area</label> 
-			<select id="selectSubArea">
-				<option value="">Select Sub Area</option>
-			</select>
+			<span> 
+				<select id="selectSubArea">
+					<option value="">Select Sub Area</option>
+				</select>
+			</span>
 		</div>
 		<div>
 			<label>Street</label> 
-			<select id="selectStreet">
-				<option value="">Select Street</option>
-			</select>
+			<span> 
+				<select id="selectStreet">
+					<option value="">Select Street</option>
+				</select>
+			</span>
 		</div>
 		<div>
 			<label>Customer Status</label> 
-			<select id="selectCustomerStatus">
-				<option value="">ALL</option>
-				<option value="ACTIVE">ACTIVE</option>
-				<option value="DEACTIVE">DEACTIVE</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Pack</label> 
-			<select id="selectPack">
-				<option value="">Select Pack</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Rent</label> 
-			<select id="selectRent">
-				<option value="">Select Rent</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Total Charge</label> 
-			<input type="text" id="totalCharge">
-		</div>
-		
-		<div>
-			<label>Outstanding</label> 
-			<select id="selectOutstanding">
-				<option value="">ALL</option>
-				<option value="true">Greater Then 0</option>
-				<option value="false">Less Then 0</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Outstanding Between</label> 
-			<input type="text" name="outstandingStart" id="outstandingStart" />
-			<input type="text" name="outstandingEnd" id="outstandingEnd" />
-		</div>
-		
-		<div>
-			<label>Payment Day</label> 
-			<input type="text" name="paymentDayStart" id="paymentDayStart" />
-			<input type="text" name="paymentDayEnd" id="paymentDayEnd" />
-		<div>
-			<label>Assigned Set Top Boxes</label> 
 			<span> 
-				<select id="selectAssignedSetTopBoxes">
+				<select id="selectCustomerStatus">
 					<option value="">ALL</option>
-					<option value="1">Only Box Issue</option>
-					<option value="0">Box Not Issue</option>
+					<option value="ACTIVE">ACTIVE</option>
+					<option value="DEACTIVE">DEACTIVE</option>
 				</select>
 			</span>
 		</div>
 		
+		<div>
+			<label>Pack</label> 
+			<span> 
+				<select id="selectPack">
+					<option value="">Select Pack</option>
+				</select>
+			</span>
+		</div>
+		
+		<div>
+			<label>Rent</label> 
+			<span> 
+				<select id="selectRent">
+					<option value="">Select Rent</option>
+				</select>
+			</span>
+		</div>
+		
+		<div>
+			<label>Total Charge</label> 
+			<span> 
+				<input type="text" id="totalCharge">
+			</span>
+		</div>
 		<div class="buttonPadding">
 			<button type="button" class="btn btn-primary" id="submitFilters">Submit</button>
 		</div>

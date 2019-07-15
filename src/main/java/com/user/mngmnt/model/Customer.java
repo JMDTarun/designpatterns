@@ -55,6 +55,9 @@ public class Customer extends Auditable{
 	@Default
 	private Double amountCredit = 0.0;
 	
+	@Default
+    private Double monthlyTotal = 0.0;
+	
 	private Double balance;
 	
 	@Default

@@ -29,6 +29,7 @@ public class SubArea extends Auditable{
     @Column(name = "id")
     private Long id;
 
+    @Column(unique = true)
     private String wardNumber;
 
     private String wardNumber2;

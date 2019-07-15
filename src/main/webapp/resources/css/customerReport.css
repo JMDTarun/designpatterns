@@ -1,8 +1,10 @@
 .reportFilters {
-    display: flex;
+	display: grid;
     padding: 20px;
-    flex-grow: 1;
-    flex-wrap: wrap;
+    grid-template-columns: auto auto auto auto;
+    grid-gap: 10px;
+    background-color: #fff;
+    color: #444;
 }
 
 .reportFilters > * {

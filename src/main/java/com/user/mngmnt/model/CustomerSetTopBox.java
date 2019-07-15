@@ -54,6 +54,8 @@ public class CustomerSetTopBox extends Auditable{
 
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date billingCycle;
+	
+	private Integer billingDay;
 
 	private Double openingBalance;
 
@@ -86,6 +88,9 @@ public class CustomerSetTopBox extends Auditable{
 	private Pack pack;
 
 	private Double packPrice;
+	
+	@Default
+    private Double monthlyTotal = 0.0;
 
 	@Default
 	private Double packPriceDifference = 0.0;

@@ -1,11 +1,7 @@
 package com.user.mngmnt.controller;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,14 +10,11 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.ServerProperties.Tomcat.Resource;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,9 +25,9 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
 import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerNetworkChannel;
+import com.user.mngmnt.model.CustomerReport;
 import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.CutomerReportColumns;
-import com.user.mngmnt.model.CustomerReport;
 import com.user.mngmnt.model.ResportSearchCriteria;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.GenericRepository;
@@ -98,7 +91,7 @@ public class ReportController {
 	}
 
 	private List<CustomerReport> mapCustomerToCustomerReport(List<Customer> customers) {
-		List<CustomerReport> cusstomerReports = customers.stream().map(c -> {
+		return customers.stream().map(c -> {
 			Double sumMonthlyRent = c.getCustomerSetTopBoxes().stream()
 					.filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
 					.map(box -> box.getPackPrice()).reduce(0.0, Double::sum);
@@ -118,6 +111,6 @@ public class ReportController {
 					.monthlyTotal(sumMonthlyRent).channelTotal(networkChannelPrice)
 					.totalSetTopBoxes(customerSetTopBoxes.size()).totalChannels(networkChannelsCount).build();
 		}).collect(Collectors.toList());
-		return cusstomerReports;
 	}
+	
 }

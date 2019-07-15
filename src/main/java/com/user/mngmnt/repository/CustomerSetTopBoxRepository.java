@@ -1,6 +1,9 @@
 package com.user.mngmnt.repository;
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.user.mngmnt.model.CustomerSetTopBox;
@@ -14,5 +17,8 @@ public interface CustomerSetTopBoxRepository extends JpaRepository<CustomerSetTo
     SetTopBox findBySetTopBoxCardNumber(String number);
 
     SetTopBox findBySetTopBoxSafeCode(String number);
+    
+    @Query("Select DISTINCT(c.packPrice) from CustomerSetTopBox c")
+    List<Double> findDistinctPackPrices();
 
 }

@@ -257,7 +257,10 @@ public class CustomerController {
 			@ModelAttribute CustomerSetTopBox customerSetTopBox) {
 		Customer customer = customerRepository.getOne(id);
 		if (customer != null) {
+		    boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 			customerSetTopBox.setCreatedAt(Instant.now());
+			customerSetTopBox.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.ACTIVE);
+			customerSetTopBox.setBillingDay(isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth());
 			customerSetTopBoxRepository.save(customerSetTopBox);
 			customer.getCustomerSetTopBoxes().add(customerSetTopBox);
 			manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
@@ -385,6 +388,8 @@ public class CustomerController {
 			long monthDays = Duration.between(dbBillingCycle.atStartOfDay(), dateForMonthDays.atStartOfDay()).toDays();
 			long days = Duration.between(dbBillingCycle.atStartOfDay(), newBillingDate.atStartOfDay()).toDays();
 			if (days != 0) {
+			    boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+			    customerSetTopBox.setBillingDay(isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth());
 				Double oneDayCharge = customerSetTopBox.getPackPrice() / monthDays;
 				Double balance = days * oneDayCharge;
 				customerLedgres.add(buildCustomerLedgre(customer, Action.PAYMENT_START_ADJUSTMENT, Math.abs(balance),
@@ -417,20 +422,22 @@ public class CustomerController {
 			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel, String reason) {
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 		if(creditDebit.equals(CreditDebit.CREDIT)) {
-			customer.setAmountCreditTemp(customer.getAmountCreditTemp() + price);
+			customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? price : customer.getAmountCreditTemp() + price);
 		} else {
-			customer.setAmountDebitTemp(customer.getAmountDebitTemp() + price);
+			customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? price: customer.getAmountDebitTemp() + price);
 		}
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(customerSetTopBox.getEntryDate());
 		
 		return CustomerLedgre.builder()
 				.action(action)
-				.amount(round(price, 2))
+				.amountCredit(CreditDebit.CREDIT.equals(creditDebit) ? round(price, 2) : 0.0)
+				.amountDebit(CreditDebit.DEBIT.equals(creditDebit) ? round(price, 2) : 0.0)
 				.createdAt(Instant.now())
 				.month(Month.of(cal.get(Calendar.MONTH)+1).toString())
 				.creditDebit(creditDebit)
 				.customer(customer)
+                .paymentDay(isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth())
 				.customerSetTopBox(customerSetTopBox)
 				.customerNetworkChannel(custpomerNetworkChannel)
 				.reason(reason)
@@ -767,10 +774,40 @@ public class CustomerController {
 	}
 
 	private Customer saveCustomer(Customer customer) {
-		customer.setBalance((customer.getAmountCredit() + customer.getAmountCreditTemp())
-				- (customer.getAmountDebit() + customer.getAmountDebitTemp()));
-		customer.setAmountCredit(customer.getAmountCredit() + customer.getAmountCreditTemp());
-		customer.setAmountDebit(customer.getAmountDebit() + customer.getAmountDebitTemp());
+	    customer.setAmountCredit(customer.getAmountCredit() == null ? 0.0 : customer.getAmountCredit());
+	    customer.setAmountDebit(customer.getAmountDebit() == null ? 0.0 : customer.getAmountDebit());
+	    customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? 0.0 : customer.getAmountCreditTemp());
+	    customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? 0.0 : customer.getAmountDebitTemp());
+        customer.setBalance((customer.getAmountCredit() + customer.getAmountCreditTemp())
+                - (customer.getAmountDebit() + customer.getAmountDebitTemp()));
+        customer.setAmountCredit(customer.getAmountCredit() + customer.getAmountCreditTemp());
+        customer.setAmountDebit(customer.getAmountDebit() + customer.getAmountDebitTemp());
+        
+        if (customer.getCustomerSetTopBoxes() != null && customer.getCustomerSetTopBoxes().size() > 0) {
+            List<CustomerSetTopBox> customerSetTopBoxes = customer.getCustomerSetTopBoxes().stream()
+                    .filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+                    .collect(Collectors.toList());
+
+            Double sumMonthlyRent = customerSetTopBoxes.stream().map(box -> box.getPackPrice()).reduce(0.0,
+                    Double::sum);
+
+            Double networkChannelTotal = 0.0;
+            for (CustomerSetTopBox cstb : customerSetTopBoxes) {
+                Double networkChannelPrice = 0.0;
+                Set<CustomerNetworkChannel> customerNetworkChannels = cstb.getCustomerNetworkChannels();
+                if (customerNetworkChannels != null && !CollectionUtils.isEmpty(customerNetworkChannels)) {
+                    List<CustomerNetworkChannel> networkChannlesList = customerNetworkChannels.stream().filter(nc -> !nc.isDeleted()).collect(Collectors.toList());
+                    for(CustomerNetworkChannel nc: networkChannlesList) {
+                        NetworkChannel dbNetworkChannel = networkChannelRepository.getOne(nc.getNetworkChannel().getId());
+                        networkChannelPrice += dbNetworkChannel.getTotal();
+                    }
+                    networkChannelTotal += networkChannelPrice;
+                }
+                cstb.setMonthlyTotal(cstb.getPackPrice() + networkChannelPrice);
+            }
+            customer.setMonthlyTotal(sumMonthlyRent + networkChannelTotal);
+        }
+        
 		return customerRepository.save(customer);
 	}
 
@@ -966,5 +1003,10 @@ public class CustomerController {
 		}
 		return "redirect:/customer";
 	}
+	
+	@GetMapping("/getDistinctPackPrices")
+    public @ResponseBody List<Double> getDistinctPackPrices() {
+        return customerSetTopBoxRepository.findDistinctPackPrices();
+    }
 	
 }

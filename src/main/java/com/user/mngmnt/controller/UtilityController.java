@@ -29,6 +29,7 @@ import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
+import com.user.mngmnt.enums.DiscountFrequency;
 import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
@@ -96,7 +97,9 @@ public class UtilityController {
 	private void addEntriesToCustomerLedgre(Month mth, Customer c, CustomerSetTopBox cstb, boolean isOnHold) {
 		customerLedgreRepository.save(CustomerLedgre.builder()
 		.action(Action.MONTHLY_PACK_PRICE)
-		.amount(cstb.getPackPrice())
+                .amountDebit(cstb.getPackPrice()
+                        - (cstb.getDiscount() > 0 && DiscountFrequency.MONTHLY.equals(cstb.getDiscountFrequency())
+                                ? cstb.getDiscount() : 0.0))
 		.createdAt(Instant.now())
 		.month(mth.toString())
 		.creditDebit(CreditDebit.DEBIT)
@@ -110,7 +113,7 @@ public class UtilityController {
 		cstb.getCustomerNetworkChannels().stream().filter(nc -> !nc.isDeleted()).forEach(nc -> {
 			customerLedgreRepository.save(CustomerLedgre.builder()
 					.action(Action.MONTHLY_CHANNEL_PRICE)
-					.amount(nc.getNetworkChannel().getTotal())
+					.amountDebit(nc.getNetworkChannel().getTotal())
 					.createdAt(Instant.now())
 					.month(mth.toString())
 					.creditDebit(CreditDebit.DEBIT)

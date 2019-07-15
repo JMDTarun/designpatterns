@@ -1,7 +1,6 @@
 package com.user.mngmnt.model;
 
 import java.time.Instant;
-import java.time.Month;
 import java.util.Date;
 
 import javax.persistence.Column;
@@ -14,6 +13,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -47,7 +47,17 @@ public class CustomerLedgre {
 
 	private Instant createdAt;
 	
-	private Double amount;
+	@Transient
+    private Double amount;
+	
+	@Default
+	private Double amountCredit = 0.0;
+	
+	@Default
+	private Double amountDebit = 0.0;
+	
+	@Default
+    private Double balance = 0.0;
 	
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
 	private Date paymentDate;
@@ -79,6 +89,8 @@ public class CustomerLedgre {
 	
 	private Date deactivateDate;
 
+	private Integer paymentDay;
+	
 	@Default
 	private boolean isOnHold = false;
 	

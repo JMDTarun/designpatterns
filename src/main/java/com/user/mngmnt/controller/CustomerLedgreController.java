@@ -82,7 +82,6 @@ public class CustomerLedgreController {
 		Optional<CustomerLedgre> dbCustomerLedgre = customerLedgreRepository.findById(id);
 		if(dbCustomerLedgre.isPresent()) {
 			CustomerLedgre c = dbCustomerLedgre.get();
-			//customerRepository.save(customer);
 			customerLedgre.setId(c.getId());
 			customerLedgreRepository.save(customerLedgre);
 		}
@@ -100,7 +99,7 @@ public class CustomerLedgreController {
 		customerLedgre.setOnHold(false);
 		CustomerLedgre dbCustomerLedgre = customerLedgreRepository.save(customerLedgre);
 		Customer customer = customerRepository.getOne(customerLedgre.getCustomer().getId());
-		customer.setAmountCredit(customer.getAmountCredit() + customerLedgre.getAmount());
+		customer.setAmountCredit(customer.getAmountCredit() + customerLedgre.getAmountCredit());
 		customer.setBalance(customer.getAmountCredit() - customer.getAmountDebit());
 		customerRepository.save(customer);
 		URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),

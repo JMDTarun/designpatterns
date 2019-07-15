@@ -9,18 +9,17 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import javax.persistence.TypedQuery;
+import javax.persistence.Query;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Join;
 import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-import org.apache.el.util.ReflectionUtil;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -52,6 +51,8 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		fieldsMap.put("streetId", "street.id");
 		fieldsMap.put("customerStatus", "customerSetTopBoxes.customerSetTopBoxStatus");
 		fieldsMap.put("monthlyCharge", "customerSetTopBoxes.packPrice");
+		fieldsMap.put("packId", "customerSetTopBoxes.pack.id");
+		fieldsMap.put("packPrice", "customerSetTopBoxes.packPrice");
 		fieldsMap.put("assignedSetTopBoxes", "customerSetTopBoxes");
 	}
 
@@ -124,14 +125,13 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		CriteriaQuery<T> criteriaQuery = builder.createQuery(c);
 		Root<T> root = criteriaQuery.from(c);
 		List<Field> fields = ReflectionUtils.getPrivateFields(ResportSearchCriteria.class);
-		// Predicate[] predicates = new Predicate[jqgridFilter.getRules().size()];
 		List<Predicate> predicatesList = new ArrayList<>();
 		if (resportSearchCriteria != null) {
 			for (int i = 0; i < fields.size(); i++) {
 				String field = fields.get(i).getName();
 				String fieldValue = (field == null) ? null
 						: String.valueOf(ReflectionUtils.getPropertyValue(resportSearchCriteria, field));
-				
+				field = fieldsMap.get(fields.get(i).getName());
 				if (field != null && !"null".equals(fieldValue) && fieldValue != null) {
 					
 					if (field.equalsIgnoreCase("assignedSetTopBoxes")) {
@@ -185,14 +185,21 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 					}
 
 					if (field.contains(".")) {
+					    Join<Object, Object> join = null;
+					    String fieldNames[] = field.split("\\.");
+					    for(int j=0;j<fieldNames.length-1; j++ ) {
+					        if(j == 0) {
+					            join = root.join(fieldNames[j]);
+					        } else {
+					            join  = join.join(fieldNames[j]);
+					        }
+					    }
 						predicatesList.add(isNumber || isEnum
 								? builder.equal(
-										root.join(field.substring(0, field.indexOf(".")))
-												.get(field.substring(field.indexOf(".") + 1, field.length())),
+								        join.get(fieldNames[fieldNames.length-1]),
 										isEnum ? CustomerSetTopBoxStatus.valueOf(fieldValue) : fieldValue)
 								: builder.like(
-										root.join(field.substring(0, field.indexOf(".")))
-												.get(field.substring(field.indexOf(".") + 1, field.length())),
+								        join.get(fieldNames[fieldNames.length-1]),
 										"%" + fieldValue.toLowerCase() + "%"));
 					} else {
 						predicatesList.add(isNumber || isEnum
@@ -204,9 +211,40 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 				}
 			}
 		}
+		addAdditionalCriteriaForOutstanding(predicatesList, resportSearchCriteria, builder, root);
 		Predicate[] predicates = predicatesList.stream().toArray(Predicate[]::new);
-		criteriaQuery.where(builder.and(predicates));
+		criteriaQuery.where(builder.and(predicates)).groupBy(root.get("id"));
 		return criteriaQuery;
+	}
+	
+	private void addAdditionalCriteriaForOutstanding(List<Predicate> predicates, ResportSearchCriteria resportSearchCriteria, CriteriaBuilder builder, Root<T> root) {
+	    if(resportSearchCriteria != null) {
+            if (resportSearchCriteria.getIsGreaterThenZero() != null) {
+                if (resportSearchCriteria.getIsGreaterThenZero()) {
+                    predicates.add(builder.ge(root.get("balance"), 0.0));
+                } else {
+                    predicates.add(builder.lt(root.get("balance"), 0.0));
+                }
+            }
+            if (resportSearchCriteria.getRangeStart() != null) {
+                predicates.add(builder.ge(root.get("balance"),resportSearchCriteria.getRangeStart()));
+            }
+            if (resportSearchCriteria.getRangeEnd() != null) {
+                predicates.add(builder.lt(root.get("balance"), resportSearchCriteria.getRangeEnd()));
+            }
+            if (resportSearchCriteria.getPaymentDayStart() != null) {
+                predicates.add(builder.ge(root.join("customerSetTopBoxes").get("billingDay"), resportSearchCriteria.getPaymentDayStart()));
+            }
+            if (resportSearchCriteria.getPaymentDayEnd() != null) {
+                predicates.add(builder.lt(root.join("customerSetTopBoxes").get("billingDay"), resportSearchCriteria.getPaymentDayEnd()));
+            }
+	    }
+    }
+	
+	@Override
+	public List<T> findAllWithSqlQuery(String sql, Class<T> c, PageRequest pageRequest) {
+	    Query nativeQuery = entityManager.createNativeQuery(sql, c);
+	    return nativeQuery.getResultList();
 	}
 
 }

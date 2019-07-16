@@ -40,13 +40,11 @@ import com.user.mngmnt.repository.SubAreaRepository;
 import javassist.NotFoundException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.hibernate.Hibernate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.jpa.provider.HibernateUtils;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -88,6 +86,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.user.mngmnt.util.DateCalculationUtil.stringToDate;
@@ -811,7 +810,71 @@ public class CustomerController {
 		return customerRepository.save(customer);
 	}
 
-	private Area parseArea(CSVRecord record){
+	class CSVRecordWrapper {
+
+		CSVRecord record;
+
+		CSVRecordWrapper (CSVRecord record) {
+				this.record = record;
+		}
+
+		public boolean isSet(String name) {
+			return record.isSet(name);
+		}
+
+		public String get(String name) {
+			try {
+				return record.get(name);
+			}
+			catch (Exception e) {
+				System.out.println("No column mapped for "+ name);
+			}
+			return null;
+		}
+
+		public Date getDate(String name) {
+			try {
+				return stringToDate(record.get(name));
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+
+		public Double getDouble(String name) {
+			try {
+				return Double.valueOf(record.get(name));
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+
+		public Boolean getBoolean(String name) {
+			try {
+				return Boolean.parseBoolean(record.get(name));
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+
+		public <T extends Enum<T>> T getEnum(String name, Class<T> enumClass) {
+			try {
+				return Enum.valueOf(enumClass, record.get(name));
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+			return null;
+		}
+
+	}
+
+	private Area parseArea(CSVRecordWrapper record){
 		return Area.builder()
 			.name(record.get("area name"))
 			.name2(record.get("area name 2"))
@@ -823,40 +886,40 @@ public class CustomerController {
 
 	public static final String CUSTOMER_SETOP_BOX_COLUMN_FORMAT = "{index} setop box {name}";
 
-	private String getCustomerSetopBoxColumnName(String column, int index) {
+	private String getIndexedColumn(String column, int index) {
 		return CUSTOMER_SETOP_BOX_COLUMN_FORMAT.replace("{index}", String.valueOf(index)).replace("{name}", column);
 	}
 
-	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecord record) {
+	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecordWrapper record) {
 		int index =1;
 		List<CustomerSetTopBox> customerSetTopBoxes = new ArrayList<>();
-		while (record.isSet(getCustomerSetopBoxColumnName("payment mode", index))){
+		while (record.isSet(getIndexedColumn("number", index))){
 			try {
 				customerSetTopBoxes.add(CustomerSetTopBox.builder()
-					.paymentMode(PaymentMode.valueOf(record.get(getCustomerSetopBoxColumnName("payment mode", index))))
-					.activateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("activation date", index))))
-					.activateReason(record.get(getCustomerSetopBoxColumnName("activation reason", index)))
-					.billingCycle(stringToDate(record.get(getCustomerSetopBoxColumnName("billing Cycle", index))))
-					.customerSetTopBoxStatus(CustomerSetTopBoxStatus.valueOf(record.get(getCustomerSetopBoxColumnName("status", index))))
-					.deactivateDate(stringToDate(record.get(getCustomerSetopBoxColumnName("deactivation date", index))))
-					.deactivateReason(record.get(getCustomerSetopBoxColumnName("deactivation reason", index)))
-					.discount(Double.valueOf(record.get(getCustomerSetopBoxColumnName("discount", index))))
-					.discountFrequency(DiscountFrequency.valueOf(record.get(getCustomerSetopBoxColumnName("discount frequency", index))))
-					.isActive(Boolean.valueOf(record.get(getCustomerSetopBoxColumnName("active", index))))
-					.openingBalance(Double.valueOf(record.get(getCustomerSetopBoxColumnName("opening balance", index))))
-					.entryDate(stringToDate(record.get(getCustomerSetopBoxColumnName("entry date", index))))
+					.paymentMode(record.getEnum(getIndexedColumn("payment mode", index), PaymentMode.class))
+					.activateDate(record.getDate(getIndexedColumn("activation date", index)))
+					.activateReason(record.get(getIndexedColumn("activation reason", index)))
+					.billingCycle(record.getDate(getIndexedColumn("billing Cycle", index)))
+					.customerSetTopBoxStatus(record.getEnum(getIndexedColumn("status", index), CustomerSetTopBoxStatus.class))
+					.deactivateDate(record.getDate(getIndexedColumn("deactivation date", index)))
+					.deactivateReason(record.get(getIndexedColumn("deactivation reason", index)))
+					.discount(record.getDouble(getIndexedColumn("discount", index)))
+					.discountFrequency(record.getEnum(getIndexedColumn("discount frequency", index), DiscountFrequency.class))
+					//.isActive(record.getBoolean(getIndexedColumn("active", index)))
+					.openingBalance(record.getDouble(getIndexedColumn("opening balance", index)))
+					.entryDate(record.getDate(getIndexedColumn("entry date", index)))
 					.pack(Pack.builder()
-						.name(record.get(getCustomerSetopBoxColumnName("pack name", index)))
+						.name(record.get(getIndexedColumn("pack name", index)))
 						.build())
-					.packPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price", index))))
-					.packPriceDifference(Double.valueOf(record.get(getCustomerSetopBoxColumnName("pack price difference", index))))
-					.paymentStartDate(stringToDate(record.get(getCustomerSetopBoxColumnName("payment start date", index))))
+					.packPrice(record.getDouble(getIndexedColumn("pack price", index)))
+					.packPriceDifference(record.getDouble(getIndexedColumn("pack price difference", index)))
+					.paymentStartDate(record.getDate(getIndexedColumn("payment start date", index)))
 					.setTopBox(SetTopBox.builder()
-						.setTopBoxNumber(record.get(getCustomerSetopBoxColumnName("number", index)))
-						.cardNumber(record.get(getCustomerSetopBoxColumnName("card number", index)))
-						.safeCode(record.get(getCustomerSetopBoxColumnName("safe code", index)))
+						.setTopBoxNumber(record.get(getIndexedColumn("number", index)))
+						.cardNumber(record.get(getIndexedColumn("card number", index)))
+						.safeCode(record.get(getIndexedColumn("safe code", index)))
 						.build())
-					.setTopBoxPrice(Double.valueOf(record.get(getCustomerSetopBoxColumnName("price", index))))
+					.setTopBoxPrice(record.getDouble(getIndexedColumn("price", index)))
 					.build());
 			}
 			catch (Exception e) {
@@ -883,18 +946,19 @@ public class CustomerController {
 				.withIgnoreHeaderCase()
 				.parse(in);
 		List<Customer> customers = new ArrayList<>();
-			records.forEach(customer -> {
+			records.forEach(record -> {
+				CSVRecordWrapper customer = new CSVRecordWrapper(record);
 				customers.add(Customer.builder()
 					.name(customer.get("name"))
 					.address(customer.get("address"))
-					.amountCredit(Double.valueOf(customer.get("amount credit")))
-					.amountDebit(Double.valueOf(customer.get("amount debit")))
-					.balance(Double.valueOf(customer.get("balance")))
+					//.amountCredit(customer.getDouble("amount credit"))
+					//.amountDebit(customer.getDouble("amount debit"))
+					//.balance(customer.getDouble("balance"))
 					.city(customer.get("city"))
 					.customerCode(customer.get("code"))
 					.customerType(CustomerType.builder()
 						.customerType(customer.get("type"))
-						.maxAmount(Double.valueOf(customer.get("max amount")))
+						.maxAmount(customer.getDouble("max amount"))
 						.build()
 					)
 					.landLine(customer.get("landline"))

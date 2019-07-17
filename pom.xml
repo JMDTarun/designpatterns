@@ -149,6 +149,30 @@
 			<version>1.7</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.github.loyada.dollarx</groupId>
+			<artifactId>dollarx-java</artifactId>
+			<version>0.38</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>3.9.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-remote-driver</artifactId>
+			<version>3.9.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-api</artifactId>
+			<version>3.9.1</version>
+		</dependency>
+
 
 	</dependencies>
 

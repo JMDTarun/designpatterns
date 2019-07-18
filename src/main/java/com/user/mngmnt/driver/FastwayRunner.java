@@ -1,10 +1,12 @@
 package com.user.mngmnt.driver;
 
+import com.github.loyada.jdollarx.BasicPath;
+import com.github.loyada.jdollarx.Operations;
+import com.github.loyada.jdollarx.Path;
 import com.user.mngmnt.model.RunnerExecution;
 import com.user.mngmnt.model.RunnerExecutionStatus;
 import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
-import org.openqa.selenium.WebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -14,14 +16,32 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.loyada.jdollarx.BasicPath.button;
+import static com.github.loyada.jdollarx.BasicPath.div;
+import static com.github.loyada.jdollarx.BasicPath.input;
+import static com.github.loyada.jdollarx.BasicPath.select;
+import static com.github.loyada.jdollarx.BasicPath.table;
+import static com.github.loyada.jdollarx.BasicPath.td;
+import static com.github.loyada.jdollarx.BasicPath.tr;
+import static com.github.loyada.jdollarx.ElementProperties.hasAggregatedTextContaining;
+import static com.github.loyada.jdollarx.ElementProperties.hasAncesctor;
+import static com.github.loyada.jdollarx.ElementProperties.hasAttribute;
+import static com.github.loyada.jdollarx.ElementProperties.hasId;
+import static com.github.loyada.jdollarx.ElementProperties.hasName;
+import static com.github.loyada.jdollarx.ElementProperties.hasParent;
+import static com.github.loyada.jdollarx.ElementProperties.hasText;
+import static com.github.loyada.jdollarx.ElementProperties.isNthSibling;
+import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.clickAt;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
+import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.sendKeys;
+import static java.util.concurrent.TimeUnit.*;
 
 @Component
 public class FastwayRunner{
 
   public static final String URL = "http://bssnew.myfastway.in:9003/oapservice";
-  public static final String USERNAME = "";
-  public static final String PASSWORD = "";
+  public static final String USERNAME = "KAMALJIT.SINGH";
+  public static final String PASSWORD = "Kamal@123";
 
 
   @Autowired
@@ -47,6 +67,8 @@ public class FastwayRunner{
       //Get action performed data till time that are not processed
 
       login();
+      searchDevice("56331345071201");
+      addPack("HD");
 
       //On execution complete
       currentExcution.setEndTime(Instant.now());
@@ -60,14 +82,45 @@ public class FastwayRunner{
     }
     finally {
       runnerExecutionRepository.save(currentExcution);
-      close();
+      //close();
     }
   }
 
   private boolean login() throws IOException, URISyntaxException {
     driver = driverConfig.driver();
-    driver.manage().timeouts().implicitlyWait(60, TimeUnit.SECONDS);
+    driver.manage().timeouts().implicitlyWait(60, SECONDS).pageLoadTimeout(60, SECONDS);
     driver.get(URL);
+    sendKeys(USERNAME).to(input.that(hasName("username")));
+    sendKeys(PASSWORD).to(input.that(hasName("password")));
+    clickAt(input.that(hasAttribute("type", "submit")));
+    return true;
+  }
+
+  private boolean searchDevice(String serialNumber) throws Operations.OperationFailedException, InterruptedException {
+    Thread.sleep(3000);
+    Path searchSection = div.withClass("summary_search");
+    sendKeys("serialno").to(select.withClass("inner_custom").inside(searchSection));
+    sendKeys(serialNumber).to(input.withClass("nav-search-input").inside(searchSection));
+    clickAt(button.withClass("btn btn-sm btn-danger btn-round").inside(searchSection));
+    return true;
+  }
+
+
+  private boolean addPack(String name) throws InterruptedException, Operations.OperationFailedException {
+    Thread.sleep(3000);
+    clickAt(button.that(hasText("Show Details")
+            .and(hasAncesctor(tr.that(isNthSibling(0)
+                    .and(hasAncesctor(table.that(hasId("activeservice")))))))));
+    Thread.sleep(3000);
+    clickAt(button.that(hasText("Add Plan").and(hasAncesctor(div.that(hasId("activeservice1"))))));
+    Thread.sleep(3000);
+    Path addPlanModal = div.that(hasId("add_change_plandialog"));
+    sendKeys("SUGGESTIVE PACKS").to(select.that(hasName("subscription-plan-list-name").and(hasAncesctor(addPlanModal))));
+    sendKeys("Recovery").to(select.that(hasName("subscription-plan-list-select-reason")).inside(addPlanModal));
+    Thread.sleep(3000);
+    clickAt(td.that(hasAggregatedTextContaining(name)).inside(table.that(hasId("subscription-plan-details")).inside(addPlanModal)));
+    Thread.sleep(1000);
+    clickAt(button.that(hasAggregatedTextContaining("Submit")).inside(addPlanModal));
     return true;
   }
 

@@ -39,7 +39,7 @@ public class DriverConfig {
     public WebDriver driver() {
 
       //System.setProperty("webdriver.chrome.driver", driverFile.getAbsolutePath());
-      System.setProperty("webdriver.chrome.driver", "/Users/lab/Desktop/user_management/src/main/resources/chromedriver");
+      System.setProperty("webdriver.chrome.driver", "/Users/rohitsrivastava/Codebase/user-management-master/src/main/resources/chromedriver");
 
       ChromeOptions chromeOptions = new ChromeOptions();
       //chromeOptions.addArguments("headless");

@@ -152,7 +152,7 @@
 		<dependency>
 			<groupId>com.github.loyada.dollarx</groupId>
 			<artifactId>dollarx-java</artifactId>
-			<version>0.38</version>
+			<version>0.63</version>
 		</dependency>
 
 		<dependency>

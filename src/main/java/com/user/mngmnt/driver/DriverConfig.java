@@ -14,6 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 //@Configuration
 @Component
 public class DriverConfig {
@@ -43,6 +46,8 @@ public class DriverConfig {
 
       ChromeOptions chromeOptions = new ChromeOptions();
       //chromeOptions.addArguments("headless");
-      return new ChromeDriver(chromeOptions);
+      WebDriver driver = new ChromeDriver(chromeOptions);
+      driver.manage().timeouts().implicitlyWait(30, SECONDS).pageLoadTimeout(30, SECONDS);
+      return driver;
     }
 }

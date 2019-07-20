@@ -9,6 +9,7 @@ import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
+import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedCondition;
@@ -24,12 +25,14 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.github.loyada.jdollarx.BasicPath.anchor;
 import static com.github.loyada.jdollarx.BasicPath.button;
 import static com.github.loyada.jdollarx.BasicPath.div;
+import static com.github.loyada.jdollarx.BasicPath.header4;
 import static com.github.loyada.jdollarx.BasicPath.input;
 import static com.github.loyada.jdollarx.BasicPath.select;
 import static com.github.loyada.jdollarx.BasicPath.table;
@@ -49,6 +52,7 @@ import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.clickAt
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.clickOn;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.find;
+import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.findAll;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.sendKeys;
 import static java.util.concurrent.TimeUnit.*;
 
@@ -82,7 +86,46 @@ public class FastwayRunner {
 
             login();
             searchDevice("56331345071201");
-            addOrChangePack("HD", "BRONZE");
+
+
+            //cancelExistingPlan("BRONZE"); // Cancel existing Pack
+
+//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+//                    .listName("SUGGESTIVE PACKS")
+//                    .plans(Arrays.asList("HD"))
+//                    .reason("Recovery")
+//                    .build())); // Add new Pack
+//
+//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+//                    .listName("BROADCASTER PLANS")
+//                    .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
+//                    .reason("Recovery")
+//                    .build())); // Add broadcaster Plan
+//
+//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+//                    .listName("A LA CARTE")
+//                    .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
+//                    .reason("Recovery")
+//                    .build())); // Add channel
+
+            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+                    .listName("SUGGESTIVE PACKS")
+                    .plans(Arrays.asList("HD"))
+                    .reason("Recovery")
+                    .build(),
+                    PlanDetails.builder()
+                            .listName("BROADCASTER PLANS")
+                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
+                            .reason("Recovery")
+                            .build(),
+                    PlanDetails.builder()
+                            .listName("A LA CARTE")
+                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
+                            .reason("Recovery")
+                            .build())); // Add pack, plans, channel in one go
+
+
+            //deactivate(); // to deactivate
 
             //On execution complete
             currentExcution.setEndTime(Instant.now());
@@ -91,16 +134,19 @@ public class FastwayRunner {
         } catch (Exception e) {
             e.printStackTrace();
             currentExcution.setStatus(RunnerExecutionStatus.ERROR);
-            currentExcution.setErrorMsg(e.getMessage());
+            currentExcution.setErrorMsg(truncateErrorMsg(e.getMessage()));
         } finally {
             runnerExecutionRepository.save(currentExcution);
             //close();
         }
     }
 
+    public static String truncateErrorMsg(String msg){
+        return msg.length() < 256 ?  msg : msg.substring(0, 255);
+    }
+
     private void login() throws IOException, URISyntaxException {
         driver = driverConfig.driver();
-        driver.manage().timeouts().implicitlyWait(30, SECONDS).pageLoadTimeout(30, SECONDS);
         driver.get(URL);
         sendKeys(USERNAME).to(input.that(hasName("username")));
         sendKeys(PASSWORD).to(input.that(hasName("password")));
@@ -132,19 +178,10 @@ public class FastwayRunner {
 
         return wait.until(jQueryLoad) && wait.until(jsLoad);
     }
-    
-    private void addOrChangePack(String newPack, String existingPackIfAny) throws Exception {
+
+
+    private void cancelExistingPlan(String existingPack) throws OperationFailedException {
         openShowDetails();
-        if(!StringUtils.isEmpty(existingPackIfAny)) {
-            cancelExistingPack(existingPackIfAny);
-            openShowDetails();
-
-        }
-        openAddPlan();
-        selectSubmitPack(newPack);
-    }
-
-    private void cancelExistingPack(String existingPack) throws OperationFailedException {
         perform(() -> clickOn(
                 anchor
                     .that(hasAggregatedTextContaining("Cancel"))
@@ -168,9 +205,23 @@ public class FastwayRunner {
     public static void sendKeysWhenClickable(Path path, String keys) throws OperationFailedException {
         WebElement found = find(path);
         Wait<WebDriver> wait = new FluentWait<>(driver).withTimeout(6, TimeUnit.SECONDS)
-                .pollingEvery(100, TimeUnit.MILLISECONDS)
-                .ignoring(java.util.NoSuchElementException.class);
-        wait.until(ExpectedConditions.elementToBeClickable(found));
+                .pollingEvery(100, TimeUnit.MILLISECONDS);
+        wait.until(new ExpectedCondition<WebElement>() {
+            public WebElement apply(WebDriver driver) {
+                WebElement visibleElement = (WebElement)ExpectedConditions.visibilityOf(found).apply(driver);
+
+                try {
+                    return visibleElement != null && visibleElement.isDisplayed() && visibleElement.isEnabled() ? visibleElement : null;
+                } catch (StaleElementReferenceException var4) {
+                    return null;
+                }
+            }
+
+            public String toString() {
+                return "element to be clickable: " + path;
+            }
+        });
+        perform(() -> clickOn(path));
         sendKeys(keys).to(path);
     }
 
@@ -188,17 +239,34 @@ public class FastwayRunner {
                         .and(hasAncesctor(table.that(hasId("activeservice"))))))))));
     }
 
-    private void openAddPlan(){
+
+    private void selectSubmitPlans(List<PlanDetails> planDetails) throws Exception {
+        openShowDetails();
         perform(() -> find(button.that(hasText("Add Plan").and(hasAncesctor(div.that(hasId("activeservice1")))))).click());
- }
+        Path addPlanModal = div.that(hasId("add_change_plandialog"));
+        for(PlanDetails detail : planDetails){
+            sendKeysWhenClickable(select.that(hasName("subscription-plan-list-name").and(hasAncesctor(addPlanModal))), detail.getListName());
+            sendKeysWhenClickable(select.that(hasName("subscription-plan-list-select-reason")).inside(addPlanModal), detail.getReason());
+            detail.getPlans().forEach((name) -> perform(() -> clickOn(tr.that(hasAggregatedTextContaining(name)).inside(table.that(hasId("subscription-plan-details"))))));
 
-
-    private void selectSubmitPack(String name) throws Exception {
-       Path addPlanModal = div.that(hasId("add_change_plandialog"));
-        sendKeysWhenClickable(select.that(hasName("subscription-plan-list-name").and(hasAncesctor(addPlanModal))), "SUGGESTIVE PACKS");
-        sendKeysWhenClickable(select.that(hasName("subscription-plan-list-select-reason")).inside(addPlanModal), "Recovery");
-        perform(() -> clickOn(tr.that(hasAggregatedTextContaining(name)).inside(table.that(hasId("subscription-plan-details")))));
+        };
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(addPlanModal)));
+        Thread.sleep(1000);
+        Path addPlanTitle =  header4.that(hasText("ADD PLAN"));
+        for(WebElement el : findAll(addPlanTitle)){
+            if(el.isDisplayed()){
+                throw new RuntimeException("Unable to add plan due to fastway error. Please check manualy in fastway site");
+            }
+        }
+
+    }
+
+    private void deactivate() throws Exception {
+        selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+                    .listName("SUGGESTIVE PACKS")
+                    .plans(Arrays.asList("BRONZE_NEW"))
+                    .reason("Non-Payment")
+                    .build()));
     }
 
     private void close() {

@@ -47,6 +47,8 @@
 					href="/customerPayment">Customer Payment</a></li>
 				<li class="nav-item active"><a class="nav-link"
 					href="/customerReports">Customer Reports</a></li>
+				<li class="nav-item active"><a class="nav-link"
+					href="/utility">Utility</a></li>	
 			</ul>
 			<div>
 				<a style="text-align: right; color: #fff;"

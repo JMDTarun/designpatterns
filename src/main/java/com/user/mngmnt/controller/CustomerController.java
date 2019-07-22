@@ -1,5 +1,51 @@
 package com.user.mngmnt.controller;
 
+import static java.util.Collections.singletonList;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URI;
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Month;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
+
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.util.UriTemplate;
+
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
@@ -37,6 +83,8 @@ import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
 import com.user.mngmnt.repository.SetTopBoxRepository;
 import com.user.mngmnt.repository.StreetRepository;
 import com.user.mngmnt.repository.SubAreaRepository;
+import com.user.mngmnt.utils.CalcUtils;
+
 import static com.user.mngmnt.utils.CalcUtils.round;
 
 import javassist.NotFoundException;
@@ -422,18 +470,21 @@ public class CustomerController {
 	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
 			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel, String reason) {
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-		if(creditDebit.equals(CreditDebit.CREDIT)) {
-			customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? price : customer.getAmountCreditTemp() + price);
-		} else {
-			customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? price: customer.getAmountDebitTemp() + price);
+		if(isPrepaid) {
+			if(creditDebit.equals(CreditDebit.CREDIT)) {
+				customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? price : customer.getAmountCreditTemp() + price);
+			} else {
+				customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? price: customer.getAmountDebitTemp() + price);
+			}
 		}
+		
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(customerSetTopBox.getEntryDate());
 		
 		return CustomerLedgre.builder()
 				.action(action)
-				.amountCredit(CreditDebit.CREDIT.equals(creditDebit) ? round(price, 2) : 0.0)
-				.amountDebit(CreditDebit.DEBIT.equals(creditDebit) ? round(price, 2) : 0.0)
+				.amountCredit(CreditDebit.CREDIT.equals(creditDebit) ? CalcUtils.round(price, 2) : 0.0)
+				.amountDebit(CreditDebit.DEBIT.equals(creditDebit) ? CalcUtils.round(price, 2) : 0.0)
 				.createdAt(Instant.now())
 				.month(Month.of(cal.get(Calendar.MONTH)+1).toString())
 				.creditDebit(creditDebit)
@@ -770,10 +821,10 @@ public class CustomerController {
 	    customer.setAmountDebit(customer.getAmountDebit() == null ? 0.0 : customer.getAmountDebit());
 	    customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? 0.0 : customer.getAmountCreditTemp());
 	    customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? 0.0 : customer.getAmountDebitTemp());
-        customer.setBalance((customer.getAmountCredit() + customer.getAmountCreditTemp())
-                - (customer.getAmountDebit() + customer.getAmountDebitTemp()));
-        customer.setAmountCredit(customer.getAmountCredit() + customer.getAmountCreditTemp());
-        customer.setAmountDebit(customer.getAmountDebit() + customer.getAmountDebitTemp());
+        customer.setBalance(CalcUtils.round((customer.getAmountCredit() + customer.getAmountCreditTemp())
+                - (customer.getAmountDebit() + customer.getAmountDebitTemp()), 2));
+        customer.setAmountCredit(CalcUtils.round(customer.getAmountCredit() + customer.getAmountCreditTemp(), 2));
+        customer.setAmountDebit(CalcUtils.round(customer.getAmountDebit() + customer.getAmountDebitTemp(), 2));
         
         if (customer.getCustomerSetTopBoxes() != null && customer.getCustomerSetTopBoxes().size() > 0) {
             List<CustomerSetTopBox> customerSetTopBoxes = customer.getCustomerSetTopBoxes().stream()
@@ -924,6 +975,7 @@ public class CustomerController {
 	}
 
 	@PostMapping("/uploadCustomerFile")
+	@Transactional
 	public String customerFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
 		throws IOException {
 
@@ -1023,9 +1075,19 @@ public class CustomerController {
 					if(setTopBox == null) {
 						setTopBox = setTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
 						if(setTopBox == null) {
+							SetTopBox box = customerSetTopBox.getSetTopBox();
+							box.setSetTopBoxStatus(SetTopBoxStatus.ALLOTED);
+							box.setReason("Alloted To Customer");
 							setTopBox = setTopBoxRepository.save(customerSetTopBox.getSetTopBox());
+							setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+						} else {
+							if(SetTopBoxStatus.FREE.equals(setTopBox.getSetTopBoxStatus())) {
+								setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+							} else {
+								throw new Exception("Set Top Box Already Alloted");
+							}
 						}
-						setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+						
 					}
 					customerSetTopBox.setSetTopBox(setTopBox);
 					Pack pack = packMap.get(customerSetTopBox.getPack().getName());

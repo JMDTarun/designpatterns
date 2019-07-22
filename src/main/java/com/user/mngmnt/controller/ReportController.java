@@ -92,8 +92,12 @@ public class ReportController {
 			.subArea(cr.getCustomer().getSubArea().getWardNumber())
 			.address(cr.getCustomer().getAddress())
 			.mobile(cr.getCustomer().getMobile())
-			.monthlyTotal(cr.getMonthlyTotal()).channelTotal(cr.getChannelTotal())
-			.totalSetTopBoxes(cr.getTotalSetTopBoxes()).totalChannels(cr.getTotalChannels()).build());
+			.monthlyTotal(cr.getMonthlyTotal())
+			.channelTotal(cr.getChannelTotal())
+			.totalSetTopBoxes(cr.getTotalSetTopBoxes())
+			.totalChannels(cr.getTotalChannels())
+			.outstanding(cr.getCustomer().getBalance())
+			.build());
 		}
 		
 		ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(cutomerReportColumns);
@@ -365,7 +369,6 @@ public class ReportController {
         parameters.add(resportSearchCriteria.getEndDate());
         return parameters;
     }
-    
     
     @SuppressWarnings("unchecked")
     @GetMapping("/downloadCustomerPartialPaymentReport")

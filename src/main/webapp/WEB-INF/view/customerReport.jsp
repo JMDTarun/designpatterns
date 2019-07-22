@@ -109,6 +109,27 @@
 			</span>
 		</div>
 		
+		<div>
+			<label>Outstanding</label> 
+			<select id="selectOutstanding">
+				<option value="">ALL</option>
+				<option value="true">Greater Then 0</option>
+				<option value="false">Less Then 0</option>
+			</select>
+		</div>
+		
+		<div>
+			<label>Outstanding Between</label> 
+			<input type="text" name="outstandingStart" id="outstandingStart" />
+			<input type="text" name="outstandingEnd" id="outstandingEnd" />
+		</div>
+		
+		<div>
+			<label>Payment Day</label> 
+			<input type="text" name="paymentDayStart" id="paymentDayStart" />
+			<input type="text" name="paymentDayEnd" id="paymentDayEnd" />
+		</div>
+		
 		<div class="buttonPadding">
 			<button type="button" class="btn btn-primary" id="submitFilters">Submit</button>
 		</div>

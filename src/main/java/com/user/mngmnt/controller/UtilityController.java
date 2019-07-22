@@ -11,6 +11,7 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -34,9 +35,11 @@ import com.user.mngmnt.enums.DiscountFrequency;
 import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerRepository;
+import com.user.mngmnt.utils.CalcUtils;
 
 @Controller
 public class UtilityController {
@@ -76,10 +79,13 @@ public class UtilityController {
 							if(getLocalDate(new Date()).compareTo(getLocalDate(cstb.getBillingCycle()).withMonth(month)) >= 0) {
 								Month previousMonth = Month.of(month - 1);
 								List<CustomerLedgre> customerLedgres = customerLedgreRepository.findByCustomerAndCustomerSetTopBoxAndMonth(c, cstb, previousMonth.toString());
-								customerLedgres.stream().forEach(cl -> {
+								for(CustomerLedgre cl: customerLedgres) {
+									c.setAmountCredit(CalcUtils.round(c.getAmountCredit() + cl.getAmountCredit(), 2));
+									c.setAmountDebit(CalcUtils.round(c.getAmountDebit() + cl.getAmountDebit(), 2));
+									c.setBalance(CalcUtils.round(c.getAmountCredit() - c.getAmountDebit(), 2));
 									cl.setOnHold(false);
 									customerLedgreRepository.save(cl);
-								});
+								}
 								if(customerLedgre == null) {
 									addEntriesToCustomerLedgre(mth, c, cstb, true);
 								} 
@@ -90,6 +96,7 @@ public class UtilityController {
 							}
 						}
 					});
+			customerRepository.save(c);
 		});
 		
 		final HttpHeaders headers = new HttpHeaders();
@@ -99,36 +106,46 @@ public class UtilityController {
 	}
 
 	private void addEntriesToCustomerLedgre(Month mth, Customer c, CustomerSetTopBox cstb, boolean isOnHold) {
-		customerLedgreRepository.save(CustomerLedgre.builder()
-		.action(Action.MONTHLY_PACK_PRICE)
-                .amountDebit(cstb.getPackPrice()
-                        - (cstb.getDiscount() > 0 && DiscountFrequency.MONTHLY.equals(cstb.getDiscountFrequency())
-                                ? cstb.getDiscount() : 0.0))
-		.createdAt(Instant.now())
-		.month(mth.toString())
-		.creditDebit(CreditDebit.DEBIT)
-		.customer(c)
-		.customerSetTopBox(cstb)
-		.customerNetworkChannel(null)
-		.reason(null)
-		.isOnHold(cstb.getPaymentMode().equals(PaymentMode.PREPAID) ? false: true)
-		.customerLedgreEntry(CustomerLedgreEntry.UTILITY)
-		.build());
-		cstb.getCustomerNetworkChannels().stream().filter(nc -> !nc.isDeleted()).forEach(nc -> {
-			customerLedgreRepository.save(CustomerLedgre.builder()
-					.action(Action.MONTHLY_CHANNEL_PRICE)
-					.amountDebit(nc.getNetworkChannel().getTotal())
+		Double amountCredit = 0.0;
+		Double amountDebit = 0.0;
+
+		customerLedgreRepository.save(CustomerLedgre.builder().action(Action.MONTHLY_PACK_PRICE)
+				.amountDebit(CalcUtils.round(cstb.getPackPrice(), 2)).createdAt(Instant.now()).month(mth.toString())
+				.creditDebit(CreditDebit.DEBIT).customer(c).customerSetTopBox(cstb).customerNetworkChannel(null)
+				.reason(null).isOnHold(isOnHold).customerLedgreEntry(CustomerLedgreEntry.UTILITY).build());
+		if (!isOnHold) {
+			amountDebit += cstb.getPackPrice();
+		}
+		if (cstb.getDiscount() != null && cstb.getDiscount() > 0 && DiscountFrequency.MONTHLY.equals(cstb.getDiscountFrequency())) {
+			customerLedgreRepository.save(CustomerLedgre
+					.builder()
+					.action(Action.MONTHLY_DISCOUNT)
+					.amountCredit(CalcUtils.round(cstb.getDiscount(), 2))
 					.createdAt(Instant.now())
 					.month(mth.toString())
-					.creditDebit(CreditDebit.DEBIT)
+					.creditDebit(CreditDebit.CREDIT)
 					.customer(c)
 					.customerSetTopBox(cstb)
-					.customerNetworkChannel(nc)
-					.reason(null)
-					.isOnHold(isOnHold)
-					.customerLedgreEntry(CustomerLedgreEntry.UTILITY)
-					.build());
-		});
+					.customerNetworkChannel(null)
+					.reason(null).isOnHold(isOnHold).customerLedgreEntry(CustomerLedgreEntry.UTILITY).build());
+			if (!isOnHold) {
+				amountCredit += cstb.getDiscount();
+			}
+		}
+		List<CustomerNetworkChannel> networkChannels = cstb.getCustomerNetworkChannels().stream()
+				.filter(nc -> !nc.isDeleted()).collect(Collectors.toList());
+		for (CustomerNetworkChannel nc : networkChannels) {
+			customerLedgreRepository.save(CustomerLedgre.builder().action(Action.MONTHLY_CHANNEL_PRICE)
+					.amountDebit(nc.getNetworkChannel().getTotal()).createdAt(Instant.now()).month(mth.toString())
+					.creditDebit(CreditDebit.DEBIT).customer(c).customerSetTopBox(cstb).customerNetworkChannel(nc)
+					.reason(null).isOnHold(isOnHold).customerLedgreEntry(CustomerLedgreEntry.UTILITY).build());
+			if (!isOnHold) {
+				amountDebit += cstb.getPackPrice();
+			}
+		}
+		c.setAmountDebit(CalcUtils.round(c.getAmountDebit() + amountDebit, 2));
+		c.setAmountCredit(CalcUtils.round(c.getAmountCredit() + amountCredit, 2));
+		c.setBalance(CalcUtils.round(c.getAmountCredit() - c.getAmountDebit(), 2));
 	}
 	
 	private LocalDate getLocalDate(Date date) {
@@ -143,6 +160,15 @@ public class UtilityController {
 			HttpServletRequest request) throws ParseException {
 		Month mth = Month.of(month);
 		List<CustomerLedgre> customerLedgresToDelete = customerLedgreRepository.findByCustomerLedgreEntryAndMonth(CustomerLedgreEntry.UTILITY, mth.toString());
+		
+		for(CustomerLedgre customerLedgre: customerLedgresToDelete) {
+			Customer customer = customerLedgre.getCustomer();
+			customer.setAmountCredit(customer.getAmountCredit() - customerLedgre.getAmountCredit());
+			customer.setAmountDebit(customer.getAmountDebit() - customer.getAmountDebit());
+			customer.setBalance(customer.getAmountCredit() - customer.getAmountDebit());
+			customerRepository.save(customer);
+		}
+		
 		customerLedgreRepository.deleteAll(customerLedgresToDelete);
 		final HttpHeaders headers = new HttpHeaders();
 		URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());

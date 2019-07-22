@@ -17,7 +17,6 @@ import javax.persistence.Query;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Join;
-import javax.persistence.criteria.Path;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
@@ -38,7 +37,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	private EntityManager entityManager;
 
 	private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-	
+
 	private Map<String, String> fieldsMap = new HashMap<>();
 
 	{
@@ -56,6 +55,8 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		fieldsMap.put("packPrice", "customerSetTopBoxes.packPrice");
 		fieldsMap.put("assignedSetTopBoxes", "customerSetTopBoxes");
 		fieldsMap.put("customerId", "customer.id");
+		fieldsMap.put("packId", "customerSetTopBoxes.pack.id");
+		fieldsMap.put("packPrice", "customerSetTopBoxes.packPrice");
 	}
 
 	@Override
@@ -65,7 +66,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		Root<T> root = criteriaQuery.from(c);
 		JqgridFilter jqgridFilter = JqgridObjectMapper.map(criteriaJson);
 		Predicate[] predicates = new Predicate[jqgridFilter.getRules().size()];
-		
+
 		for (int i = 0; i < jqgridFilter.getRules().size(); i++) {
 			String field = jqgridFilter.getRules().get(i).getField();
 			Class<?> propertyClass = ReflectionUtils.getPropertyClass(c,
@@ -105,9 +106,9 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	public List<T> findAllWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c, PageRequest pageRequest)
 			throws ParseException, NoSuchFieldException {
 		CriteriaQuery<T> criteriaQuery = getFilterCriteria(resportSearchCriteria, c);
-		if(pageRequest == null) {
+		if (pageRequest == null) {
 			return entityManager.createQuery(criteriaQuery).getResultList();
-		} 
+		}
 		return entityManager.createQuery(criteriaQuery)
 				.setFirstResult(pageRequest.getPageNumber() * pageRequest.getPageSize())
 				.setMaxResults(pageRequest.getPageSize()).getResultList();
@@ -120,7 +121,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		CriteriaQuery<T> criteriaQuery = getFilterCriteria(resportSearchCriteria, c);
 		return entityManager.createQuery(criteriaQuery).getResultList().size();
 	}
-	
+
 	private CriteriaQuery<T> getFilterCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c)
 			throws NoSuchFieldException, ParseException {
 		CriteriaBuilder builder = entityManager.getCriteriaBuilder();
@@ -133,82 +134,53 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 				String field = fields.get(i).getName();
 				String fieldValue = (field == null) ? null
 						: String.valueOf(ReflectionUtils.getPropertyValue(resportSearchCriteria, field));
-				field = fieldsMap.get(fields.get(i).getName());
 				if (field != null && !"null".equals(fieldValue) && fieldValue != null) {
-					
+
 					if (field.equalsIgnoreCase("assignedSetTopBoxes")) {
 						field = fieldsMap.get(field);
-						int setTopBoxesAssigned = Integer.parseInt(fieldValue);
-						if(setTopBoxesAssigned > 0) {
-							predicatesList.add(builder.ge(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
-						} else {
-							predicatesList.add(builder.le(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
+						if(field != null) {
+							int setTopBoxesAssigned = Integer.parseInt(fieldValue);
+							if (setTopBoxesAssigned > 0) {
+								predicatesList.add(builder.ge(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
+							} else {
+								predicatesList.add(builder.le(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
+							}
 						}
 						continue;
-					} else if (field.equalsIgnoreCase("dateBetween")) {
-						String[] fieldsAndDates = fieldValue.split("_");
-						field = fieldsMap.get(fieldsAndDates[0]);
-						Path<Date> path = null;
-						if(field.contains(".")) {
-							path = root.join(field.substring(0, field.indexOf(".")))
-							.get(field.substring(field.indexOf(".") + 1, field.length()));
-						} else {
-							path = root.get(field);
-						}
-						predicatesList.add(builder.greaterThanOrEqualTo(path, sdf.parse(fieldsAndDates[1])));
-						if(fieldsAndDates.length == 3) {
-							predicatesList.add(builder.lessThanOrEqualTo(path, sdf.parse(fieldsAndDates[2])));
-						}
-						continue;
-					} else if(field.equalsIgnoreCase("numberBewtween")) {
-						String[] fieldsAndNumber = fieldValue.split("_");
-						field = fieldsMap.get(fieldsAndNumber[0]);
-						Path<Number> path = null;
-						if(field.contains(".")) {
-							path = root.join(field.substring(0, field.indexOf(".")))
-							.get(field.substring(field.indexOf(".") + 1, field.length()));
-						} else {
-							path = root.get(field);
-						}
-						predicatesList.add(builder.ge(path, NumberFormat.getInstance().parse(fieldsAndNumber[1])));
-						if(fieldsAndNumber.length == 3) {
-							predicatesList.add(builder.le(path, NumberFormat.getInstance().parse(fieldsAndNumber[2])));
-						}
 					}
-					
 					field = fieldsMap.get(fields.get(i).getName());
-					Class<?> propertyClass = ReflectionUtils.getPropertyClass(c, field);
-					boolean isNumber = false;
-					boolean isEnum = false;
-					if (Number.class.isAssignableFrom(propertyClass)) {
-						isNumber = true;
-					} else if (propertyClass instanceof Class && ((Class<?>) propertyClass).isEnum()) {
-						isEnum = true;
-					}
-
-					if (field.contains(".")) {
-					    Join<Object, Object> join = null;
-					    String fieldNames[] = field.split("\\.");
-					    for(int j=0;j<fieldNames.length-1; j++ ) {
-					        if(j == 0) {
-					            join = root.join(fieldNames[j]);
-					        } else {
-					            join  = join.join(fieldNames[j]);
-					        }
-					    }
-						predicatesList.add(isNumber || isEnum
-								? builder.equal(
-								        join.get(fieldNames[fieldNames.length-1]),
-										isEnum ? CustomerSetTopBoxStatus.valueOf(fieldValue) : fieldValue)
-								: builder.like(
-								        join.get(fieldNames[fieldNames.length-1]),
-										"%" + fieldValue.toLowerCase() + "%"));
-					} else {
-						predicatesList.add(isNumber || isEnum
-								? builder.equal(root.get(field),
-										isEnum ? CustomerSetTopBoxStatus.valueOf(fieldValue)
-												: NumberFormat.getInstance().parse(fieldValue))
-								: builder.like(builder.lower(root.get(field)), "%" + fieldValue.toLowerCase() + "%"));
+					if (field != null) {
+						Class<?> propertyClass = ReflectionUtils.getPropertyClass(c, field);
+						boolean isNumber = false;
+						boolean isEnum = false;
+						if (Number.class.isAssignableFrom(propertyClass)) {
+							isNumber = true;
+						} else if (propertyClass instanceof Class && ((Class<?>) propertyClass).isEnum()) {
+							isEnum = true;
+						}
+						if (field.contains(".")) {
+							Join<Object, Object> join = null;
+							String fieldNames[] = field.split("\\.");
+							for (int j = 0; j < fieldNames.length - 1; j++) {
+								if (j == 0) {
+									join = root.join(fieldNames[j]);
+								} else {
+									join = join.join(fieldNames[j]);
+								}
+							}
+							predicatesList.add(isNumber || isEnum
+									? builder.equal(join.get(fieldNames[fieldNames.length - 1]),
+											isEnum ? CustomerSetTopBoxStatus.valueOf(fieldValue) : fieldValue)
+									: builder.like(join.get(fieldNames[fieldNames.length - 1]),
+											"%" + fieldValue.toLowerCase() + "%"));
+						} else {
+							predicatesList.add(isNumber || isEnum
+									? builder.equal(root.get(field),
+											isEnum ? CustomerSetTopBoxStatus.valueOf(fieldValue)
+													: NumberFormat.getInstance().parse(fieldValue))
+									: builder.like(builder.lower(root.get(field)),
+											"%" + fieldValue.toLowerCase() + "%"));
+						}
 					}
 				}
 			}

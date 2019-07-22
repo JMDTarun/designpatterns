@@ -57,9 +57,11 @@ public class CustomerSetTopBox extends Auditable{
 	
 	private Integer billingDay;
 
-	private Double openingBalance;
+	@Default
+	private Double openingBalance = 0.0;
 
-	private Double discount;
+	@Default
+	private Double discount = 0.0;
 
 	private DiscountFrequency discountFrequency;
 

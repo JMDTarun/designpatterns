@@ -126,38 +126,18 @@ $(function() {
 				index: 'customer.mobile'
 			},
 			{
-				name:'status',
-				label: 'Is Active',
-				index: 'status'
-			},
-			{
-				name:'monthlyTotal',
-				label: 'M Total',
-				index: 'monthlyTotal'
-			},
-			{
-				name:'totalSetTopBoxes',
-				label: 'Set Top Box Count',
-				index: 'totalSetTopBoxes'
-			},
-			{
-				name:'channelTotal',
-				label: 'Addon Total',
-				index: 'channelTotal'
-			},
-			{
-				name:'totalChannels',
-				label: 'Addon Count',
-				index: 'totalChannels'
+				name:'customer.mobile',
+				label: 'Mobile',
+				index: 'customer.mobile'
 			},
 			{
 				name:'customer.balance',
-				label: 'Outstanding',
+				label: 'Customer Outstanding',
 				index: 'customer.balance'
-			},
+			}
 		],
-		caption: "Customer Reports",
-		pager : '#pagerCustomerReport',
+		caption: "Customer Outstanding",
+		pager : '#pagerCustomerOutstanding',
 		height: 'auto',
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
@@ -166,10 +146,24 @@ $(function() {
 
 	$("#customerReport")
 			.jqGrid(options)
-			.navGrid('#pagerCustomerReport',
+			.navGrid('#pagerCustomerOutstanding',
 					{edit:false,add:false,del:false, search:false}
 	);
 
+	$("#customerOutstanding").navButtonAdd("#pagerCustomerOutstanding",
+            {
+                buttonicon: "ui-icon-document",
+                title: "Download",
+                id: "downloadReport",
+                caption: "Download",
+                position: "last",
+                onClickButton: function() {
+                	$.ajax({url: "downloadCustomerReport", success: function(result){
+                		
+                	  }});
+                }
+            });
+	
 	$.ajax({url: "getAllAreas", success: function(result){
 		$("#selectArea").addClass("ui-widget ui-jqdialog");
 		$("#selectArea").select2();
@@ -214,9 +208,6 @@ $(function() {
 	$("#selectCustomerStatus").addClass("ui-widget ui-jqdialog");
 	$("#selectCustomerStatus").select2();
 	
-	$("#selectAssignedSetTopBoxes").addClass("ui-widget ui-jqdialog");
-	$("#selectAssignedSetTopBoxes").select2();
-	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerReport?'+getUrlParams();
 		$(this).attr("href", urlStr);
@@ -252,45 +243,6 @@ $(function() {
         }
         if($("#selectRent").val() !== "") {
         	urlStr += encodeURIComponent("packPrice") + '=' + encodeURIComponent($("#selectRent").val()) + "&";
-        }
-        if($("#selectOutstanding").val() !== "") {
-        	urlStr += encodeURIComponent("isGreaterThenZero") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
-        }
-        if($("#outstandingStart").val() !== "") {
-        	urlStr += encodeURIComponent("rangeStart") + '=' + encodeURIComponent($("#outstandingStart").val()) + "&";
-        }
-        if($("#outstandingEnd").val() !== "") {
-        	urlStr += encodeURIComponent("rangeEnd") + '=' + encodeURIComponent($("#outstandingEnd").val()) + "&";
-        }
-        if($("#paymentDayStart").val() !== "") {
-        	urlStr += encodeURIComponent("paymentDayStart") + '=' + encodeURIComponent($("#paymentDayStart").val()) + "&";
-        }
-        if($("#paymentDayEnd").val() !== "") {
-        	urlStr += encodeURIComponent("paymentDayEnd") + '=' + encodeURIComponent($("#paymentDayEnd").val()) + "&";
-        }
-        if($("#selectAssignedSetTopBoxes").val() !== "") {
-        	urlStr += encodeURIComponent("assignedSetTopBoxes") + '=' + encodeURIComponent($("#selectAssignedSetTopBoxes").val()) + "&";
-		}
-        if($("#selectPack").val() !== "") {
-        	urlStr += encodeURIComponent("packId") + '=' + encodeURIComponent($("#selectPack").val()) + "&";
-        }
-        if($("#selectRent").val() !== "") {
-        	urlStr += encodeURIComponent("packPrice") + '=' + encodeURIComponent($("#selectRent").val()) + "&";
-        }
-        if($("#selectOutstanding").val() !== "") {
-        	urlStr += encodeURIComponent("isGreaterThenZero") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
-        }
-        if($("#outstandingStart").val() !== "") {
-        	urlStr += encodeURIComponent("rangeStart") + '=' + encodeURIComponent($("#outstandingStart").val()) + "&";
-        }
-        if($("#outstandingEnd").val() !== "") {
-        	urlStr += encodeURIComponent("rangeEnd") + '=' + encodeURIComponent($("#outstandingEnd").val()) + "&";
-        }
-        if($("#paymentDayStart").val() !== "") {
-        	urlStr += encodeURIComponent("paymentDayStart") + '=' + encodeURIComponent($("#paymentDayStart").val()) + "&";
-        }
-        if($("#paymentDayEnd").val() !== "") {
-        	urlStr += encodeURIComponent("paymentDayEnd") + '=' + encodeURIComponent($("#paymentDayEnd").val()) + "&";
         }
         return urlStr;
 	}

@@ -80,10 +80,10 @@ public class FastwayRunner {
             //Get action performed data till time that are not processed
 
             login();
-            searchDevice("FCBFDMQBK");
+            searchDevice("56331345071201");
 
 
-            //cancelExistingPlan("BRONZE"); // Cancel existing Pack
+            cancelExistingPlan("BRONZE"); // Cancel existing Pack
 
 //            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
 //                    .listName("SUGGESTIVE PACKS")
@@ -103,26 +103,26 @@ public class FastwayRunner {
 //                    .reason("Recovery")
 //                    .build())); // Add channel
 
-//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
-//                    .listName("SUGGESTIVE PACKS")
-//                    .plans(Arrays.asList("HD"))
-//                    .reason("Recovery")
-//                    .build(),
-//                    PlanDetails.builder()
-//                            .listName("BROADCASTER PLANS")
-//                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
-//                            .reason("Recovery")
-//                            .build(),
-//                    PlanDetails.builder()
-//                            .listName("A LA CARTE")
-//                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
-//                            .reason("Recovery")
-//                            .build())); // Add pack, plans, channel in one go
+            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+                    .listName("SUGGESTIVE PACKS")
+                    .plans(Arrays.asList("HD"))
+                    .reason("Recovery")
+                    .build(),
+                    PlanDetails.builder()
+                            .listName("BROADCASTER PLANS")
+                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
+                            .reason("Recovery")
+                            .build(),
+                    PlanDetails.builder()
+                            .listName("A LA CARTE")
+                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
+                            .reason("Recovery")
+                            .build())); // Add pack, plans, channel in one go
 
             //activate();
 
 
-            deactivate(); // to deactivate
+            //deactivate(); // to deactivate
 
             //On execution complete
             currentExcution.setEndTime(Instant.now());
@@ -223,6 +223,7 @@ public class FastwayRunner {
     }
 
     private void searchDevice(String serialNumber) throws OperationFailedException {
+        waitForJSandJQueryToLoad();
         Path searchSection = div.withClass("summary_search");
         selectDropdown(select.withClass("inner_custom").inside(searchSection), "Serial Number");
         sendKeys(serialNumber).to(input.withClass("nav-search-input").inside(searchSection));

@@ -35,6 +35,7 @@
 			</div>
 		</div>
 		<div class="row">
+			<div class="col">Upload Customer Details</div>
         		<div class="col">
         			<form method="POST" action="/uploadCustomerFile"
         				enctype="multipart/form-data">
@@ -43,6 +44,16 @@
         			</form>
         		</div>
         	</div>
+		<div class="row">
+			<div class="col">Upload Customer Network Channel</div>
+			<div class="col">
+				<form method="POST" action="/uploadCustomerChannelFile"
+					  enctype="multipart/form-data">
+					<input type="file" name="file" /><br /> <br /> <input
+						type="submit" value="Submit" />
+				</form>
+			</div>
+		</div>
 	</div>
 	<div id="myDialog">
 		<input type="hidden" id="customerId"> <input type="hidden"

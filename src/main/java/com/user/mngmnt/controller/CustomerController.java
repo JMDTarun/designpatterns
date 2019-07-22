@@ -133,6 +133,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -1115,6 +1116,88 @@ public class CustomerController {
 			redirectAttributes.addAttribute("totalElements", customers.size());
 			redirectAttributes.addAttribute("savedElements", customers.size() - errorCutomers.size());
 			String errorSetTopBoxesString = errorCutomers.stream().map(Customer::getName).collect(Collectors.joining( "," ));
+			redirectAttributes.addAttribute("errorSetTopBoxes", errorSetTopBoxesString);
+		} else {
+			redirectAttributes.addAttribute("message",
+				"You successfully uploaded '" + file.getOriginalFilename() + "'");
+		}
+		return "redirect:/customer";
+	}
+
+	@PostMapping("/uploadCustomerChannelFile")
+	public String customerChannelFileUpload(@RequestParam("file") MultipartFile file, RedirectAttributes redirectAttributes)
+		throws IOException {
+
+		if (file.isEmpty()) {
+			redirectAttributes.addAttribute("message", "Please select a file to upload");
+			return "redirect:customer";
+		}
+
+		Reader in = new InputStreamReader(file.getInputStream());
+		Iterable<CSVRecord> records = CSVFormat.RFC4180
+			.withFirstRecordAsHeader()
+			.withIgnoreSurroundingSpaces()
+			.withIgnoreHeaderCase()
+			.parse(in);
+		Map<String, CustomerSetTopBox> customerSetTopBoxMap = new HashMap<>();
+		records.forEach(record -> {
+			CSVRecordWrapper networkChannel = new CSVRecordWrapper(record);
+			String serialNumber = networkChannel.get("Set top box number");
+			CustomerSetTopBox customerSetTopBox = customerSetTopBoxMap.get(serialNumber);
+			if (customerSetTopBox == null){
+				customerSetTopBox = CustomerSetTopBox.builder()
+					.setTopBox(SetTopBox.builder()
+						.setTopBoxNumber(serialNumber)
+						.build())
+					.customerNetworkChannels(new HashSet<>())
+					.build();
+				customerSetTopBoxMap.put(serialNumber, customerSetTopBox);
+			}
+			customerSetTopBox.getCustomerNetworkChannels().add(
+				CustomerNetworkChannel.builder()
+					.paymentStartDate(networkChannel.getDate("payment start date"))
+					.networkChannel(NetworkChannel.builder()
+						.name(networkChannel.get("network channel"))
+						.build())
+					.build()
+			);
+		});
+
+		Map<String, NetworkChannel> networkChannelMap = new HashMap<>();
+		List<CustomerSetTopBox> errorCustomerSetupBoxes = new ArrayList<>();
+		List<CustomerSetTopBox> updatedCustomerSetupBoxes = new ArrayList<>();
+		for(CustomerSetTopBox customerSetTopBox: customerSetTopBoxMap.values()) {
+			try {
+				List<CustomerSetTopBox> existingCustomerSetupBox = customerSetTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+				if (existingCustomerSetupBox == null) {
+					throw new RuntimeException("No existing CustomerSetTopBox for the given serial number " + customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+				}
+				for(CustomerNetworkChannel customerNetworkChannel: customerSetTopBox.getCustomerNetworkChannels()){
+					NetworkChannel existingNetworkChannel = networkChannelMap.get(customerNetworkChannel.getNetworkChannel().getName());
+					if(existingNetworkChannel == null) {
+						existingNetworkChannel = networkChannelRepository.findByName(customerNetworkChannel.getNetworkChannel().getName());
+						if(existingNetworkChannel == null) {
+							throw new RuntimeException("No Network Channel for the given name " + customerNetworkChannel.getNetworkChannel().getName());
+						}
+						networkChannelMap.put(customerNetworkChannel.getNetworkChannel().getName(), existingNetworkChannel);
+					}
+					customerNetworkChannel.setNetworkChannel(existingNetworkChannel);
+				}
+				for(CustomerSetTopBox ecistingCustomerSetTopBox: existingCustomerSetupBox) {
+					ecistingCustomerSetTopBox.setCustomerNetworkChannels(customerSetTopBox.getCustomerNetworkChannels());
+					updatedCustomerSetupBoxes.add(ecistingCustomerSetTopBox);
+				}
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+				errorCustomerSetupBoxes.add(customerSetTopBox);
+			}
+		}
+		customerSetTopBoxRepository.saveAll(updatedCustomerSetupBoxes);
+		if(!CollectionUtils.isEmpty(errorCustomerSetupBoxes)) {
+			redirectAttributes.addAttribute("totalElements", customerSetTopBoxMap.values().size());
+			redirectAttributes.addAttribute("savedElements", customerSetTopBoxMap.values().size() - errorCustomerSetupBoxes.size());
+			String errorSetTopBoxesString = errorCustomerSetupBoxes.stream().map(CustomerSetTopBox::getSetTopBox).map(SetTopBox::getSetTopBoxNumber).collect(Collectors.joining( "," ));
 			redirectAttributes.addAttribute("errorSetTopBoxes", errorSetTopBoxesString);
 		} else {
 			redirectAttributes.addAttribute("message",

@@ -9,9 +9,12 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
@@ -38,6 +41,7 @@ public class ExcelUtils {
 			for (T t : data) {
 				row = sheet.createRow(rowCount++);
 				columnCount = 0;
+				
 				for (String fieldName : fieldNames) {
 					Cell cell = row.createCell(columnCount);
 					Method method = null;
@@ -56,6 +60,22 @@ public class ExcelUtils {
 							cell.setCellValue((Integer) value);
 						} else if (value instanceof Double) {
 							cell.setCellValue((Double) value);
+						} else if (value instanceof Date) {
+						    CellStyle cellStyle = workbook.createCellStyle();
+						    CreationHelper createHelper = workbook.getCreationHelper();
+						    cellStyle.setDataFormat(
+						        createHelper.createDataFormat().getFormat("d/m/yy"));
+						    cell.setCellValue((Date) value);
+						    cell.setCellStyle(cellStyle);
+                        } else if(value instanceof List) {
+						    @SuppressWarnings("unchecked")
+                            List<String> values = (List<String>) value;
+                            for (int i = 0; i < values.size(); i++) {
+                                cell.setCellValue((String) values.get(i));
+                                if(i < values.size() - 1) {
+                                    cell = row.createCell(++columnCount);
+                                }
+                            }
 						}
 					}
 					columnCount++;

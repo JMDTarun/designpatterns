@@ -12,8 +12,12 @@ import lombok.NoArgsConstructor;
 public class CustomerReport {
 	private Customer customer;
 	private String status;
+	private String networkChannels;
 	private Double monthlyTotal;
 	private Double channelTotal;
 	private Integer totalSetTopBoxes;
 	private Integer totalChannels;
+	private Double balance;
+    private String creditOrDebit;
+	private CustomerSetTopBox customerSetTopBox;
 }

@@ -1,6 +1,7 @@
 package com.user.mngmnt.repository.impl;
 
 import java.lang.reflect.Field;
+import java.math.BigInteger;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -54,6 +55,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		fieldsMap.put("packId", "customerSetTopBoxes.pack.id");
 		fieldsMap.put("packPrice", "customerSetTopBoxes.packPrice");
 		fieldsMap.put("assignedSetTopBoxes", "customerSetTopBoxes");
+		fieldsMap.put("customerId", "customer.id");
 	}
 
 	@Override
@@ -211,13 +213,13 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 				}
 			}
 		}
-		addAdditionalCriteriaForOutstanding(predicatesList, resportSearchCriteria, builder, root);
+		addAdditionalCriteria(predicatesList, resportSearchCriteria, builder, root);
 		Predicate[] predicates = predicatesList.stream().toArray(Predicate[]::new);
 		criteriaQuery.where(builder.and(predicates)).groupBy(root.get("id"));
 		return criteriaQuery;
 	}
 	
-	private void addAdditionalCriteriaForOutstanding(List<Predicate> predicates, ResportSearchCriteria resportSearchCriteria, CriteriaBuilder builder, Root<T> root) {
+	private void addAdditionalCriteria(List<Predicate> predicates, ResportSearchCriteria resportSearchCriteria, CriteriaBuilder builder, Root<T> root) {
 	    if(resportSearchCriteria != null) {
             if (resportSearchCriteria.getIsGreaterThenZero() != null) {
                 if (resportSearchCriteria.getIsGreaterThenZero()) {
@@ -241,10 +243,31 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	    }
     }
 	
-	@Override
-	public List<T> findAllWithSqlQuery(String sql, Class<T> c, PageRequest pageRequest) {
-	    Query nativeQuery = entityManager.createNativeQuery(sql, c);
-	    return nativeQuery.getResultList();
-	}
+	@SuppressWarnings("unchecked")
+    @Override
+    public List<T> findAllWithSqlQuery(String sql, Class<T> c, List<Object> parameters, PageRequest pageRequest) {
+        Query nativeQuery = entityManager.createNativeQuery(sql, c);
+        if (parameters != null) {
+            for (int i = 0; i < parameters.size(); i++) {
+                nativeQuery.setParameter(i + 1, parameters.get(i));
+            }
+        }
 
+        if (pageRequest == null) {
+            return nativeQuery.getResultList();
+        }
+        return nativeQuery.setFirstResult(pageRequest.getPageNumber() * pageRequest.getPageSize())
+                .setMaxResults(pageRequest.getPageSize()).getResultList();
+    }
+
+    @Override
+    public Integer findCountWithSqlQuery(String sql, List<Object> parameters) {
+        Query nativeQuery = entityManager.createNativeQuery(sql);
+        if (parameters != null) {
+            for (int i = 0; i < parameters.size(); i++) {
+                nativeQuery.setParameter(i + 1, parameters.get(i));
+            }
+        }
+        return ((BigInteger) nativeQuery.getSingleResult()).intValue();
+    }
 }

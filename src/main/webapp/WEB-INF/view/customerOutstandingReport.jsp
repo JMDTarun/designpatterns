@@ -120,10 +120,10 @@
 
 	<div class="row mt-3">
 		<div class="col">
-			<table id="customerReport"></table>
-			<div id="pagerCustomerReport"></div>
+			<table id="customerOutstandingReport"></table>
+			<div id="pagerCustomerOutstandingReport"></div>
 		</div>
 	</div>
-	<script src="/resources/js/customerReport.js"></script>
+	<script src="/resources/js/customerOutstandingReport.js"></script>
 </body>
 </html>

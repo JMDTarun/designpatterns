@@ -267,6 +267,7 @@ $(function() {
         }
         if($("#paymentDayEnd").val() !== "") {
         	urlStr += encodeURIComponent("paymentDayEnd") + '=' + encodeURIComponent($("#paymentDayEnd").val()) + "&";
+        }
         if($("#selectAssignedSetTopBoxes").val() !== "") {
         	urlStr += encodeURIComponent("assignedSetTopBoxes") + '=' + encodeURIComponent($("#selectAssignedSetTopBoxes").val()) + "&";
         }

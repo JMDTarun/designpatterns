@@ -1,86 +1,37 @@
 $(function() {
 
 	$.extend($.jgrid.defaults, {
-				datatype: 'json',
-				jsonReader : {
-					repeatitems:false,
-					total: function(result) {
-						//Total number of pages
-						return Math.ceil(result.total / result.max);
-					},
-					records: function(result) {
-						//Total number of records
-						return result.total;
-					}
-				},
-				prmNames: {
-					page: "page",
-					rows: "size",
-					sort: "sort"
-				},
-				sortname: 'customer.id',
-				sortorder: 'asc',
-				height: 'auto',
-				forceFit: true,
-		        autowidth: true,
-				viewrecords: true,
-				rowList: [10, 20, 50, 100],
-				altRows: true,
-				loadError: function(xhr, status, error) {
-					alert(error);
-				}
-			});
-
-	$.extend($.jgrid.edit, {
-				closeAfterEdit: true,
-				closeAfterAdd: false,
-				ajaxEditOptions: { contentType: "application/x-www-form-urlencoded" },
-				mtype: 'POST',
-				serializeEditData: function(data) {
-					var url = Object.keys(data).map(function(k) {
-					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
-					}).join('&');
-					return url;
-					//delete data.oper;
-					//return JSON.stringify(data);
-				},
-				errorTextFormat: function (response) {
-					if(response.responseText) {
-						var obj = JSON.parse(response.responseText);
-						if(obj.errorCode && obj.errorCode != null) {
-							return obj.errorCode+" "+ obj.errorCause;
-						}
-					}
-				    return "Data Saved!";
-				}
-			});
-	$.extend($.jgrid.del, {
-				mtype: 'DELETE',
-				serializeDelData: function() {
-					return "";
-				}
-			});
-
-	var editOptions = {
-			width: 700,
-		onclickSubmit: function(params, postdata) {
-			params.url = 'customerType/' + postdata.id;
-		}
-	};
-	var addOptions = {
-			width: 700,
-		onclickSubmit: function(params, postdata) {
-			params.url = 'customerType';
+		datatype: 'json',
+		jsonReader : {
+			repeatitems:false,
+			total: function(result) {
+				//Total number of pages
+				return Math.ceil(result.total / result.max);
+			},
+			records: function(result) {
+				//Total number of records
+				return result.total;
+			}
 		},
-		mtype: "POST"
-	};
-	var delOptions = {
-		onclickSubmit: function(params, postdata) {
-			params.url = 'customerType/' + postdata;
+		prmNames: {
+			page: "page",
+			rows: "size",
+			sort: "sort"
+		},
+		sortname: 'customer.customerCode',
+		sortorder: 'asc',
+		height: 'auto',
+		forceFit: true,
+        autowidth: true,
+		viewrecords: true,
+		rowList: [10, 20, 50, 100],
+		altRows: true,
+		loadError: function(xhr, status, error) {
+			alert(error);
 		}
-	};
-
-	var URL = '/customerReport';
+	});
+	
+	var URL = '/customerOutstandingReport';
 	var options = {
 		url: URL,
 		editurl: URL,
@@ -131,26 +82,38 @@ $(function() {
 				index: 'customer.mobile'
 			},
 			{
-				name:'customer.balance',
-				label: 'Customer Outstanding',
-				index: 'customer.balance'
+				name:'customerSetTopBox.entryDate',
+				label: 'Issue Date',
+				index: 'customerSetTopBox.entryDate',
+				formatter:'date',
+				formatoptions: { newformat: 'Y/m/d'}
+			},
+			{
+				name:'customerSetTopBox.setTopBox.setTopBoxNumber',
+				label: 'Box Number',
+				index: 'customerSetTopBox.setTopBox.setTopBoxNumber'
+			},
+			{
+				name:'networkChannels',
+				label: 'Channels',
+				index: 'networkChannels'
 			}
 		],
 		caption: "Customer Outstanding",
-		pager : '#pagerCustomerOutstanding',
+		pager : '#pagerCustomerOutstandingReport',
 		height: 'auto',
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
 		}
 	};
 
-	$("#customerReport")
+	$("#customerOutstandingReport")
 			.jqGrid(options)
-			.navGrid('#pagerCustomerOutstanding',
+			.navGrid('#pagerCustomerOutstandingReport',
 					{edit:false,add:false,del:false, search:false}
 	);
 
-	$("#customerOutstanding").navButtonAdd("#pagerCustomerOutstanding",
+	$("#customerOutstandingReport").navButtonAdd("#pagerCustomerOutstandingReport",
             {
                 buttonicon: "ui-icon-document",
                 title: "Download",
@@ -158,7 +121,7 @@ $(function() {
                 caption: "Download",
                 position: "last",
                 onClickButton: function() {
-                	$.ajax({url: "downloadCustomerReport", success: function(result){
+                	$.ajax({url: "downloadCustomerOutstandingReport", success: function(result){
                 		
                 	  }});
                 }
@@ -209,13 +172,13 @@ $(function() {
 	$("#selectCustomerStatus").select2();
 	
 	$("#downloadAnchor").click(function(){
-		var urlStr = 'downloadCustomerReport?'+getUrlParams();
+		var urlStr = 'downloadCustomerOutstandingReport?'+getUrlParams();
 		$(this).attr("href", urlStr);
     });
 		
-	$("#submitFilters").click(function(){
-        var urlStr = 'customerReport?'+getUrlParams();
-    	$("#customerReport").setGridParam({
+	$("#submitFilters").click(function() {
+        var urlStr = 'customerOutstandingReport?'+getUrlParams();
+    	$("#customerOutstandingReport").setGridParam({
 	      url:urlStr,
 	      page:1
     	}).trigger("reloadGrid");

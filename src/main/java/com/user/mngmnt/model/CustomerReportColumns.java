@@ -1,5 +1,8 @@
 package com.user.mngmnt.model;
 
+import java.util.Date;
+import java.util.List;
+
 import com.user.mngmnt.model.CustomerReport.CustomerReportBuilder;
 
 import lombok.AllArgsConstructor;
@@ -11,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CutomerReportColumns {
+public class CustomerReportColumns {
 	private String customerName;
 	private String customerCode;
 	private String area;
@@ -24,4 +27,8 @@ public class CutomerReportColumns {
 	private Double channelTotal;
 	private Integer totalSetTopBoxes;
 	private Integer totalChannels;
+	private Double outstanding;
+	private Date entryDate;
+	private String setTopBoxNumber;
+	private List<String> networkChannels;
 }

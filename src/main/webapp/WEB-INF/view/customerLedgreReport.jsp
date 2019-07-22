@@ -33,80 +33,16 @@
 
 	<div class="reportFilters">
 		<div>
-			<label>Area</label> 
-			<select id="selectArea">
-					<option value="">Select Area</option>
+			<label>Customer Code</label> 
+			<select id="selectCustomerCode">
+					<option value="">Select Customer code</option>
 			</select>
 		</div>
 		<div>
-			<label>Sub Area</label> 
-			<select id="selectSubArea">
-				<option value="">Select Sub Area</option>
+			<label>Customer Name</label> 
+			<select id="selectCustomerName">
+					<option value="">Select Customer Name</option>
 			</select>
-		</div>
-		<div>
-			<label>Street</label> 
-			<select id="selectStreet">
-				<option value="">Select Street</option>
-			</select>
-		</div>
-		<div>
-			<label>Customer Status</label> 
-			<select id="selectCustomerStatus">
-				<option value="">ALL</option>
-				<option value="ACTIVE">ACTIVE</option>
-				<option value="DEACTIVE">DEACTIVE</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Pack</label> 
-			<select id="selectPack">
-				<option value="">Select Pack</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Rent</label> 
-			<select id="selectRent">
-				<option value="">Select Rent</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Total Charge</label> 
-			<input type="text" id="totalCharge">
-		</div>
-		
-		<div>
-			<label>Outstanding</label> 
-			<select id="selectOutstanding">
-				<option value="">ALL</option>
-				<option value="true">Greater Then 0</option>
-				<option value="false">Less Then 0</option>
-			</select>
-		</div>
-		
-		<div>
-			<label>Outstanding Between</label> 
-			<input type="text" name="outstandingStart" id="outstandingStart" />
-			<input type="text" name="outstandingEnd" id="outstandingEnd" />
-		</div>
-		
-		<div>
-			<label>Payment Day</label> 
-			<input type="text" name="paymentDayStart" id="paymentDayStart" />
-			<input type="text" name="paymentDayEnd" id="paymentDayEnd" />
-		</div>	
-		<div>
-			<label>Assigned Set Top Boxes</label> 
-			<span> 
-				<select id="selectAssignedSetTopBoxes">
-					<option value="">ALL</option>
-					<option value="1">Only Box Issue</option>
-					<option value="0">Box Not Issue</option>
-				</select>
-			</span>
 		</div>
 		
 		<div class="buttonPadding">
@@ -120,10 +56,9 @@
 
 	<div class="row mt-3">
 		<div class="col">
-			<table id="customerReport"></table>
-			<div id="pagerCustomerReport"></div>
+			<table id="customerLedgreReport"></table>
 		</div>
 	</div>
-	<script src="/resources/js/customerReport.js"></script>
+	<script src="/resources/js/customerLedgreReport.js"></script>
 </body>
 </html>

@@ -37,6 +37,8 @@ import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
 import com.user.mngmnt.repository.SetTopBoxRepository;
 import com.user.mngmnt.repository.StreetRepository;
 import com.user.mngmnt.repository.SubAreaRepository;
+import static com.user.mngmnt.utils.CalcUtils.round;
+
 import javassist.NotFoundException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
@@ -443,15 +445,6 @@ public class CustomerController {
 				.isOnHold(!isPrepaid)
 				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
-	}
-
-	private static double round(double value, int places) {
-		if (places < 0)
-			throw new IllegalArgumentException();
-
-		BigDecimal bd = new BigDecimal(Double.toString(value));
-		bd = bd.setScale(places, RoundingMode.HALF_UP);
-		return bd.doubleValue();
 	}
 
 	@GetMapping("/allCustomerSetTopBoxChannels/{id}")

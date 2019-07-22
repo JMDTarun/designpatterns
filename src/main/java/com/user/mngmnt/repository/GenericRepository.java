@@ -17,6 +17,8 @@ public interface GenericRepository<T> {
 	Integer findCountWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c)
 			throws ParseException, NoSuchFieldException;
 	
-	List<T> findAllWithSqlQuery(String sql, Class<T> c, PageRequest pageRequest);
+	List<T> findAllWithSqlQuery(String sql, Class<T> c, List<Object> parameters, PageRequest pageRequest);
+	
+	Integer findCountWithSqlQuery(String sql, List<Object> parameters);
 	
 }

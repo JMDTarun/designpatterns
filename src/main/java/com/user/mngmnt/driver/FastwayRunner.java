@@ -1,13 +1,10 @@
 package com.user.mngmnt.driver;
 
-import com.github.loyada.jdollarx.BasicPath;
-import com.github.loyada.jdollarx.Operations;
 import com.github.loyada.jdollarx.Path;
 import com.user.mngmnt.model.RunnerExecution;
 import com.user.mngmnt.model.RunnerExecutionStatus;
 import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
-import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
@@ -15,11 +12,11 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedCondition;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -43,7 +40,6 @@ import static com.github.loyada.jdollarx.ElementProperties.hasAncesctor;
 import static com.github.loyada.jdollarx.ElementProperties.hasAttribute;
 import static com.github.loyada.jdollarx.ElementProperties.hasId;
 import static com.github.loyada.jdollarx.ElementProperties.hasName;
-import static com.github.loyada.jdollarx.ElementProperties.hasParent;
 import static com.github.loyada.jdollarx.ElementProperties.hasText;
 import static com.github.loyada.jdollarx.ElementProperties.isNthSibling;
 import static com.github.loyada.jdollarx.ElementProperties.isSiblingOf;
@@ -54,7 +50,6 @@ import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.find;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.findAll;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.sendKeys;
-import static java.util.concurrent.TimeUnit.*;
 
 @Component
 public class FastwayRunner {
@@ -85,7 +80,7 @@ public class FastwayRunner {
             //Get action performed data till time that are not processed
 
             login();
-            searchDevice("56331345071201");
+            searchDevice("FCBFDMQBK");
 
 
             //cancelExistingPlan("BRONZE"); // Cancel existing Pack
@@ -108,24 +103,26 @@ public class FastwayRunner {
 //                    .reason("Recovery")
 //                    .build())); // Add channel
 
-            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
-                    .listName("SUGGESTIVE PACKS")
-                    .plans(Arrays.asList("HD"))
-                    .reason("Recovery")
-                    .build(),
-                    PlanDetails.builder()
-                            .listName("BROADCASTER PLANS")
-                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
-                            .reason("Recovery")
-                            .build(),
-                    PlanDetails.builder()
-                            .listName("A LA CARTE")
-                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
-                            .reason("Recovery")
-                            .build())); // Add pack, plans, channel in one go
+//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+//                    .listName("SUGGESTIVE PACKS")
+//                    .plans(Arrays.asList("HD"))
+//                    .reason("Recovery")
+//                    .build(),
+//                    PlanDetails.builder()
+//                            .listName("BROADCASTER PLANS")
+//                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
+//                            .reason("Recovery")
+//                            .build(),
+//                    PlanDetails.builder()
+//                            .listName("A LA CARTE")
+//                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
+//                            .reason("Recovery")
+//                            .build())); // Add pack, plans, channel in one go
+
+            //activate();
 
 
-            //deactivate(); // to deactivate
+            deactivate(); // to deactivate
 
             //On execution complete
             currentExcution.setEndTime(Instant.now());
@@ -193,7 +190,7 @@ public class FastwayRunner {
                     )
         ));
         Path cancelModal = div.that(hasId("scheduledialog_cancel"));
-        sendKeysWhenClickable(select.that(hasId("subscription-plan-cancel-select-reason")).inside(cancelModal), "Non-Payment");
+        selectDropdown(select.that(hasId("subscription-plan-cancel-select-reason")).inside(cancelModal), "Non-Payment");
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(cancelModal)));
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Yes")).inside(div.withClass("bootbox-confirm"))));
     }
@@ -202,7 +199,7 @@ public class FastwayRunner {
         doWithRetries(action, 30, 500);
     }
 
-    public static void sendKeysWhenClickable(Path path, String keys) throws OperationFailedException {
+    public static void selectDropdown(Path path, String keys) throws OperationFailedException {
         WebElement found = find(path);
         Wait<WebDriver> wait = new FluentWait<>(driver).withTimeout(6, TimeUnit.SECONDS)
                 .pollingEvery(100, TimeUnit.MILLISECONDS);
@@ -221,14 +218,14 @@ public class FastwayRunner {
                 return "element to be clickable: " + path;
             }
         });
-        perform(() -> clickOn(path));
-        sendKeys(keys).to(path);
+        Select selectBox = new Select(found);
+        selectBox.selectByVisibleText(keys);
     }
 
     private void searchDevice(String serialNumber) throws OperationFailedException {
         Path searchSection = div.withClass("summary_search");
-        sendKeysWhenClickable(select.withClass("inner_custom").inside(searchSection), "serialno");
-        sendKeysWhenClickable(input.withClass("nav-search-input").inside(searchSection), serialNumber);
+        selectDropdown(select.withClass("inner_custom").inside(searchSection), "Serial Number");
+        sendKeys(serialNumber).to(input.withClass("nav-search-input").inside(searchSection));
         perform(() -> clickOn(button.withClass("btn btn-sm btn-danger btn-round").inside(searchSection)));
     }
 
@@ -245,8 +242,8 @@ public class FastwayRunner {
         perform(() -> find(button.that(hasText("Add Plan").and(hasAncesctor(div.that(hasId("activeservice1")))))).click());
         Path addPlanModal = div.that(hasId("add_change_plandialog"));
         for(PlanDetails detail : planDetails){
-            sendKeysWhenClickable(select.that(hasName("subscription-plan-list-name").and(hasAncesctor(addPlanModal))), detail.getListName());
-            sendKeysWhenClickable(select.that(hasName("subscription-plan-list-select-reason")).inside(addPlanModal), detail.getReason());
+            selectDropdown(select.that(hasName("subscription-plan-list-name").and(hasAncesctor(addPlanModal))), detail.getListName());
+            selectDropdown(select.that(hasName("subscription-plan-list-select-reason")).inside(addPlanModal), detail.getReason());
             detail.getPlans().forEach((name) -> perform(() -> clickOn(tr.that(hasAggregatedTextContaining(name)).inside(table.that(hasId("subscription-plan-details"))))));
 
         };
@@ -259,6 +256,14 @@ public class FastwayRunner {
             }
         }
 
+    }
+
+    private void activate() throws Exception {
+        openShowDetails();
+        perform(() -> clickOn(button.withText("Reactivate").inside(div.that(hasId("inactiveservice1")))));
+        Path cancelModal = div.that(hasId("scheduledialog_inactive"));
+        selectDropdown(select.that(hasId("service-reactivate-select-reason")).inside(cancelModal), "Recovery");
+        perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(cancelModal)));
     }
 
     private void deactivate() throws Exception {

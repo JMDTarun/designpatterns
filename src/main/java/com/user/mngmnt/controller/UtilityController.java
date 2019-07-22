@@ -15,6 +15,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 
+import com.user.mngmnt.driver.FastwayRunner;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,6 +46,9 @@ public class UtilityController {
 	
 	@Autowired
 	private CustomerRepository customerRepository;
+
+	@Autowired
+	private FastwayRunner fastwayRunner;
 	
 	@GetMapping("/utility")
 	public String utility() {
@@ -144,5 +148,11 @@ public class UtilityController {
 		URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 		headers.put("Location", singletonList(uri.toASCIIString()));
 		return new ResponseEntity<>(headers, HttpStatus.CREATED);
+	}
+
+	@GetMapping("/uploadActions")
+	public @ResponseBody ResponseEntity<Boolean> uploadActions() {
+		fastwayRunner.run();
+		return new ResponseEntity<>(true, HttpStatus.OK);
 	}
 }

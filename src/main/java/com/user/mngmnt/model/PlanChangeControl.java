@@ -38,5 +38,7 @@ public class PlanChangeControl extends Auditable{
     @Enumerated(EnumType.STRING)
     private PlanChangeControlAction action;
 
+    private String listName;
+
     private String plans; //Comma separated plans(Ala catre, Broadcaster plans, packs)
 }

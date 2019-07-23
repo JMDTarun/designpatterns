@@ -12,11 +12,8 @@ import com.user.mngmnt.model.SetTopBox;
 @Repository
 public interface CustomerSetTopBoxRepository extends JpaRepository<CustomerSetTopBox, Long> {
 
-    SetTopBox findBySetTopBoxSetTopBoxNumber(String number);
-
-    SetTopBox findBySetTopBoxCardNumber(String number);
-
-    SetTopBox findBySetTopBoxSafeCode(String number);
+    @Query("select c from CustomerSetTopBox c where c.setTopBox.setTopBoxNumber = :number")
+    List<CustomerSetTopBox> findBySetTopBoxNumber(String number);
     
     @Query("Select DISTINCT(c.packPrice) from CustomerSetTopBox c")
     List<Double> findDistinctPackPrices();

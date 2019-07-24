@@ -124,6 +124,7 @@ public class FastwayRunner {
                         control.setErrMsg(truncateErrorMsg(e.getMessage()));
                     }
                     finally {
+                        closeAllPopup();
                         planChangeControlRepository.save(control);
                     }
 
@@ -186,6 +187,7 @@ public class FastwayRunner {
         } finally {
             planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
             runnerExecutionRepository.save(currentExecution);
+            logout();
             close();
         }
     }
@@ -301,14 +303,14 @@ public class FastwayRunner {
 
         };
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(addPlanModal)));
-        Thread.sleep(1000);
+        Thread.sleep(500);
         Path addPlanTitle =  header4.that(hasText("ADD PLAN"));
         for(WebElement el : findAll(addPlanTitle)){
             if(el.isDisplayed()){
+                closeAllPopup();
                 throw new RuntimeException("Unable to add plan due to fastway error. Please check manualy in fastway site");
             }
         }
-
     }
 
     private void activate() throws Exception {
@@ -325,6 +327,31 @@ public class FastwayRunner {
                     .plans(Arrays.asList("BRONZE_NEW"))
                     .reason("Non-Payment")
                     .build()));
+    }
+
+    private void closeAllPopup() {
+//        boolean isAnyPopupDisplayed = true;
+//        while (isAnyPopupDisplayed) {
+//            isAnyPopupDisplayed = false;
+//            for(WebElement el : findAll(button.withClass("close").inside(div.withClass("modal")))) {
+//                if (el.isEnabled() && el.isDisplayed()) {
+//                    el.click();
+//                    isAnyPopupDisplayed = true;
+//                }
+//            }
+//        }
+        ((JavascriptExecutor) driver).executeScript("$('.modal').modal('hide')");
+    }
+
+
+    public void logout() {
+        perform(() -> clickOn(anchor.that(hasAggregatedTextContaining("Welcome"))));
+        perform(() -> clickOn(anchor.that(hasAggregatedTextContaining("Logout"))));
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void close() {

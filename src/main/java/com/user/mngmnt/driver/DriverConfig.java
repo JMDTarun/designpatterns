@@ -47,7 +47,7 @@ public class DriverConfig {
       ChromeOptions chromeOptions = new ChromeOptions();
       //chromeOptions.addArguments("headless");
       WebDriver driver = new ChromeDriver(chromeOptions);
-      driver.manage().timeouts().implicitlyWait(30, SECONDS).pageLoadTimeout(60, SECONDS);
+      driver.manage().timeouts().implicitlyWait(5, SECONDS).pageLoadTimeout(60, SECONDS);
       return driver;
     }
 }

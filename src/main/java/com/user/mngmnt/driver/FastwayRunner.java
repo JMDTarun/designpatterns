@@ -1,8 +1,10 @@
 package com.user.mngmnt.driver;
 
 import com.github.loyada.jdollarx.Path;
+import com.user.mngmnt.model.PlanChangeControl;
 import com.user.mngmnt.model.RunnerExecution;
 import com.user.mngmnt.model.RunnerExecutionStatus;
+import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.openqa.selenium.JavascriptExecutor;
@@ -21,7 +23,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -43,13 +44,21 @@ import static com.github.loyada.jdollarx.ElementProperties.hasName;
 import static com.github.loyada.jdollarx.ElementProperties.hasText;
 import static com.github.loyada.jdollarx.ElementProperties.isNthSibling;
 import static com.github.loyada.jdollarx.ElementProperties.isSiblingOf;
-import static com.github.loyada.jdollarx.Operations.*;
+import static com.github.loyada.jdollarx.Operations.OperationFailedException;
+import static com.github.loyada.jdollarx.Operations.doWithRetries;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.clickAt;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.clickOn;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.find;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.findAll;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.sendKeys;
+import static com.user.mngmnt.model.PlanChangeControlAction.ACTIVATE;
+import static com.user.mngmnt.model.PlanChangeControlAction.ADD;
+import static com.user.mngmnt.model.PlanChangeControlAction.DEACTIVATE;
+import static com.user.mngmnt.model.PlanChangeControlAction.REMOVE;
+import static com.user.mngmnt.model.PlanChangeControlStatus.ERROR;
+import static com.user.mngmnt.model.PlanChangeControlStatus.IN_PROGRESS;
+import static com.user.mngmnt.model.PlanChangeControlStatus.PROCESSED;
 
 @Component
 public class FastwayRunner {
@@ -64,26 +73,69 @@ public class FastwayRunner {
     @Autowired
     private RunnerExecutionRepository runnerExecutionRepository;
 
+    @Autowired
+    private PlanChangeControlRepository planChangeControlRepository;
+
     public void run() {
-        // List<RunnerExecution> executions = runnerExecutionRepository.findByStatus(RunnerExecutionStatus.IN_PROGRESS);
-        List<RunnerExecution> executions = new ArrayList<>();
+        List<RunnerExecution> executions = runnerExecutionRepository.findByStatus(RunnerExecutionStatus.IN_PROGRESS);
         if (CollectionUtils.isNotEmpty(executions)) {
             throw new RuntimeException("A instance of runner execution is already in progress.");
         }
 
-        RunnerExecution currentExcution = runnerExecutionRepository.save(RunnerExecution.builder()
+        RunnerExecution currentExecution = runnerExecutionRepository.save(RunnerExecution.builder()
                 .status(RunnerExecutionStatus.IN_PROGRESS)
                 .startTime(Instant.now())
                 .build());
         try {
 
             //Get action performed data till time that are not processed
+            int markedRecord = planChangeControlRepository.markPlanChangeControlToExecute(currentExecution.getId());
 
-            login();
-            searchDevice("56331345071201");
+            if(markedRecord>0){
+                List<PlanChangeControl> controls = planChangeControlRepository.findNotProcessedRecords(currentExecution.getId());
+                login();
+                for(PlanChangeControl control : controls){
+                    try {
+                        searchDevice(control.getSerialNumber());
+
+                        if(ACTIVATE.equals(control.getAction())){
+                            activate();
+                        }
+                        else if(DEACTIVATE.equals(control.getAction())){
+                            deactivate();
+                        }
+                        else if (REMOVE.equals(control.getAction())){
+                            cancelExistingPlan(control.getPlans());
+                        }
+                        else if(ADD.equals(control.getAction())){
+                            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+                             .listName(control.getListName())
+                             .plans(Arrays.asList(control.getPlans().split(",")))
+                             .reason("Recovery")
+                             .build()));
+                        }
+                        else {
+                            throw new RuntimeException("Invalid Action: "+ control.getAction().name());
+                        }
+                        control.setStatus(PROCESSED);
+                    }
+                    catch (Exception e){
+                        control.setStatus(ERROR);
+                        control.setErrMsg(truncateErrorMsg(e.getMessage()));
+                    }
+                    finally {
+                        closeAllPopup();
+                        planChangeControlRepository.save(control);
+                    }
+
+                }
+            }
+
+            //login();
+           // searchDevice("56331345071201");
 
 
-            cancelExistingPlan("BRONZE"); // Cancel existing Pack
+            //cancelExistingPlan("BRONZE"); // Cancel existing Pack
 
 //            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
 //                    .listName("SUGGESTIVE PACKS")
@@ -103,21 +155,21 @@ public class FastwayRunner {
 //                    .reason("Recovery")
 //                    .build())); // Add channel
 
-            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
-                    .listName("SUGGESTIVE PACKS")
-                    .plans(Arrays.asList("HD"))
-                    .reason("Recovery")
-                    .build(),
-                    PlanDetails.builder()
-                            .listName("BROADCASTER PLANS")
-                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
-                            .reason("Recovery")
-                            .build(),
-                    PlanDetails.builder()
-                            .listName("A LA CARTE")
-                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
-                            .reason("Recovery")
-                            .build())); // Add pack, plans, channel in one go
+//            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
+//                    .listName("SUGGESTIVE PACKS")
+//                    .plans(Arrays.asList("HD"))
+//                    .reason("Recovery")
+//                    .build(),
+//                    PlanDetails.builder()
+//                            .listName("BROADCASTER PLANS")
+//                            .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
+//                            .reason("Recovery")
+//                            .build(),
+//                    PlanDetails.builder()
+//                            .listName("A LA CARTE")
+//                            .plans(Arrays.asList("ALC_UTV_MOVIES", "ALC_ZEE_TV"))
+//                            .reason("Recovery")
+//                            .build())); // Add pack, plans, channel in one go
 
             //activate();
 
@@ -125,16 +177,18 @@ public class FastwayRunner {
             //deactivate(); // to deactivate
 
             //On execution complete
-            currentExcution.setEndTime(Instant.now());
-            currentExcution.setStatus(RunnerExecutionStatus.COMPLETED);
+            currentExecution.setEndTime(Instant.now());
+            currentExecution.setStatus(RunnerExecutionStatus.COMPLETED);
 
         } catch (Exception e) {
             e.printStackTrace();
-            currentExcution.setStatus(RunnerExecutionStatus.ERROR);
-            currentExcution.setErrorMsg(truncateErrorMsg(e.getMessage()));
+            currentExecution.setStatus(RunnerExecutionStatus.ERROR);
+            currentExecution.setErrorMsg(truncateErrorMsg(e.getMessage()));
         } finally {
-            runnerExecutionRepository.save(currentExcution);
-            //close();
+            planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
+            runnerExecutionRepository.save(currentExecution);
+            logout();
+            close();
         }
     }
 
@@ -249,14 +303,14 @@ public class FastwayRunner {
 
         };
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(addPlanModal)));
-        Thread.sleep(1000);
+        Thread.sleep(500);
         Path addPlanTitle =  header4.that(hasText("ADD PLAN"));
         for(WebElement el : findAll(addPlanTitle)){
             if(el.isDisplayed()){
+                closeAllPopup();
                 throw new RuntimeException("Unable to add plan due to fastway error. Please check manualy in fastway site");
             }
         }
-
     }
 
     private void activate() throws Exception {
@@ -273,6 +327,31 @@ public class FastwayRunner {
                     .plans(Arrays.asList("BRONZE_NEW"))
                     .reason("Non-Payment")
                     .build()));
+    }
+
+    private void closeAllPopup() {
+//        boolean isAnyPopupDisplayed = true;
+//        while (isAnyPopupDisplayed) {
+//            isAnyPopupDisplayed = false;
+//            for(WebElement el : findAll(button.withClass("close").inside(div.withClass("modal")))) {
+//                if (el.isEnabled() && el.isDisplayed()) {
+//                    el.click();
+//                    isAnyPopupDisplayed = true;
+//                }
+//            }
+//        }
+        ((JavascriptExecutor) driver).executeScript("$('.modal').modal('hide')");
+    }
+
+
+    public void logout() {
+        perform(() -> clickOn(anchor.that(hasAggregatedTextContaining("Welcome"))));
+        perform(() -> clickOn(anchor.that(hasAggregatedTextContaining("Logout"))));
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     private void close() {

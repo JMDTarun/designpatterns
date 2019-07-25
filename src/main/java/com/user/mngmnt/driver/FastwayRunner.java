@@ -16,7 +16,6 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.Wait;
-import org.openqa.selenium.support.ui.WebDriverWait;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -52,6 +51,7 @@ import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.driver;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.find;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.findAll;
 import static com.github.loyada.jdollarx.singlebrowser.InBrowserSinglton.sendKeys;
+import static com.user.mngmnt.driver.WaitUtil.waitForJSandJQueryToLoad;
 import static com.user.mngmnt.model.PlanChangeControlAction.ACTIVATE;
 import static com.user.mngmnt.model.PlanChangeControlAction.ADD;
 import static com.user.mngmnt.model.PlanChangeControlAction.DEACTIVATE;
@@ -124,27 +124,49 @@ public class FastwayRunner {
                         control.setErrMsg(truncateErrorMsg(e.getMessage()));
                     }
                     finally {
+                        waitForJSandJQueryToLoad(driver);
                         closeAllPopup();
                         planChangeControlRepository.save(control);
                     }
 
                 }
             }
+            currentExecution.setEndTime(Instant.now());
+            currentExecution.setStatus(RunnerExecutionStatus.COMPLETED);
 
-            //login();
-           // searchDevice("56331345071201");
+        } catch (Exception e) {
+            e.printStackTrace();
+            currentExecution.setStatus(RunnerExecutionStatus.ERROR);
+            currentExecution.setErrorMsg(truncateErrorMsg(e.getMessage()));
+        } finally {
+            planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
+            runnerExecutionRepository.save(currentExecution);
+            logout();
+            close();
+        }
 
-
-            //cancelExistingPlan("BRONZE"); // Cancel existing Pack
-
+//        try{
+//            login();
+//            searchDevice("56331345071201");
+//
+//
+//            //cancelExistingPlan("BRONZE"); // Cancel existing Pack
+//
 //            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
 //                    .listName("SUGGESTIVE PACKS")
 //                    .plans(Arrays.asList("HD"))
 //                    .reason("Recovery")
 //                    .build())); // Add new Pack
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            closeAllPopup();
+//        }
+//        try{
+//            searchDevice("4C0A9D64");
+//
 //
 //            selectSubmitPlans(Arrays.asList(PlanDetails.builder()
-//                    .listName("BROADCASTER PLANS")
+//                    .listName("ROADCASTER PLANS")
 //                    .plans(Arrays.asList("SONY_HAPPY_INDIA_HD", "ZEE_FAMILY_PACK_HINDI_HD"))
 //                    .reason("Recovery")
 //                    .build())); // Add broadcaster Plan
@@ -176,20 +198,12 @@ public class FastwayRunner {
 
             //deactivate(); // to deactivate
 
-            //On execution complete
-            currentExecution.setEndTime(Instant.now());
-            currentExecution.setStatus(RunnerExecutionStatus.COMPLETED);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            currentExecution.setStatus(RunnerExecutionStatus.ERROR);
-            currentExecution.setErrorMsg(truncateErrorMsg(e.getMessage()));
-        } finally {
-            planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
-            runnerExecutionRepository.save(currentExecution);
-            logout();
-            close();
-        }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            closeAllPopup();
+//            logout();
+//            close();
+//        }
     }
 
     public static String truncateErrorMsg(String msg){
@@ -202,32 +216,6 @@ public class FastwayRunner {
         sendKeys(USERNAME).to(input.that(hasName("username")));
         sendKeys(PASSWORD).to(input.that(hasName("password")));
         clickAt(input.that(hasAttribute("type", "submit")));
-    }
-
-    public boolean waitForJSandJQueryToLoad() {
-        WebDriverWait wait = new WebDriverWait(driver, 30);
-        ExpectedCondition<Boolean> jQueryLoad = new ExpectedCondition<Boolean>() {
-            @Override
-            public Boolean apply(WebDriver driver) {
-                try {
-                    Long r = (Long)((JavascriptExecutor)driver).executeScript("return $.active");
-                    return r == 0;
-                } catch (Exception e) {
-                    System.out.println("no jquery present");
-                    return true;
-                }
-            }
-        };
-
-        ExpectedCondition<Boolean> jsLoad = new ExpectedCondition<Boolean>() {
-            @Override
-            public Boolean apply(WebDriver driver) {
-                return ((JavascriptExecutor)driver).executeScript("return document.readyState")
-                        .toString().equals("complete");
-            }
-        };
-
-        return wait.until(jQueryLoad) && wait.until(jsLoad);
     }
 
 
@@ -276,16 +264,33 @@ public class FastwayRunner {
         selectBox.selectByVisibleText(keys);
     }
 
-    private void searchDevice(String serialNumber) throws OperationFailedException {
-        waitForJSandJQueryToLoad();
-        Path searchSection = div.withClass("summary_search");
-        selectDropdown(select.withClass("inner_custom").inside(searchSection), "Serial Number");
-        sendKeys(serialNumber).to(input.withClass("nav-search-input").inside(searchSection));
-        perform(() -> clickOn(button.withClass("btn btn-sm btn-danger btn-round").inside(searchSection)));
+    public static void setInputValue(Path path, String keys) throws OperationFailedException {
+        int retry = 10;
+        int sleepMillis =100;
+        while (retry>0){
+            sendKeys(keys).to(path);
+            if(keys.equals(find(path).getAttribute("value"))) break;
+            retry--;
+            try {
+                Thread.sleep(sleepMillis);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            sendKeys("").to(path);
+        }
+
     }
 
+    private void searchDevice(String serialNumber) throws OperationFailedException {
+        waitForJSandJQueryToLoad(driver);
+        Path searchSection = div.withClass("summary_search");
+        selectDropdown(select.withClass("inner_custom").inside(searchSection), "Serial Number");
+        setInputValue(input.withClass("nav-search-input").inside(searchSection), serialNumber);
+        perform(() -> clickOn(button.withClass("btn btn-sm btn-danger btn-round").inside(searchSection)));
+   }
+
     private void openShowDetails(){
-        waitForJSandJQueryToLoad();
+        waitForJSandJQueryToLoad(driver);
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Show Details")
                 .and(hasAncesctor(tr.that(isNthSibling(0)
                         .and(hasAncesctor(table.that(hasId("activeservice"))))))))));
@@ -303,7 +308,7 @@ public class FastwayRunner {
 
         };
         perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(addPlanModal)));
-        Thread.sleep(500);
+        waitForJSandJQueryToLoad(driver);
         Path addPlanTitle =  header4.that(hasText("ADD PLAN"));
         for(WebElement el : findAll(addPlanTitle)){
             if(el.isDisplayed()){

@@ -2,6 +2,7 @@ package com.user.mngmnt.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -29,7 +30,8 @@ public class PlanChangeControl extends Auditable{
     private String serialNumber;
 
     @Enumerated(EnumType.STRING)
-    private PlanChangeControlStatus status;
+    @Default
+    private PlanChangeControlStatus status = PlanChangeControlStatus.NOT_PROCESSED;
 
     private String errMsg;
 

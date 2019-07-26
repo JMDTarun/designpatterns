@@ -1,5 +1,7 @@
 package com.user.mngmnt.controller;
 
+import static com.user.mngmnt.utils.CalcUtils.round;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.text.ParseException;
@@ -11,7 +13,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
-import static com.user.mngmnt.utils.CalcUtils.round;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
@@ -32,14 +33,13 @@ import com.user.mngmnt.model.CustomerLedgreReport;
 import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerPartialPaymentColumns;
 import com.user.mngmnt.model.CustomerReport;
-import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.CustomerReportColumns;
+import com.user.mngmnt.model.CustomerSetTopBox;
 import com.user.mngmnt.model.ResportSearchCriteria;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.repository.ReportsRepository;
 import com.user.mngmnt.util.ExcelUtils;
-import static com.user.mngmnt.utils.CalcUtils.round;
 
 @Controller
 public class ReportController {
@@ -399,5 +399,7 @@ public class ReportController {
         headers.add("Content-Disposition", "attachment; filename=CustomerPartialPaymentReport.xlsx");
         return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
     }
+    
+    
     
 }

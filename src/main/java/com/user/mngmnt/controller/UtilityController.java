@@ -163,9 +163,9 @@ public class UtilityController {
 		
 		for(CustomerLedgre customerLedgre: customerLedgresToDelete) {
 			Customer customer = customerLedgre.getCustomer();
-			customer.setAmountCredit(customer.getAmountCredit() - customerLedgre.getAmountCredit());
-			customer.setAmountDebit(customer.getAmountDebit() - customer.getAmountDebit());
-			customer.setBalance(customer.getAmountCredit() - customer.getAmountDebit());
+			customer.setAmountCredit(CalcUtils.round(customer.getAmountCredit() - customerLedgre.getAmountCredit(), 2));
+			customer.setAmountDebit(CalcUtils.round(customer.getAmountDebit() - customerLedgre.getAmountDebit(), 2));
+			customer.setBalance(CalcUtils.round(customer.getAmountCredit() - customer.getAmountDebit(), 2));
 			customerRepository.save(customer);
 		}
 		

@@ -1,10 +1,12 @@
 package com.user.mngmnt.controller;
 
+import static com.user.mngmnt.util.DateCalculationUtil.stringToDate;
 import static java.util.Collections.singletonList;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -17,6 +19,8 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,70 +30,9 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
 
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.util.UriTemplate;
-
-import com.user.mngmnt.enums.Action;
-import com.user.mngmnt.enums.CreditDebit;
-import com.user.mngmnt.enums.CustomerLedgreEntry;
-import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
-import com.user.mngmnt.enums.DiscountFrequency;
-import com.user.mngmnt.enums.PaymentMode;
-import com.user.mngmnt.enums.SetTopBoxStatus;
-import com.user.mngmnt.model.Area;
-import com.user.mngmnt.model.Customer;
-import com.user.mngmnt.model.CustomerLedgre;
-import com.user.mngmnt.model.CustomerNetworkChannel;
-import com.user.mngmnt.model.CustomerSetTopBox;
-import com.user.mngmnt.model.CustomerType;
-import com.user.mngmnt.model.NetworkChannel;
-import com.user.mngmnt.model.Pack;
-import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
-import com.user.mngmnt.model.RemoveCustomerSetTopBox;
-import com.user.mngmnt.model.ResponseHandler;
-import com.user.mngmnt.model.SetTopBox;
-import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
-import com.user.mngmnt.model.SetTopBoxReplacement;
-import com.user.mngmnt.model.Street;
-import com.user.mngmnt.model.SubArea;
-import com.user.mngmnt.model.ViewPage;
-import com.user.mngmnt.repository.AreaRepository;
-import com.user.mngmnt.repository.CustomerLedgreRepository;
-import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
-import com.user.mngmnt.repository.CustomerRepository;
-import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
-import com.user.mngmnt.repository.CustomerTypeRepository;
-import com.user.mngmnt.repository.GenericRepository;
-import com.user.mngmnt.repository.NetworkChannelRepository;
-import com.user.mngmnt.repository.PackRepository;
-import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
-import com.user.mngmnt.repository.SetTopBoxRepository;
-import com.user.mngmnt.repository.StreetRepository;
-import com.user.mngmnt.repository.SubAreaRepository;
-import com.user.mngmnt.utils.CalcUtils;
-
-import static com.user.mngmnt.utils.CalcUtils.round;
-
-import javassist.NotFoundException;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.poi.hpsf.Array;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -113,36 +56,51 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.util.UriTemplate;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.transaction.Transactional;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URI;
-import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
+import com.user.mngmnt.enums.Action;
+import com.user.mngmnt.enums.CreditDebit;
+import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
+import com.user.mngmnt.enums.DiscountFrequency;
+import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.SetTopBoxStatus;
+import com.user.mngmnt.model.Area;
+import com.user.mngmnt.model.Customer;
+import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerNetworkChannel;
+import com.user.mngmnt.model.CustomerSetTopBox;
+import com.user.mngmnt.model.CustomerSetTopBoxHistory;
+import com.user.mngmnt.model.CustomerType;
+import com.user.mngmnt.model.NetworkChannel;
+import com.user.mngmnt.model.Pack;
+import com.user.mngmnt.model.PlanChangeControl;
+import com.user.mngmnt.model.PlanChangeControlAction;
+import com.user.mngmnt.model.RemoveCustomerNetworkChannel;
+import com.user.mngmnt.model.RemoveCustomerSetTopBox;
+import com.user.mngmnt.model.ResponseHandler;
+import com.user.mngmnt.model.SetTopBox;
+import com.user.mngmnt.model.SetTopBoxActivateDeactivate;
+import com.user.mngmnt.model.SetTopBoxReplacement;
+import com.user.mngmnt.model.Street;
+import com.user.mngmnt.model.SubArea;
+import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.AreaRepository;
+import com.user.mngmnt.repository.CustomerLedgreRepository;
+import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
+import com.user.mngmnt.repository.CustomerRepository;
+import com.user.mngmnt.repository.CustomerSetTopBoxHistoryRepository;
+import com.user.mngmnt.repository.CustomerSetTopBoxRepository;
+import com.user.mngmnt.repository.CustomerTypeRepository;
+import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.NetworkChannelRepository;
+import com.user.mngmnt.repository.PackRepository;
+import com.user.mngmnt.repository.PlanChangeControlRepository;
+import com.user.mngmnt.repository.SetTopBoxReplacementRepository;
+import com.user.mngmnt.repository.SetTopBoxRepository;
+import com.user.mngmnt.repository.StreetRepository;
+import com.user.mngmnt.repository.SubAreaRepository;
+import com.user.mngmnt.utils.CalcUtils;
 
-import static com.user.mngmnt.util.DateCalculationUtil.stringToDate;
-import static java.util.Collections.singletonList;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import javassist.NotFoundException;
 
 @Controller
 public class CustomerController {
@@ -185,9 +143,29 @@ public class CustomerController {
 
 	@Autowired
 	private CustomerTypeRepository customerTypeRepository;
+	
+	@Autowired
+	private CustomerSetTopBoxHistoryRepository customerSetTopBoxHistoryRepository;
+	
+	@Autowired
+	private PlanChangeControlRepository planChangeControlRepository;
 
-	private static DecimalFormat df = new DecimalFormat("0.00");
+	private static List<Action> actions = new ArrayList<>();
 
+	static {
+	    actions.add(Action.PACK_CHANGE);
+	    actions.add(Action.PACK_REMOVE);
+	    actions.add(Action.MONTHLY_PACK_PRICE);
+	    actions.add(Action.MONTHLY_CHANNEL_PRICE);
+	    actions.add(Action.CHANNEL_REMOVE);
+	    actions.add(Action.ADD_CHANNEL);
+	    actions.add(Action.REMOVE_CHANNEL);
+	    actions.add(Action.SET_TOP_BOX_REMOVE);
+	    actions.add(Action.SET_TOP_BOX_DEACTIVE);
+	    actions.add(Action.SET_TOP_BOX_ACTIVE);
+	    actions.add(Action.SET_TOP_BOX_REPLACEMENT);
+	}
+	
 	@GetMapping("/customer")
 	public String getCustomer() {
 		return "customer";
@@ -337,15 +315,20 @@ public class CustomerController {
 		Double packPrice = 0.0;
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 		Pack pack = packRepository.findById(customerSetTopBox.getPack().getId()).get();
+		SetTopBox setTopBox = setTopBoxRepository.getOne(customerSetTopBox.getSetTopBox().getId());
 		packPrice = pack.getTotal();
 		if (customerSetTopBox.getPackPrice() > 0) {
 			customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
 			packPrice = customerSetTopBox.getPackPrice();
 		} 
-		if(isPrepaid) {
-			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice,
-					CreditDebit.DEBIT, customerSetTopBox, null, null));
+		if (isPrepaid) {
+			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice, CreditDebit.DEBIT,
+					customerSetTopBox, null, null));
 		}
+		
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+                .serialNumber(setTopBox.getSetTopBoxNumber())
+                .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
 		
 		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
@@ -407,6 +390,12 @@ public class CustomerController {
 		if (customerSetTopBox.getId() != null) {
 			if (Double.compare(dbCustomerSetTopBox.getPackPrice(), customerSetTopBox.getPackPrice()) != 0) {
 				Pack pack = packRepository.getOne(customerSetTopBox.getPack().getId());
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+	                    .serialNumber(dbCustomerSetTopBox.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(dbCustomerSetTopBox.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+                        .serialNumber(dbCustomerSetTopBox.getSetTopBox().getSetTopBoxNumber())
+                        .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
 				customerSetTopBox.setPackPriceDifference(pack.getTotal() - customerSetTopBox.getPackPrice());
 				packPrice = customerSetTopBox.getPackPrice() - dbCustomerSetTopBox.getPackPrice();
 				CreditDebit type = packPrice > 0 ? CreditDebit.DEBIT : CreditDebit.CREDIT;
@@ -470,6 +459,7 @@ public class CustomerController {
 
 	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
 			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel, String reason) {
+	    
 		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
 		if(isPrepaid) {
 			if(creditDebit.equals(CreditDebit.CREDIT)) {
@@ -481,6 +471,8 @@ public class CustomerController {
 		
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(customerSetTopBox.getEntryDate());
+		
+		
 		
 		return CustomerLedgre.builder()
 				.action(action)
@@ -533,6 +525,11 @@ public class CustomerController {
 					customerLedgres.add(
 							buildCustomerLedgre(customer, Action.MONTHLY_CHANNEL_PRICE, price, CreditDebit.DEBIT, cstb, cnc, null));
 				}
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+	                    .serialNumber(cstb.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(networkChannel.getName())
+	                    .listName(networkChannel.getNetwork().getName())
+	                    .build());
 				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForAddChannel(cstb.getPaymentMode(),
 						entryDate, cstb.getBillingCycle(), paymentStartDate, customer,
 						Action.CHANNEL_PAYMENT_START_DISCOUNT, price, cstb);
@@ -579,6 +576,10 @@ public class CustomerController {
 			dbCstb.setUpdatedAt(Instant.now());
 			dbCstb.setDeleted(true);
 			customerSetTopBoxRepository.save(dbCstb);
+			
+			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+			
 			updateSetTopBoxStatus(dbCstb.getSetTopBox().getId(), removeCustomerSetTopBox.getSetTopBoxStatus(),
 					removeCustomerSetTopBox.getReason());
 			if (removeCustomerSetTopBox.getAmount() != null && removeCustomerSetTopBox.getAmount().doubleValue() > 0) {
@@ -649,10 +650,14 @@ public class CustomerController {
 			Optional<CustomerNetworkChannel> customerNetworkChannel = cstb.getCustomerNetworkChannels().stream()
 					.filter(nc -> nc.getId().longValue() == removeCustomerNetworkChannel.getId().longValue()).findAny();
 			if (customerNetworkChannel != null && customerNetworkChannel.isPresent()) {
-
 				Double price = cnc.getNetworkChannel().getMonthlyRent() + cnc.getNetworkChannel().getGst();
 				cnc.setDeleted(true);
 				customerNetworkChannelRepository.save(cnc);
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+	                    .serialNumber(cstb.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(cnc.getNetworkChannel().getName())
+	                    .listName(cnc.getNetworkChannel().getNetwork().getName())
+	                    .build());
 				// customerRepository.save(customer);
 				CustomerLedgre customerDiscountForNewTransaction = customerDiscountForRemoveChannelOrActiveDeactiveSetTopBox(
 						cstb.getPaymentMode(), cstb.getBillingCycle(),
@@ -685,6 +690,13 @@ public class CustomerController {
 			dbCstb.setActive(true);
 			dbCstb.setActivateReason(setTopBoxActivateDeavtivate.getReason());
 			customerSetTopBoxRepository.save(dbCstb);
+			
+			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+			
+			customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
+                    .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.ACTIVATE).build());
+			
 			Double price = dbCstb.getPackPrice();
 			if (dbCstb.getCustomerNetworkChannels() != null
 					&& !CollectionUtils.isEmpty(dbCstb.getCustomerNetworkChannels())) {
@@ -739,6 +751,13 @@ public class CustomerController {
 						setTopBoxReplacement.getReplacementReason().toString());
 				updateSetTopBoxStatus(setTopBoxReplacement.getReplacedSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
 						"Assigned To Customer");
+				
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
+                        .serialNumber(setTopBoxReplacement.getReplacedSetTopBox().getSetTopBoxNumber()).build());
+                
+                planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
+                        .serialNumber(setTopBoxReplacement.getOldSetTopBox().getSetTopBoxNumber()).build());
+				
 				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 				final HttpHeaders headers = new HttpHeaders();
 				headers.put("Location", singletonList(uri.toASCIIString()));
@@ -761,6 +780,13 @@ public class CustomerController {
 			dbCstb.setDeactivateReason(setTopBoxActivateDeavtivate.getReason());
 			dbCstb.setActive(false);
 			customerSetTopBoxRepository.save(dbCstb);
+			
+            planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+			
+            customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
+                    .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.DE_ACTIVATE).build());
+			
 			Double price = dbCstb.getPackPrice();
 			if (dbCstb.getCustomerNetworkChannels() != null
 					&& !CollectionUtils.isEmpty(dbCstb.getCustomerNetworkChannels())) {

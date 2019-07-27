@@ -32,13 +32,16 @@
 	<jsp:include page="templates/header.jsp" />
 
 	<div class="reportFilters">
-		<div>
+		<div class="reportFiltersWidth">
 			<label>Payment Between</label>
-			<br/>
-			<input type="radio" name="paymentBetween" value="partialPayment" checked> Partial Payment<br>
-  			<input type="radio" name="paymentBetween" value="noPayment">No Payment<br>
 			<input type="text" name="partialPaymanetBetweenStart" id="partialPaymanetBetweenStart" />
 			<input type="text" name="partialPaymanetBetweenEnd" id="partialPaymanetBetweenEnd" />
+		</div>
+		
+		<div class="reportFiltersWidth">
+			<label>Payment Type</label>
+			<input type="radio" name="paymentBetween" value="partialPayment" checked> Partial Payment<br>
+  			<input type="radio" name="paymentBetween" value="noPayment">No Payment<br>
 		</div>
 		
 		<div class="buttonPadding">

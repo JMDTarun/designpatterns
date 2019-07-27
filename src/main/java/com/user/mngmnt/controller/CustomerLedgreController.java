@@ -38,6 +38,7 @@ import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.util.CalcUtils;
 
 @Controller
 public class CustomerLedgreController {
@@ -83,6 +84,14 @@ public class CustomerLedgreController {
 		if(dbCustomerLedgre.isPresent()) {
 			CustomerLedgre c = dbCustomerLedgre.get();
 			customerLedgre.setId(c.getId());
+			
+			Double dbAmountCredit = c.getAmountCredit();
+			Double amountCredit = customerLedgre.getAmountCredit();
+			Customer customer = c.getCustomer();
+			customer.setAmountCredit(CalcUtils.round(customer.getAmountCredit() + (amountCredit - dbAmountCredit)));
+			customer.setBalance(CalcUtils.round(customer.getAmountCredit() - customer.getAmountDebit()));
+			customerRepository.save(customer);
+			
 			customerLedgreRepository.save(customerLedgre);
 		}
 		return new ResponseEntity<>(HttpStatus.CREATED);

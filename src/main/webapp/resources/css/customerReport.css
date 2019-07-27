@@ -15,4 +15,9 @@
 
 .buttonPadding {
 	padding: 20;
+	height: 50px;
+}
+
+.reportFiltersWidth {
+	width: 50% !important;
 }

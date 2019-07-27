@@ -45,10 +45,17 @@
 					href="/customer">Customer</a></li>
 				<li class="nav-item active"><a class="nav-link"
 					href="/customerPayment">Customer Payment</a></li>
+				<li class="nav-item dropdown-content">
+					<a href="#">Reports &#9662;</a>
+            		<ul class="dropdown">
+				    <li><a class="nav-link" href="/customerLedgreReport">Customer Ledgre Report</a></li>
+				    <li><a class="nav-link" href="/customerOutstandingReports">Customer Outstanding Report</a></li>
+				    <li><a class="nav-link" href="/customerPartialPaymentReports">Customer Partial Payment Report</a></li>
+				    <li><a class="nav-link" target="_blank" href="/uploadActions">Fastway Utility</a></li>
+				    </ul>
+				</li>	
 				<li class="nav-item active"><a class="nav-link"
 					href="/customerReports">Customer Reports</a></li>
-				<li class="nav-item active"><a class="nav-link"
-					href="/utility">Utility</a></li>	
 			</ul>
 			<div>
 				<a style="text-align: right; color: #fff;"

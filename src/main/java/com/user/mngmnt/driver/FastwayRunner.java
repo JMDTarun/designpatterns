@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import javax.transaction.Transactional;
+
 import static com.github.loyada.jdollarx.BasicPath.anchor;
 import static com.github.loyada.jdollarx.BasicPath.button;
 import static com.github.loyada.jdollarx.BasicPath.div;
@@ -76,6 +78,7 @@ public class FastwayRunner {
     @Autowired
     private PlanChangeControlRepository planChangeControlRepository;
 
+    @Transactional
     public void run() {
         List<RunnerExecution> executions = runnerExecutionRepository.findByStatus(RunnerExecutionStatus.IN_PROGRESS);
         if (CollectionUtils.isNotEmpty(executions)) {
@@ -86,10 +89,11 @@ public class FastwayRunner {
                 .status(RunnerExecutionStatus.IN_PROGRESS)
                 .startTime(Instant.now())
                 .build());
+        int markedRecord = 0;
         try {
 
             //Get action performed data till time that are not processed
-            int markedRecord = planChangeControlRepository.markPlanChangeControlToExecute(currentExecution.getId());
+            markedRecord = planChangeControlRepository.markPlanChangeControlToExecute(currentExecution.getId());
 
             if(markedRecord>0){
                 List<PlanChangeControl> controls = planChangeControlRepository.findNotProcessedRecords(currentExecution.getId());
@@ -141,8 +145,10 @@ public class FastwayRunner {
         } finally {
             planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
             runnerExecutionRepository.save(currentExecution);
-            logout();
-            close();
+            if(markedRecord > 0) {
+            	logout();
+                close();
+            }
         }
 
 //        try{

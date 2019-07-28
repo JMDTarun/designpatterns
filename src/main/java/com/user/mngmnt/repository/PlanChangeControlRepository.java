@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Repository
+@Transactional
 public interface PlanChangeControlRepository extends JpaRepository<PlanChangeControl, Long> {
 
 	@Modifying

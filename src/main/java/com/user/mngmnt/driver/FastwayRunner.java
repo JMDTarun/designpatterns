@@ -7,6 +7,7 @@ import com.user.mngmnt.model.RunnerExecutionStatus;
 import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
+import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.StaleElementReferenceException;
 import org.openqa.selenium.WebDriver;
@@ -17,6 +18,7 @@ import org.openqa.selenium.support.ui.FluentWait;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.Wait;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -58,6 +60,7 @@ import static com.user.mngmnt.model.PlanChangeControlAction.ACTIVATE;
 import static com.user.mngmnt.model.PlanChangeControlAction.ADD;
 import static com.user.mngmnt.model.PlanChangeControlAction.DEACTIVATE;
 import static com.user.mngmnt.model.PlanChangeControlAction.REMOVE;
+import static com.user.mngmnt.model.PlanChangeControlAction.RETRACK;
 import static com.user.mngmnt.model.PlanChangeControlStatus.ERROR;
 import static com.user.mngmnt.model.PlanChangeControlStatus.IN_PROGRESS;
 import static com.user.mngmnt.model.PlanChangeControlStatus.PROCESSED;
@@ -78,7 +81,7 @@ public class FastwayRunner {
     @Autowired
     private PlanChangeControlRepository planChangeControlRepository;
 
-    @Transactional
+    @Scheduled(fixedDelay = 120000)
     public void run() {
         List<RunnerExecution> executions = runnerExecutionRepository.findByStatus(RunnerExecutionStatus.IN_PROGRESS);
         if (CollectionUtils.isNotEmpty(executions)) {
@@ -107,6 +110,9 @@ public class FastwayRunner {
                         }
                         else if(DEACTIVATE.equals(control.getAction())){
                             deactivate();
+                        }
+                        else if(RETRACK.equals(control.getAction())){
+                            retract();
                         }
                         else if (REMOVE.equals(control.getAction())){
                             cancelExistingPlan(control.getPlans());
@@ -227,15 +233,20 @@ public class FastwayRunner {
 
     private void cancelExistingPlan(String existingPack) throws OperationFailedException {
         openShowDetails();
+        removePlanWhenShowDetailPopupIsAlreadyShown(existingPack);
+    }
+
+
+    private void removePlanWhenShowDetailPopupIsAlreadyShown(String existingPack) throws OperationFailedException {
         perform(() -> clickOn(
                 anchor
-                    .that(hasAggregatedTextContaining("Cancel"))
-                    .inside(td
-                            .that(isSiblingOf(td
-                                                .that(hasAggregatedTextContaining(existingPack))
-                            ))
-                            .descendantOf(table.that(hasId("service_plandetail1")))
-                    )
+                        .that(hasAggregatedTextContaining("Cancel"))
+                        .inside(td
+                                .that(isSiblingOf(td
+                                        .that(hasAggregatedTextContaining(existingPack))
+                                ))
+                                .descendantOf(table.that(hasId("service_plandetail1")))
+                        )
         ));
         Path cancelModal = div.that(hasId("scheduledialog_cancel"));
         selectDropdown(select.that(hasId("subscription-plan-cancel-select-reason")).inside(cancelModal), "Non-Payment");
@@ -244,7 +255,7 @@ public class FastwayRunner {
     }
 
     public static  void perform(Runnable action){
-        doWithRetries(action, 30, 500);
+        doWithRetries(action, 5, 250);
     }
 
     public static void selectDropdown(Path path, String keys) throws OperationFailedException {
@@ -318,7 +329,7 @@ public class FastwayRunner {
         Path addPlanTitle =  header4.that(hasText("ADD PLAN"));
         for(WebElement el : findAll(addPlanTitle)){
             if(el.isDisplayed()){
-                closeAllPopup();
+                 closeAllPopup();
                 throw new RuntimeException("Unable to add plan due to fastway error. Please check manualy in fastway site");
             }
         }
@@ -326,10 +337,24 @@ public class FastwayRunner {
 
     private void activate() throws Exception {
         openShowDetails();
-        perform(() -> clickOn(button.withText("Reactivate").inside(div.that(hasId("inactiveservice1")))));
-        Path cancelModal = div.that(hasId("scheduledialog_inactive"));
-        selectDropdown(select.that(hasId("service-reactivate-select-reason")).inside(cancelModal), "Recovery");
-        perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(cancelModal)));
+        Path reactivateButtonPath = button.withText("Reactivate").inside(div.that(hasId("inactiveservice1")));
+        Thread.sleep(100);
+        try {
+            perform(() -> clickOn(reactivateButtonPath));
+            Path cancelModal = div.that(hasId("scheduledialog_inactive"));
+            selectDropdown(select.that(hasId("service-reactivate-select-reason")).inside(cancelModal), "Recovery");
+            perform(() -> clickOn(button.that(hasAggregatedTextContaining("Submit")).inside(cancelModal)));
+        }
+       catch(Exception e){
+            removePlanWhenShowDetailPopupIsAlreadyShown("BRONZE_NEW");
+        }
+    }
+
+    private void retract() throws Exception {
+        waitForJSandJQueryToLoad(driver);
+        perform(() -> clickOn(button.that(hasAggregatedTextContaining("Retrack")
+                .and(hasAncesctor(tr.that(isNthSibling(0)
+                        .and(hasAncesctor(table.that(hasId("activeservice"))))))))));
     }
 
     private void deactivate() throws Exception {
@@ -341,16 +366,6 @@ public class FastwayRunner {
     }
 
     private void closeAllPopup() {
-//        boolean isAnyPopupDisplayed = true;
-//        while (isAnyPopupDisplayed) {
-//            isAnyPopupDisplayed = false;
-//            for(WebElement el : findAll(button.withClass("close").inside(div.withClass("modal")))) {
-//                if (el.isEnabled() && el.isDisplayed()) {
-//                    el.click();
-//                    isAnyPopupDisplayed = true;
-//                }
-//            }
-//        }
         ((JavascriptExecutor) driver).executeScript("$('.modal').modal('hide')");
     }
 

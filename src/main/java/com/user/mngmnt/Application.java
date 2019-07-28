@@ -5,8 +5,10 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 @ComponentScan(basePackages = {"com.user.mngmnt", "com.user.mngmnt.configuration", "com.user.mngmnt.controller",
 		"com.user.mngmnt.model", "com.user.mngmnt.repository", "com.user.mngmnt.service" })
 public class Application extends SpringBootServletInitializer {

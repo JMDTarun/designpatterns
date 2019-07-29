@@ -14,6 +14,7 @@ public class CustomerLedgreReport {
 	private Date date;
 	private String action;
     private String customerLedgreEntry;
+    private String setTopBoxNumber;
 	private Double credit;
 	private Double debit;
 	private String creditOrDebit;

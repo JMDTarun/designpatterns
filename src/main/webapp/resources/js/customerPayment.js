@@ -133,7 +133,7 @@ $(function() {
                                 	   var myObj = JSON.parse(jsonOrderArray);
                                 	   allCustomers = myObj;
                                 	   for (var key in myObj) {
-                                		    s += '<option value="'+key+'">'+myObj[key].name+'</option>';
+                                		    s += '<option value="'+key+'">'+myObj[key].customerCode+'</option>';
                                 		}
                                   }
                                   return s + "</select>";
@@ -147,11 +147,39 @@ $(function() {
 				index:"customerCode",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
 					if(rowObject) {
-						return rowObject.customer.customerCode;
+						return rowObject.customer.name;
 					}
 					return "";
 				},
 				editable: true,
+			},
+			{
+				name:"customer.name",
+				label: 'Name',
+				index:"customer.name",
+				editable: false,
+				editrules: { edithidden: true }
+			},
+			{
+				name:"customer.area.name",
+				label: 'Area',
+				index:"customer.area.name",
+				editable: false,
+				editrules: { edithidden: true }
+			},
+			{
+				name:"customer.subArea.wardNumber",
+				label: 'Sub Area',
+				index:"customer.subArea.wardNumber",
+				editable: false,
+				editrules: { edithidden: true }
+			},
+			{
+				name:"customer.street.streetNumber",
+				label: 'Street',
+				index:"customer.street.streetNumber",
+				editable: false,
+				editrules: { edithidden: true }
 			},
 			{
 				name:"amountCredit",

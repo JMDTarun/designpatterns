@@ -41,7 +41,7 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http.headers().frameOptions().disable();
-        http.authorizeRequests().antMatchers("/login", "/logout", "/h2-console/**").permitAll()
+        http.authorizeRequests().antMatchers("/login", "/logout", "/h2-console/**", "/resources/**").permitAll()
                 .antMatchers("/users", "/allUsers/**", "/user/**", "/revertUtility", "/runUtility", "/utility")
                 .hasAuthority(RoleNames.ADMIN.name()).anyRequest().authenticated().and().formLogin().loginPage("/login")
                 .defaultSuccessUrl("/").usernameParameter("username").passwordParameter("password").and().logout()

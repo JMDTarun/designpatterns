@@ -51,6 +51,11 @@ $(function() {
 				index: 'action'
 			},
 			{
+				name:'setTopBoxNumber',
+				label: 'Set Top Box Number',
+				index: 'setTopBoxNumber'
+			},
+			{
 				name:'credit',
 				label: 'Credit',
 				index: 'credit'
@@ -94,6 +99,10 @@ $(function() {
 	    	$("#selectCustomerName").append('<option value="'+key+'">'+result[key].name+'</option>')
 	    }
 	  }});
+
+	$("#selectCustomerCode").change(function() {
+		$("#selectCustomerName").val($(this).val()).change();
+	});
 	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerLedgreReport?'+getUrlParams();

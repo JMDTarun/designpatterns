@@ -4,9 +4,6 @@ import java.util.Date;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
-import com.user.mngmnt.enums.PaymentMode;
-import com.user.mngmnt.enums.PaymentType;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

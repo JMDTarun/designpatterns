@@ -77,11 +77,6 @@ $(function() {
 				index: 'customer.mobile'
 			},
 			{
-				name:'customer.mobile',
-				label: 'Mobile',
-				index: 'customer.mobile'
-			},
-			{
 				name:'customerSetTopBox.entryDate',
 				label: 'Issue Date',
 				index: 'customerSetTopBox.entryDate',
@@ -97,6 +92,26 @@ $(function() {
 				name:'networkChannels',
 				label: 'Channels',
 				index: 'networkChannels'
+			},
+			{
+				name:'customer.balance',
+				label: 'Type',
+				index: 'customer.balance',
+				formatter: function myformatter ( cellvalue, options, rowObject ) {
+					if(cellvalue < 0) {
+						return "Dr";
+					} else {
+						return "Cr"
+					}
+				}
+			},
+			{
+				name:'customer.balance',
+				label: 'Outstanding',
+				index: 'customer.balance', 
+				formatter: function myformatter ( cellvalue, options, rowObject ) {
+					return Math.abs(cellvalue);
+				}
 			}
 		],
 		caption: "Customer Outstanding",

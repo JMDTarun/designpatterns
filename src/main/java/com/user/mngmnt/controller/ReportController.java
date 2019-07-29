@@ -153,7 +153,6 @@ public class ReportController {
 		return customers.stream().map(c -> {
 			
 			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes().stream()
-					.filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
                     .filter(box -> !box.isDeleted()).collect(Collectors.toList());
 			
             if (resportSearchCriteria.getPackPrice() != null) {
@@ -166,6 +165,11 @@ public class ReportController {
                 customerSetTopBoxes = customerSetTopBoxes.stream().filter(
                         cstb -> cstb.getPack().getId().longValue() == resportSearchCriteria.getPackId().doubleValue())
                         .collect(Collectors.toList());
+            }
+            
+            if (resportSearchCriteria.getCustomerStatus() != null) {
+                customerSetTopBoxes = customerSetTopBoxes.stream().filter(cstb -> cstb.getCustomerSetTopBoxStatus()
+                        .toString().equals(resportSearchCriteria.getCustomerStatus())).collect(Collectors.toList());
             }
 			
             Double sumMonthlyRent = customerSetTopBoxes.stream()
@@ -330,6 +334,7 @@ public class ReportController {
                         .credit(cl.getAmountCredit())
                         .debit(cl.getAmountDebit())
                         .customerLedgreEntry(cl.getCustomerLedgreEntry().toString())
+                        .setTopBoxNumber(cl.getCustomerSetTopBox() != null ? cl.getCustomerSetTopBox().getSetTopBox().getSetTopBoxNumber() : "")
                         .creditOrDebit(type)
                         .date(Date.from(cl.getCreatedAt()))
                         .balance(Math.abs(round(balance, 2)))

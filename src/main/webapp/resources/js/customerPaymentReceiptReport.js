@@ -47,11 +47,6 @@ $(function() {
 				index: 'amountCredit'
 			},
 			{
-				name:'createdAt',
-				label: 'Receipt Date',
-				index: 'createdAt'
-			},
-			{
 				name:'chequeNumber',
 				label: 'Cheque Number',
 				index: 'chequeNumber'

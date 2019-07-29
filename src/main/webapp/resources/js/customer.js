@@ -229,7 +229,7 @@ $(function() {
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
 					if(rowObject.area) {
-						return rowObject.area.name;
+						return rowObject.subArea.wardNumber;
 					}
 					return "";
 				},
@@ -258,7 +258,7 @@ $(function() {
 				edittype:"select",
 				formatter: function myformatter ( cellvalue, options, rowObject ) {
 					if(rowObject.area) {
-						return rowObject.area.name;
+						return rowObject.street.streetNumber;
 					}
 					return "";
 				},
@@ -515,6 +515,19 @@ $(function() {
 			    subGrid: true,
 			    forceFit: true,
                 caption: "Set Top Boxes",
+                gridComplete: function()
+                {
+                    var rows = $("#"+subgrid_table_id).getDataIDs(); 
+                    for (var i = 0; i < rows.length; i++)
+                    {
+                    	console.log(rows[i]);
+                        var status = $("#"+subgrid_table_id).getCell(rows[i],"active");
+                        console.log(status);
+                        if(status == 0) {
+                            $("#"+subgrid_table_id).jqGrid('setRowData',rows[i],false, {  color:'white',weightfont:'bold',background:'red'});            
+                        }
+                    }
+                },
                 beforeSelectRow: function (rowid, e) {
 		        	setTopBoxSelectedRowId = rowid;
 		        	var myGrid = $("#"+subgrid_table_id);

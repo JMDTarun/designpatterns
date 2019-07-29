@@ -1,6 +1,5 @@
 package com.user.mngmnt.model;
 
-import java.time.Instant;
 import java.util.List;
 
 import javax.persistence.CascadeType;

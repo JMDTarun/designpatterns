@@ -9,6 +9,8 @@
 <link rel="stylesheet" href="resources/css/style.css" />
 <link rel="stylesheet"
 	href="/resources/css/font-awesome.min.css">
+<link rel="stylesheet" type="text/css" media="screen"
+	href="/resources/css/customerReport.css" />
 
 <script src="/resources/js/common/jquery.min.js"></script>
 <script src="/resources/js/common/jquery-ui.min.js"></script>
@@ -21,6 +23,7 @@
 <link href="/resources/css/select2.min.css" rel="stylesheet" />
 <script src="/resources/js/common/select2.min.js"></script>
 <script src="/resources/js/common/URI.min.js"></script>
+
 </head>
 <div id="navBar" style="height: 11%;">
 	<nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-primary">

@@ -323,9 +323,6 @@ public class CustomerController {
 		if (isPrepaid) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice, CreditDebit.DEBIT,
 					customerSetTopBox, null, null));
-            planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
-                    .serialNumber(setTopBox.getSetTopBoxNumber())
-                    .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
 		}
 		
 		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)

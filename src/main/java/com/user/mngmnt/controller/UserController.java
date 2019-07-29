@@ -1,165 +1,110 @@
 package com.user.mngmnt.controller;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import static java.util.Collections.singletonList;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.net.URI;
+import java.text.ParseException;
+import java.time.Instant;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.util.UriTemplate;
 
-import com.user.mngmnt.model.RoleNames;
+import com.user.mngmnt.model.ResponseHandler;
+import com.user.mngmnt.model.User;
+import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.repository.UserRepository;
+import com.user.mngmnt.service.UserService;
 
 @Controller
 public class UserController {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Value("${max.result.per.page}")
-    private int maxResults;
-
-    @Value("${max.card.display.on.pagination.tray}")
-    private int maxPaginationTraySize;
-
-
+    
+    @Autowired
+    private PasswordEncoder bCryptPasswordEncoder;
+    
+    @Autowired
+    private GenericRepository genericRepository;
 
     @GetMapping("/")
-    public ModelAndView home(@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-                             @RequestParam(value = "size", defaultValue = "4", required = false) Integer size,
-                             HttpServletRequest request, HttpServletResponse response) {
+    public String home() {
+        return "customer";
+    }
+    
+    @GetMapping("/users")
+    public String createUser() {
+        return "create-user";
+    }
 
-        Collection<SimpleGrantedAuthority> authorities = (Collection<SimpleGrantedAuthority>)
-                SecurityContextHolder.getContext().getAuthentication().getAuthorities();
-        List<String> list = new ArrayList<>();
-        authorities.forEach(e -> {
-            list.add(e.getAuthority());
+    @GetMapping("/allUsers")
+    public @ResponseBody ViewPage<User> listNetworks(@RequestParam("_search") Boolean search,
+            @RequestParam(value = "filters", required = false) String filters,
+            @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+            @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+            @RequestParam(value = "sort", defaultValue = "firstName", required = false) String sort) throws ParseException {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
+        if (search) {
+            return getFilteredUsers(filters, pageRequest);
+        }
+        return new ViewPage<>(userRepository.findAll(pageRequest));
+    }
+
+    public ViewPage<User> getFilteredUsers(String filters, PageRequest pageRequest) throws ParseException {
+        long count = userRepository.count();
+        List<User> records = genericRepository.findAllWithCriteria(filters, User.class, pageRequest);
+        return ViewPage.<User>builder().rows(records).max(pageRequest.getPageSize())
+                .page(pageRequest.getPageNumber() + 1).total(count).build();
+    }
+
+    @RequestMapping(value = "/user/{id}", method = POST)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateUser(@PathVariable("id") Long id, @ModelAttribute User user) {
+        userRepository.findById(id).ifPresent(n -> {
+            user.setUpdatedAt(Instant.now());
+            user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+            user.setId(n.getId());
+            userRepository.save(user);
         });
-
-        ModelAndView modelAndView = new ModelAndView();
-        if (list.contains(RoleNames.ADMIN.name())) {
-            modelAndView.setViewName("home");
-/*            Page<User> allUsers = userService.listUsers(PageRequest.of(page, size, Sort.by("firstName")));
-            modelAndView.addObject("allUsers", allUsers);
-*/            modelAndView.addObject("maxTraySize", size);
-            modelAndView.addObject("currentPage", page);
-        } else {
-            //modelAndView.setViewName("user-home");
-            modelAndView.setViewName("home");
-/*            User user = userService.findUserByEmail(request.getUserPrincipal().getName());
-            modelAndView.addObject("currentUser", user);
-*/        }
-
-        return modelAndView;
     }
 
-/*    @GetMapping("/searchBox")
-    public ModelAndView searchByTerm(@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
-                                     @RequestParam(value = "size", defaultValue = "4", required = false) Integer size,
-                                     @RequestParam(value = "searchTerm", required = false) String searchTerm) {
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("home");
-        Page<User> allUsers = userService.searchByTerm(searchTerm.trim(), PageRequest.of(page, size, Sort.by("firstName")));
-        modelAndView.addObject("allUsers", allUsers);
-        modelAndView.addObject("maxTraySize", size);
-        modelAndView.addObject("currentPage", page);
-        return modelAndView;
-    }
-
-
-
-    @GetMapping("/search")
-    public ModelAndView search() {
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("search");
-        return modelAndView;
-    }
-
-
-
-    @PostMapping("/searchSubmit")
-    public ModelAndView searchSubmit(@ModelAttribute SearchDTO searchDto) {
-        List<User> result = userService.searchBy(searchDto.getSearchKeyword(), searchDto.getCriteria());
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("search");
-        modelAndView.addObject("result", result);
-        return modelAndView;
-    }
-
-
-
-    @GetMapping("/addNewUser")
-    public ModelAndView addNewUser() {
-        ModelAndView modelAndView = new ModelAndView();
-        modelAndView.setViewName("create-user");
-        return modelAndView;
-    }
-
-
-
-    @ResponseBody
-    @PostMapping("/save")
-    public Response update(@RequestBody User user) {
-        User dbUser = userService.findById(user.getId());
-        dbUser.setFirstName(user.getFirstName());
-        dbUser.setLastName(user.getLastName());
-        userService.saveUser(dbUser);
-        return new Response(302, AppConstant.SUCCESS, "/");
-    }
-
-
-
-    @PostMapping("/register")
-    public String register(@ModelAttribute User user) {
-        String result = "redirect:/";
-        User dbUser = userService.findUserByEmail(user.getEmail());
-        if (user.getFirstName() == null || user.getFirstName().trim().isEmpty()) {
-            result = "redirect:/addNewUser?error=Enter valid fist name";
-        } else if (user.getLastName() == null || user.getLastName().trim().isEmpty()) {
-            result = "redirect:/addNewUser?error=Enter valid last name";
-        } else if (user.getEmail() == null || user.getEmail().trim().isEmpty()) {
-            result = "redirect:/addNewUser?error=Enter valid email";
-        } else if (user.getPassword() == null || user.getPassword().trim().isEmpty()) {
-            result = "redirect:/addNewUser?error=Enter valid password";
-        } else if (StringUtils.isEmpty(user.getRoleName())) {
-            result = "redirect:/addNewUser?error=Select a valid Role";
+    @RequestMapping(value = "/user", method = POST)
+    public ResponseEntity<ResponseHandler> createUser(HttpServletRequest request, @ModelAttribute User user) {
+        if (userRepository.findByEmailIgnoreCase(user.getEmail()) == null) {
+            user.setCreatedAt(Instant.now());
+            user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+            User dbUser = userRepository.save(user);
+            URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
+                    dbUser.getId());
+            final HttpHeaders headers = new HttpHeaders();
+            headers.put("Location", singletonList(uri.toASCIIString()));
+            return new ResponseEntity<>(headers, HttpStatus.CREATED);
         }
-        if (dbUser == null) {
-            userService.saveUser(user);
-        } else {
-            result = "redirect:/addNewUser?error=User Already Exists!";
-        }
-
-        return result;
+        return new ResponseEntity<>(ResponseHandler.builder()
+                .errorCode(HttpStatus.CONFLICT.value())
+                .errorCause("User with email already exists.")
+                .build(), HttpStatus.CONFLICT);
     }
-
-
-
-    @GetMapping("/delete/{userId}")
-    public String delete(@PathVariable Long userId) {
-        userService.removeById(userId);
-        return "redirect:/";
-    }
-
-
-
-    @ResponseBody
-    @GetMapping("/removeAll")
-    public Boolean removeAll() {
-        return userService.removeAll();
-    }
-*/
-
 
     @GetMapping("/403")
     public ModelAndView accessDenied() {

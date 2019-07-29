@@ -6,7 +6,6 @@
 
 <body>
 
-<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
@@ -14,8 +13,8 @@
     <meta name="description" content="403 Forbidden">
     <title>403 Forbidden</title>
     <!-- Bootstrap core CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css">
+    <link rel="stylesheet" href="/resources/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/resources/css/font-awesome.min.css">
     <style>
         /* Error Page Inline Styles */
         body {
@@ -79,7 +78,7 @@
             <script type="text/javascript">
                 function checkSite() {
                     var currentSite = window.location.hostname;
-                    window.location = "http://" + currentSite;
+                    window.location = "http://localhost:9090/";
                 }
             </script>
         </p>

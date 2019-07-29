@@ -8,7 +8,19 @@
 <link rel="stylesheet" href="resources/bootstrap/css/bootstrap.min.css">
 <link rel="stylesheet" href="resources/css/style.css" />
 <link rel="stylesheet"
-	href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	href="/resources/css/font-awesome.min.css">
+
+<script src="/resources/js/common/jquery.min.js"></script>
+<script src="/resources/js/common/jquery-ui.min.js"></script>
+<script src="/resources/js/lib/grid.locale-en.js"></script>
+<script src="/resources/js/lib/jquery.jqGrid.src.js"></script>
+<link rel="stylesheet" type="text/css" media="screen"
+	href="/resources/css/jquery-ui.css" />
+<link rel="stylesheet" type="text/css" media="screen"
+	href="/resources/css/ui.jqgrid.css" />
+<link href="/resources/css/select2.min.css" rel="stylesheet" />
+<script src="/resources/js/common/select2.min.js"></script>
+<script src="/resources/js/common/URI.min.js"></script>
 </head>
 <div id="navBar" style="height: 11%;">
 	<nav class="navbar sticky-top navbar-expand-lg navbar-dark bg-primary">
@@ -30,7 +42,9 @@
 						<span class="sr-only">(current)</span>
 				</a></li>
 				<li class="nav-item active"><a class="nav-link"
-					href="/addNewUser">User</a></li>
+					href="/users">User</a></li>
+				<li class="nav-item active"><a class="nav-link"
+					href="/users">User</a></li>
 				<li class="nav-item active"><a class="nav-link" href="/area">Area</a>
 				</li>
 				<li class="nav-item active"><a class="nav-link" href="/network">Network</a>
@@ -45,23 +59,29 @@
 					href="/customer">Customer</a></li>
 				<li class="nav-item active"><a class="nav-link"
 					href="/customerPayment">Customer Payment</a></li>
-				<li class="nav-item dropdown-content">
-					<a href="#">Reports &#9662;</a>
-            		<ul class="dropdown">
-				    <li><a class="nav-link" href="/customerLedgreReport">Customer Ledgre Report</a></li>
-				    <li><a class="nav-link" href="/customerOutstandingReports">Customer Outstanding Report</a></li>
-				    <li><a class="nav-link" href="/customerPartialPaymentReports">Customer Partial Payment Report</a></li>
-				    <li><a class="nav-link" target="_blank" href="/uploadActions">Fastway Utility</a></li>
-				    </ul>
-				</li>	
+				<li class="nav-item dropdown-content"><a href="#">Reports
+						&#9662;</a>
+					<ul class="dropdown">
+						<li class="nav-item active"><a class="nav-link"
+							href="/customerReports">Customer Reports</a></li>
+						<li><a class="nav-link" href="/customerLedgreReports">Customer
+								Ledgre Report</a></li>
+						<li><a class="nav-link" href="/customerOutstandingReports">Customer
+								Outstanding Report</a></li>
+						<li><a class="nav-link" href="/customerPartialPaymentReports">Customer
+								Partial Payment Report</a></li>
+						<li><a class="nav-link" href="/paymentReceipts">Payment
+								Receipt</a></li>
+						<li><a class="nav-link" target="_blank" href="/uploadActions">Fastway
+								Utility</a></li>
+					</ul></li>
 				<li class="nav-item active"><a class="nav-link"
-					href="/customerReports">Customer Reports</a></li>
+					href="/utility">Utility</a></li>	
 			</ul>
 			<div>
 				<a style="text-align: right; color: #fff;"
 					href="<c:url value="logout" />">Logout <i
 					class="fa fa-sign-out fa-lg"></i>
-
 				</a>
 			</div>
 		</div>

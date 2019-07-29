@@ -1,5 +1,8 @@
 $(function() {
 
+	$("#successDiv").hide();
+	$("#errorDiv").hide();
+	
 	$.extend($.jgrid.defaults, {
 				datatype: 'json',
 				jsonReader : {
@@ -790,6 +793,7 @@ $(function() {
 					addOptionsSG,
 					delOptionsSG
 				);
+			$("#"+pager_id).css({"height":"55"});
 			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
 	                {
 	                    buttonicon: "ui-icon-trash",
@@ -863,6 +867,30 @@ $(function() {
 	                			$("#currentSetTopBox").attr("readonly","readonly");
 
 	                			$("#setTopBoxReplace").dialog('open');
+	                    	} else {
+	                    		$("#mySelectRowDialog").dialog('open');
+	                    	}
+	                    }
+	                });
+			$("#"+subgrid_table_id).navButtonAdd("#"+pager_id,
+	                {
+	                    buttonicon: "ui-icon-trash",
+	                    title: "Retrack",
+	                    caption: "Retrack",
+	                    position: "last",
+	                    onClickButton: function() {
+	                    	var myGrid = $("#"+subgrid_table_id);
+	                    	selectedRowId = myGrid.jqGrid ('getGridParam', 'selrow');
+	                    	setTopBoxGridId = myGrid;
+	                    	if(selectedRowId) {
+	                    		$.ajax({url: "retrackSetTopBox?customerSetTopBoxId="+selectedRowId, success: function(result){
+	                    			$("#successDiv").text("Successfully retracked Set top box.");
+	                    			$("#successDiv").show();
+	                    			setTimeout(function() {
+	                    		        $("#successDiv").hide('blind', {}, 500)
+	                    		    }, 5000);
+	                    			$("#errorDiv").hide();
+	                    		}});
 	                    	} else {
 	                    		$("#mySelectRowDialog").dialog('open');
 	                    	}
@@ -1335,6 +1363,8 @@ $(function() {
 		}
 	});
 
+	$("ui-jqgrid-pager").css({"height":"55"});
+	
 	function billingCycleState() {
 		if($("#paymentMode").val() === "PREPAID") {
 			$("#billingCycle").attr("disabled","disabled");

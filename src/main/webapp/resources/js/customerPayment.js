@@ -65,6 +65,7 @@ $(function() {
 		},
 		afterShowForm: function (formid) {
 			manageFields();
+			disableFields();
         },
 		mtype: "POST"
 	};
@@ -153,9 +154,9 @@ $(function() {
 				editable: true,
 			},
 			{
-				name:"amount",
+				name:"amountCredit",
 				label: 'Amount',
-				index:"amount",
+				index:"amountCredit",
 				formatter:'number',
 				editable: true,
 			},
@@ -270,5 +271,9 @@ $(function() {
 				}
 			});
 		}, 200);
+	}
+	
+	function disableFields(){
+		
 	}
 });

@@ -171,6 +171,12 @@ $(function() {
 	$("#selectCustomerStatus").addClass("ui-widget ui-jqdialog");
 	$("#selectCustomerStatus").select2();
 	
+	$("#selectOutstanding").addClass("ui-widget ui-jqdialog");
+	$("#selectOutstanding").select2();
+	
+	$("#selectAssignedSetTopBoxes").addClass("ui-widget ui-jqdialog");
+	$("#selectAssignedSetTopBoxes").select2();
+	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerOutstandingReport?'+getUrlParams();
 		$(this).attr("href", urlStr);
@@ -207,6 +213,18 @@ $(function() {
         if($("#selectRent").val() !== "") {
         	urlStr += encodeURIComponent("packPrice") + '=' + encodeURIComponent($("#selectRent").val()) + "&";
         }
+        if($("#outstandingStart").val() !== "") {
+        	urlStr += encodeURIComponent("rangeStart") + '=' + encodeURIComponent($("#outstandingStart").val()) + "&";
+        }
+        if($("#outstandingEnd").val() !== "") {
+        	urlStr += encodeURIComponent("rangeEnd") + '=' + encodeURIComponent($("#outstandingEnd").val()) + "&";
+        }
+        if($("#selectOutstanding").val() !== "") {
+        	urlStr += encodeURIComponent("outstandingValue") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
+        }
+        if($("#selectAssignedSetTopBoxes").val() !== "") {
+        	urlStr += encodeURIComponent("assignedSetTopBoxes") + '=' + encodeURIComponent($("#selectAssignedSetTopBoxes").val()) + "&";
+		}
         return urlStr;
 	}
 	

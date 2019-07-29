@@ -23,20 +23,20 @@ public class DriverConfig {
 
     private File driverFile;
 
-    @PostConstruct
-    public void extractDrivver() throws IOException, URISyntaxException {
-        ClassLoader classLoader = getClass().getClassLoader();
-        URL resource = classLoader.getResource("chromedriver.exe");
-        File f = new File("Driver");
-        if (!f.exists()) {
-            f.mkdirs();
-        }
-        driverFile= new File("Driver" + File.separator + "chromedriver.exe");
-        if (!driverFile.exists()) {
-            driverFile.createNewFile();
-        }
-        Files.copy(Paths.get(resource.toURI()), driverFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-    }
+//    @PostConstruct
+//    public void extractDrivver() throws IOException, URISyntaxException {
+//        ClassLoader classLoader = getClass().getClassLoader();
+//        URL resource = classLoader.getResource("chromedriver.exe");
+//        File f = new File("Driver");
+//        if (!f.exists()) {
+//            f.mkdirs();
+//        }
+//        driverFile= new File("Driver" + File.separator + "chromedriver.exe");
+//        if (!driverFile.exists()) {
+//            driverFile.createNewFile();
+//        }
+//        Files.copy(Paths.get(resource.toURI()), driverFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+//    }
 
     // @Bean
     public WebDriver driver() {

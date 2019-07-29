@@ -99,6 +99,9 @@ $(function() {
 		}
 	};
 
+	$("#successDiv").hide();
+	$("#errorDiv").hide();
+	
 	$("#customerPartialPaymentReport")
 			.jqGrid(options)
 			.navGrid('#pagerCustomerPartialPaymentReport',
@@ -113,6 +116,21 @@ $(function() {
 	
 	$("#partialPaymanetBetweenStart").datepicker('setDate', d);
 	$("#partialPaymanetBetweenEnd").datepicker('setDate', new Date());
+	
+	$("#selectOutstanding").addClass("ui-widget ui-jqdialog");
+	$("#selectOutstanding").select2();
+	
+	$("#deactivateSetTopBoxes").click(function() {
+		$("#deactivateSetTopBoxes").attr("disabled", "disabled");
+		$.ajax({url: "deactivateCustomerNoPaymentSetTopBox?"+getUrlParams(), success: function(result){
+			$("#successDiv").text("Successfully deactivated Set top boxes.");
+			$("#successDiv").show();
+			setTimeout(function() {
+		        $("#successDiv").hide('blind', {}, 500)
+		    }, 5000);
+			$("#errorDiv").hide();
+		}});
+	});
 	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerPartialPaymentReport?'+getUrlParams();
@@ -137,6 +155,9 @@ $(function() {
         }
         if($('input[name=paymentBetween]:checked').val() === "noPayment") {
         	urlStr += encodeURIComponent("noPaymentBetween") + '= true' + "&";
+        }
+        if($("#selectOutstanding").val() !== "") {
+        	urlStr += encodeURIComponent("outstandingValue") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
         }
         return urlStr;
 	}

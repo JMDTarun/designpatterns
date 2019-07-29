@@ -16,7 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import com.user.mngmnt.model.CustomerLedgre;
-import com.user.mngmnt.model.ResportSearchCriteria;
+import com.user.mngmnt.model.ReportSearchCriteria;
 import com.user.mngmnt.repository.ReportsRepository;
 
 @Repository
@@ -26,7 +26,7 @@ public class ReportsRepositoryImpl implements ReportsRepository {
     private EntityManager entityManager;
     
     @Override
-    public List<CustomerLedgre> findAllWithPartialPayment(ResportSearchCriteria resportSearchCriteria, Pageable pageable) {
+    public List<CustomerLedgre> findAllWithPartialPayment(ReportSearchCriteria resportSearchCriteria, Pageable pageable) {
         
         CriteriaBuilder builder = entityManager.getCriteriaBuilder();
         CriteriaQuery<CustomerLedgre> criteriaQuery = builder.createQuery(CustomerLedgre.class);

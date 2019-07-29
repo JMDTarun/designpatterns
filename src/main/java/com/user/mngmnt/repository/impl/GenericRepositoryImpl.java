@@ -23,10 +23,14 @@ import javax.persistence.criteria.Root;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import com.user.mngmnt.enums.CustomerLedgreEntry;
 import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
+import com.user.mngmnt.enums.PaymentMode;
+import com.user.mngmnt.enums.PaymentType;
 import com.user.mngmnt.mapper.JqgridObjectMapper;
+import com.user.mngmnt.model.CustomerType;
 import com.user.mngmnt.model.JqgridFilter;
-import com.user.mngmnt.model.ResportSearchCriteria;
+import com.user.mngmnt.model.ReportSearchCriteria;
 import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.utils.ReflectionUtils;
 
@@ -35,8 +39,6 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 
 	@PersistenceContext
 	private EntityManager entityManager;
-
-	private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
 
 	private Map<String, String> fieldsMap = new HashMap<>();
 
@@ -56,7 +58,10 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		fieldsMap.put("assignedSetTopBoxes", "customerSetTopBoxes");
 		fieldsMap.put("customerId", "customer.id");
 		fieldsMap.put("packId", "customerSetTopBoxes.pack.id");
-		fieldsMap.put("packPrice", "customerSetTopBoxes.packPrice");
+		fieldsMap.put("prAreaId", "customer.area.id");
+		fieldsMap.put("prSubAreaId", "customer.subArea.id");
+		fieldsMap.put("prStreetId", "customer.street.id");
+		fieldsMap.put("prMachineNumner", "machineId");
 	}
 
 	@Override
@@ -103,7 +108,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	}
 
 	@Override
-	public List<T> findAllWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c, PageRequest pageRequest)
+	public List<T> findAllWithCriteria(ReportSearchCriteria resportSearchCriteria, Class<T> c, PageRequest pageRequest)
 			throws ParseException, NoSuchFieldException {
 		CriteriaQuery<T> criteriaQuery = getFilterCriteria(resportSearchCriteria, c);
 		if (pageRequest == null) {
@@ -115,19 +120,19 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 	}
 
 	@Override
-	public Integer findCountWithCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c)
+	public Integer findCountWithCriteria(ReportSearchCriteria resportSearchCriteria, Class<T> c)
 			throws ParseException, NoSuchFieldException {
 
 		CriteriaQuery<T> criteriaQuery = getFilterCriteria(resportSearchCriteria, c);
 		return entityManager.createQuery(criteriaQuery).getResultList().size();
 	}
 
-	private CriteriaQuery<T> getFilterCriteria(ResportSearchCriteria resportSearchCriteria, Class<T> c)
+	private CriteriaQuery<T> getFilterCriteria(ReportSearchCriteria resportSearchCriteria, Class<T> c)
 			throws NoSuchFieldException, ParseException {
 		CriteriaBuilder builder = entityManager.getCriteriaBuilder();
 		CriteriaQuery<T> criteriaQuery = builder.createQuery(c);
 		Root<T> root = criteriaQuery.from(c);
-		List<Field> fields = ReflectionUtils.getPrivateFields(ResportSearchCriteria.class);
+		List<Field> fields = ReflectionUtils.getPrivateFields(ReportSearchCriteria.class);
 		List<Predicate> predicatesList = new ArrayList<>();
 		if (resportSearchCriteria != null) {
 			for (int i = 0; i < fields.size(); i++) {
@@ -191,26 +196,46 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 		return criteriaQuery;
 	}
 	
-	private void addAdditionalCriteria(List<Predicate> predicates, ResportSearchCriteria resportSearchCriteria, CriteriaBuilder builder, Root<T> root) {
+	private void addAdditionalCriteria(List<Predicate> predicates, ReportSearchCriteria resportSearchCriteria, CriteriaBuilder builder, Root<T> root) {
 	    if(resportSearchCriteria != null) {
-            if (resportSearchCriteria.getIsGreaterThenZero() != null) {
-                if (resportSearchCriteria.getIsGreaterThenZero()) {
-                    predicates.add(builder.ge(root.get("balance"), 0.0));
-                } else {
+            if (resportSearchCriteria.getOutstandingValue() != null) {
+                if (resportSearchCriteria.getOutstandingValue().intValue() == 0) {
+                    predicates.add(builder.equal(root.get("balance"), 0.0));
+                } else if(resportSearchCriteria.getOutstandingValue().intValue() < 0) {
                     predicates.add(builder.lt(root.get("balance"), 0.0));
+                } else {
+                	predicates.add(builder.gt(root.get("balance"), 0.0));
                 }
             }
             if (resportSearchCriteria.getRangeStart() != null) {
                 predicates.add(builder.ge(root.get("balance"),resportSearchCriteria.getRangeStart()));
             }
             if (resportSearchCriteria.getRangeEnd() != null) {
-                predicates.add(builder.lt(root.get("balance"), resportSearchCriteria.getRangeEnd()));
+                predicates.add(builder.le(root.get("balance"), resportSearchCriteria.getRangeEnd()));
             }
             if (resportSearchCriteria.getPaymentDayStart() != null) {
                 predicates.add(builder.ge(root.join("customerSetTopBoxes").get("billingDay"), resportSearchCriteria.getPaymentDayStart()));
             }
             if (resportSearchCriteria.getPaymentDayEnd() != null) {
-                predicates.add(builder.lt(root.join("customerSetTopBoxes").get("billingDay"), resportSearchCriteria.getPaymentDayEnd()));
+                predicates.add(builder.le(root.join("customerSetTopBoxes").get("billingDay"), resportSearchCriteria.getPaymentDayEnd()));
+            }
+			if (resportSearchCriteria.isPaymentReceiptReport()) {
+				predicates.add(builder.equal(root.get("customerLedgreEntry"), CustomerLedgreEntry.MANUAL));
+			}
+            if(resportSearchCriteria.getPrFromDate() != null) {
+                predicates.add(builder.greaterThanOrEqualTo(root.get("paymentDate"), resportSearchCriteria.getPrFromDate()));
+            }
+            if(resportSearchCriteria.getPrToDate() != null) {
+                predicates.add(builder.lessThanOrEqualTo(root.get("paymentDate"), resportSearchCriteria.getPrToDate()));
+            }
+            if(resportSearchCriteria.getPrPaymentMode() != null) {
+                predicates.add(builder.equal(root.get("paymentMode"), PaymentMode.valueOf(resportSearchCriteria.getPrPaymentMode())));
+            }
+            if(resportSearchCriteria.getPrPaymentType() != null) {
+                predicates.add(builder.equal(root.get("paymentType"), PaymentType.valueOf(resportSearchCriteria.getPrPaymentType())));
+            }
+            if(resportSearchCriteria.getCustomerType() != null) {
+            	predicates.add(builder.equal(root.join("customerType").get("id"), resportSearchCriteria.getCustomerType()));
             }
 	    }
     }

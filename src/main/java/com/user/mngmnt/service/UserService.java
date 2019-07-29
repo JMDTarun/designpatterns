@@ -9,7 +9,7 @@ import java.util.List;
 public interface UserService {
     User findUserByEmail(String email);
 
-    void saveUser(User user);
+    User saveUser(User user);
 
     Boolean removeAll();
 
@@ -17,9 +17,6 @@ public interface UserService {
 
     User findById(Long id);
 
-    Page<User> searchByTerm(String name, Pageable pageable);
-
     Page<User> listUsers(Pageable pageable);
 
-    List<User> searchBy(String keyword, String criteria);
 }

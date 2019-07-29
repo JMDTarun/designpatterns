@@ -28,8 +28,4 @@ public class CustomUserDetailsService implements UserDetailsService {
 		}
 		return new UserAdapter(user);
 	}
-
-	public User saveUser(User user) {
-		return userRepository.save(user);
-	}
 }

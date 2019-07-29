@@ -1,13 +1,13 @@
 .reportFilters {
 	display: grid;
-    padding: 5;
-    grid-template-columns: auto auto auto;
-    grid-gap: 10px;
-    background-color: #fff;
-    color: #444;
+	padding: 5;
+	grid-template-columns: auto auto auto;
+	grid-gap: 10px;
+	background-color: #fff;
+	color: #444;
 }
 
-.reportFilters > * {
+.reportFilters>* {
 	padding-right: 25px;
 	width: 25%;
 	display: grid;

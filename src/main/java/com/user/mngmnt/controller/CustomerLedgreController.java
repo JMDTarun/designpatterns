@@ -8,6 +8,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.transaction.Transactional;
@@ -31,13 +32,18 @@ import org.springframework.web.util.UriTemplate;
 import com.user.mngmnt.enums.Action;
 import com.user.mngmnt.enums.CreditDebit;
 import com.user.mngmnt.enums.CustomerLedgreEntry;
+import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
 import com.user.mngmnt.model.Customer;
 import com.user.mngmnt.model.CustomerLedgre;
+import com.user.mngmnt.model.CustomerSetTopBox;
+import com.user.mngmnt.model.PlanChangeControl;
+import com.user.mngmnt.model.PlanChangeControlAction;
 import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.util.CalcUtils;
 
 @Controller
@@ -51,6 +57,9 @@ public class CustomerLedgreController {
 	
 	@Autowired
 	private GenericRepository genericRepository;
+	
+	@Autowired
+	private PlanChangeControlRepository planChangeControlRepository;
 	
 	@GetMapping("/customerPayment")
 	public String getCustomer() {
@@ -83,16 +92,22 @@ public class CustomerLedgreController {
 		Optional<CustomerLedgre> dbCustomerLedgre = customerLedgreRepository.findById(id);
 		if(dbCustomerLedgre.isPresent()) {
 			CustomerLedgre c = dbCustomerLedgre.get();
-			customerLedgre.setId(c.getId());
-			
 			Double dbAmountCredit = c.getAmountCredit();
 			Double amountCredit = customerLedgre.getAmountCredit();
+			
+			c.setAmountCredit(customerLedgre.getAmountCredit());
+			c.setPaymentDate(customerLedgre.getPaymentDate());
+			c.setPaymentType(customerLedgre.getPaymentType());
+			c.setPaymentMode(customerLedgre.getPaymentMode());
+			c.setChequeDate(customerLedgre.getChequeDate());
+			c.setChequeNumber(customerLedgre.getChequeNumber());
+			
 			Customer customer = c.getCustomer();
 			customer.setAmountCredit(CalcUtils.round(customer.getAmountCredit() + (amountCredit - dbAmountCredit)));
 			customer.setBalance(CalcUtils.round(customer.getAmountCredit() - customer.getAmountDebit()));
 			customerRepository.save(customer);
 			
-			customerLedgreRepository.save(customerLedgre);
+			customerLedgreRepository.save(c);
 		}
 		return new ResponseEntity<>(HttpStatus.CREATED);
 	}
@@ -110,12 +125,37 @@ public class CustomerLedgreController {
 		Customer customer = customerRepository.getOne(customerLedgre.getCustomer().getId());
 		customer.setAmountCredit(customer.getAmountCredit() + customerLedgre.getAmountCredit());
 		customer.setBalance(customer.getAmountCredit() - customer.getAmountDebit());
+		if(customer.getBalance() > (customer.getCustomerType().getMaxAmount() * -1)) {
+			List<CustomerSetTopBox> customerSetTopBoxes = customer.getCustomerSetTopBoxes().stream()
+					.filter(box -> CustomerSetTopBoxStatus.DEACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+					.filter(box -> box.getDeactivateReason().equals("NO PAYMENT"))
+					.filter(box -> box.isDeleted()).collect(Collectors.toList());
+			for (CustomerSetTopBox dbCstb : customerSetTopBoxes) {
+				activateSetTopBoxes(dbCstb);
+			}
+		}
 		customerRepository.save(customer);
 		URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(),
 				dbCustomerLedgre.getId());
 		final HttpHeaders headers = new HttpHeaders();
 		headers.put("Location", singletonList(uri.toASCIIString()));
 		return new ResponseEntity<>(headers, HttpStatus.CREATED);
+	}
+	
+	private void activateSetTopBoxes(CustomerSetTopBox dbCstb) {
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
+				.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+				.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).plans(dbCstb.getPack().getName())
+				.listName("SUGGESTIVE PACKS").build());
+
+		dbCstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+					.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+					.plans(cnc.getNetworkChannel().getName())
+					.listName(cnc.getNetworkChannel().getNetwork().getName()).build());
+		});
 	}
 	
 }

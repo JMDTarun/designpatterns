@@ -19,6 +19,7 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,9 +36,14 @@ import com.user.mngmnt.model.CustomerPartialPaymentColumns;
 import com.user.mngmnt.model.CustomerReport;
 import com.user.mngmnt.model.CustomerReportColumns;
 import com.user.mngmnt.model.CustomerSetTopBox;
-import com.user.mngmnt.model.ResportSearchCriteria;
+import com.user.mngmnt.model.PaymentReceiptColumns;
+import com.user.mngmnt.model.PlanChangeControl;
+import com.user.mngmnt.model.PlanChangeControlAction;
+import com.user.mngmnt.model.ReportSearchCriteria;
+import com.user.mngmnt.model.ResponseHandler;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.GenericRepository;
+import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.repository.ReportsRepository;
 import com.user.mngmnt.util.ExcelUtils;
 
@@ -50,6 +56,9 @@ public class ReportController {
 	
 	@Autowired
 	private ReportsRepository reportsRepository;
+	
+	@Autowired
+	private PlanChangeControlRepository planChangeControlRepository;
 
 	private static final Integer MAX_RECORDS = 1000000;
 	
@@ -65,7 +74,7 @@ public class ReportController {
 			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
 			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
 			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
-			@ModelAttribute ResportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+			@ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
 		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
 		List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class,
 				pageRequest);
@@ -74,10 +83,43 @@ public class ReportController {
 		return ViewPage.<CustomerReport>builder().rows(cusstomerReports).max(pageRequest.getPageSize())
 				.page(pageRequest.getPageNumber() + 1).total(count).build();
 	}
+	
+	@SuppressWarnings("unchecked")
+	@GetMapping("/deactivateCustomerSetTopBox")
+	public @ResponseBody ResponseEntity<ResponseHandler> deactiveCustomerSetTopBoxes(
+			@ModelAttribute ReportSearchCriteria resportSearchCriteria, HttpServletResponse response)
+			throws ParseException, NoSuchFieldException, IOException {
+		List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class, null);
+		for (Customer c : customers) {
+			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes().stream()
+					.filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+					.filter(box -> !box.isDeleted()).collect(Collectors.toList());
+			for (CustomerSetTopBox dbCstb : customerSetTopBoxes) {
+				deActivateSetTopBoxes(dbCstb);
+			}
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+
+	private void deActivateSetTopBoxes(CustomerSetTopBox dbCstb) {
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
+				.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+				.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).plans(dbCstb.getPack().getName())
+				.listName("SUGGESTIVE PACKS").build());
+
+		dbCstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+					.serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+					.plans(cnc.getNetworkChannel().getName())
+					.listName(cnc.getNetworkChannel().getNetwork().getName()).build());
+		});
+	}
 
 	@SuppressWarnings("unchecked")
 	@GetMapping("/downloadCustomerReport")
-	public ResponseEntity<InputStreamResource> downloadCustomerReport(@ModelAttribute ResportSearchCriteria resportSearchCriteria,
+	public ResponseEntity<InputStreamResource> downloadCustomerReport(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
 			HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
 		List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class, null);
 		List<CustomerReport> cusstomerReports = mapCustomerToCustomerReport(customers, resportSearchCriteria, false);
@@ -107,10 +149,12 @@ public class ReportController {
 	    return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
 	}
 
-	private List<CustomerReport> mapCustomerToCustomerReport(List<Customer> customers, ResportSearchCriteria resportSearchCriteria, boolean isPartial) {
+	private List<CustomerReport> mapCustomerToCustomerReport(List<Customer> customers, ReportSearchCriteria resportSearchCriteria, boolean isPartial) {
 		return customers.stream().map(c -> {
 			
-			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes();
+			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes().stream()
+					.filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+                    .filter(box -> !box.isDeleted()).collect(Collectors.toList());
 			
             if (resportSearchCriteria.getPackPrice() != null) {
                 customerSetTopBoxes = customerSetTopBoxes.stream().filter(
@@ -125,7 +169,6 @@ public class ReportController {
             }
 			
             Double sumMonthlyRent = customerSetTopBoxes.stream()
-                    .filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
                     .map(box -> box.getPackPrice()).reduce(0.0, Double::sum);
             
 			boolean isActive = customerSetTopBoxes.size() > 0 ? customerSetTopBoxes.stream()
@@ -170,7 +213,7 @@ public class ReportController {
             @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
             @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
             @RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
-            @ModelAttribute ResportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+            @ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
         PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
         List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class,
                 pageRequest);
@@ -181,7 +224,7 @@ public class ReportController {
     }
     
     private List<CustomerReport> mapCustomerToCustomerOutstandingReport(List<Customer> customers,
-            ResportSearchCriteria resportSearchCriteria) {
+            ReportSearchCriteria resportSearchCriteria) {
         List<CustomerReport> customerReports = new ArrayList<>();
 
         for (Customer c : customers) {
@@ -219,10 +262,9 @@ public class ReportController {
         return customerReports;
     }
     
-    
     @SuppressWarnings("unchecked")
     @GetMapping("/downloadCustomerOutstandingReport")
-    public ResponseEntity<InputStreamResource> downloadCustomerOutstandingReport(@ModelAttribute ResportSearchCriteria resportSearchCriteria,
+    public ResponseEntity<InputStreamResource> downloadCustomerOutstandingReport(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
             HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
         List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class, null);
         List<CustomerReport> cusstomerReports = mapCustomerToCustomerOutstandingReport(customers, resportSearchCriteria);
@@ -261,12 +303,12 @@ public class ReportController {
     @SuppressWarnings("unchecked")
     @GetMapping("/customerLedgreReport")
     public @ResponseBody ViewPage<CustomerLedgreReport> customerLedgreReport(
-            @ModelAttribute ResportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+            @ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
         List<CustomerLedgreReport> customerLedgreReports = getCustomerLedgreRecords(resportSearchCriteria);
         return ViewPage.<CustomerLedgreReport>builder().rows(customerLedgreReports).build();
     }
 
-    private List<CustomerLedgreReport> getCustomerLedgreRecords(ResportSearchCriteria resportSearchCriteria)
+    private List<CustomerLedgreReport> getCustomerLedgreRecords(ReportSearchCriteria resportSearchCriteria)
             throws ParseException, NoSuchFieldException {
         
         List<CustomerLedgreReport> customerLedgreReports = new ArrayList<>();
@@ -296,10 +338,9 @@ public class ReportController {
         }
         return customerLedgreReports;
     }
-    
-    @SuppressWarnings("unchecked")
+
     @GetMapping("/downloadCustomerLedgreReport")
-    public ResponseEntity<InputStreamResource> downloadCustomerLedgreReport(@ModelAttribute ResportSearchCriteria resportSearchCriteria,
+    public ResponseEntity<InputStreamResource> downloadCustomerLedgreReport(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
             HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
         List<CustomerLedgreReport> customerLedgreRecords = getCustomerLedgreRecords(resportSearchCriteria);
         ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(customerLedgreRecords);
@@ -314,14 +355,13 @@ public class ReportController {
         return "customerPartialPaymentReport";
     }
 
-    @SuppressWarnings("unchecked")
     @GetMapping("/customerPartialPaymentReport")
     public @ResponseBody ViewPage<CustomerReport> listCustomerPartialPaymentReports(
             @RequestParam(value = "filters", required = false) String filters,
             @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
             @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
             @RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
-            @ModelAttribute ResportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+            @ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
         List<Customer> customers = new ArrayList<>();
         PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
         Integer count = 0;
@@ -335,7 +375,23 @@ public class ReportController {
                 .page(pageRequest.getPageNumber() + 1).total(count).build();
     }
 
-    private List<Customer> getPartialPaymentCustomers(ResportSearchCriteria resportSearchCriteria, PageRequest pageRequest) {
+	@GetMapping("/deactivateCustomerNoPaymentSetTopBox")
+	public @ResponseBody ResponseEntity<ResponseHandler> deactiveCustomerOutstandingSetTopBoxes(
+			@ModelAttribute ReportSearchCriteria resportSearchCriteria, HttpServletResponse response)
+			throws ParseException, NoSuchFieldException, IOException {
+    	List<Customer> customers = getPartialPaymentCustomers(resportSearchCriteria, null);
+		for (Customer c : customers) {
+			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes().stream()
+					.filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+					.filter(box -> !box.isDeleted()).collect(Collectors.toList());
+			for (CustomerSetTopBox dbCstb : customerSetTopBoxes) {
+				deActivateSetTopBoxes(dbCstb);
+			}
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+    
+    private List<Customer> getPartialPaymentCustomers(ReportSearchCriteria resportSearchCriteria, PageRequest pageRequest) {
         String sql = "select distinct sq.total_credit as amount_credit, c.* from customer_ledgre mq "
                 + "inner join (select sum(amount_credit) as total_credit, customer_id from customer_ledgre "
                 + "where is_on_hold = false and created_at>= ? and created_at <= ? group by customer_id) sq "
@@ -346,10 +402,19 @@ public class ReportController {
         } else {
             sql = sql.concat("total_credit < c.monthly_total or total_credit > c.monthly_total ");
         }
+        if(resportSearchCriteria.getOutstandingValue() != null) {
+        	if (resportSearchCriteria.getOutstandingValue().intValue() == 0) {
+        		sql = sql.concat("and c.balance = 0 ");
+            } else if(resportSearchCriteria.getOutstandingValue().intValue() < 0) {
+            	sql = sql.concat("and c.balance < 0 ");
+            } else {
+            	sql = sql.concat("and c.balance > 0 ");
+            }
+        }
         return genericRepository.findAllWithSqlQuery(sql, Customer.class, getSqlQueryParamsForPartialPayment(resportSearchCriteria), pageRequest);
     }
     
-    private Integer getPartialPaymentCount(ResportSearchCriteria resportSearchCriteria) {
+    private Integer getPartialPaymentCount(ReportSearchCriteria resportSearchCriteria) {
         String countSql = "select count(distinct mq.customer_id) from customer_ledgre mq "
                 + "inner join (select sum(amount_credit) as total_credit, customer_id from customer_ledgre "
                 + "where is_on_hold = false and created_at>= ? and created_at <= ? group by customer_id) sq "
@@ -363,7 +428,7 @@ public class ReportController {
         return genericRepository.findCountWithSqlQuery(countSql, getSqlQueryParamsForPartialPayment(resportSearchCriteria));
     }
     
-    private List<Object> getSqlQueryParamsForPartialPayment(ResportSearchCriteria resportSearchCriteria) {
+    private List<Object> getSqlQueryParamsForPartialPayment(ReportSearchCriteria resportSearchCriteria) {
         List<Object> parameters = new ArrayList<>();
         parameters.add(resportSearchCriteria.getStartDate());
         parameters.add(resportSearchCriteria.getEndDate());
@@ -372,7 +437,7 @@ public class ReportController {
     
     @SuppressWarnings("unchecked")
     @GetMapping("/downloadCustomerPartialPaymentReport")
-    public ResponseEntity<InputStreamResource> downloadCustomerPartialPaymentReport(@ModelAttribute ResportSearchCriteria resportSearchCriteria,
+    public ResponseEntity<InputStreamResource> downloadCustomerPartialPaymentReport(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
             HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
         List<Customer> customers = getPartialPaymentCustomers(resportSearchCriteria, null);
         List<CustomerReport> cusstomerReports = mapCustomerToCustomerReport(customers, resportSearchCriteria, true);
@@ -400,6 +465,52 @@ public class ReportController {
         return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
     }
     
+    
+    @GetMapping("/paymentReceipts")
+	public String paymentReceipt() {
+		return "customerPaymentReceiptReport";
+	}
+
+	@SuppressWarnings("unchecked")
+	@GetMapping("/paymentReceipt")
+	public @ResponseBody ViewPage<CustomerLedgre> listPaymentReceipt(
+			@RequestParam(value = "filters", required = false) String filters,
+			@RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+			@RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+			@RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
+			@ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+		PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
+		resportSearchCriteria.setPaymentReceiptReport(true);
+		List<CustomerLedgre> customerLedgres = genericRepository.findAllWithCriteria(resportSearchCriteria, CustomerLedgre.class,
+				pageRequest);
+		Integer count = genericRepository.findCountWithCriteria(resportSearchCriteria, CustomerLedgre.class);
+		return ViewPage.<CustomerLedgre>builder().rows(customerLedgres).max(pageRequest.getPageSize())
+				.page(pageRequest.getPageNumber() + 1).total(count).build();
+	}
+
+	@SuppressWarnings("unchecked")
+	@GetMapping("/downloadPaymentReceiptReport")
+	public ResponseEntity<InputStreamResource> downloadPaymentReceipt(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
+			HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
+		List<CustomerLedgre> customerLedgres = genericRepository.findAllWithCriteria(resportSearchCriteria, CustomerLedgre.class,
+				null);
+		
+		List<PaymentReceiptColumns> paymentReceiptColumns = customerLedgres.stream().map(cl -> PaymentReceiptColumns
+				.builder()
+				.amount(cl.getAmountCredit())
+				.chequeDate(cl.getChequeDate())
+				.chequeNumber(cl.getChequeNumber())
+				.paymentDate(cl.getPaymentDate())
+				.paymentMode(cl.getPaymentMode().toString())
+				.paymentType(cl.getPaymentType().toString())
+				.build()).collect(Collectors.toList());
+		
+		ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(paymentReceiptColumns);
+		HttpHeaders headers = new HttpHeaders();
+	    // set filename in header
+	    headers.add("Content-Disposition", "attachment; filename=PaymentReceiptReport.xlsx");
+	    return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
+	}
     
     
 }

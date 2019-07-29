@@ -9,27 +9,14 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="Expires" content="Sat, 01 Dec 2001 00:00:00 GMT">
-<title>Books</title>
-<script
-		src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script
-		src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js"></script>
-	<script src="/resources/js/lib/grid.locale-en.js"></script>
-	<script src="/resources/js/lib/jquery.jqGrid.src.js"></script>
-<link rel="stylesheet" type="text/css" media="screen"
-	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/base/jquery.ui.base.css" />
-<link rel="stylesheet" type="text/css" media="screen"
-	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/redmond/jquery-ui.css" />
-<link rel="stylesheet" type="text/css" media="screen"
-	href="/resources/css/ui.jqgrid.css" />
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
-<link rel="stylesheet" type="text/css" media="screen"
-	href="/resources/css/customerReport.css" />
+<title>Customer Report</title>
 </head>
 <body>
 
 	<jsp:include page="templates/header.jsp" />
+
+	<div class="alert alert-success" id="successDiv"></div>
+	<div class="alert alert-danger" id="errorDiv"></div>
 
 	<div class="reportFilters">
 		<div>
@@ -82,15 +69,10 @@
 			<label>Outstanding</label> 
 			<select id="selectOutstanding">
 				<option value="">ALL</option>
-				<option value="true">Greater Then 0</option>
-				<option value="false">Less Then 0</option>
+				<option value="0">Equal To 0</option>
+				<option value="1">Greater Then 0</option>
+				<option value="-1">Less Then 0</option>
 			</select>
-		</div>
-		
-		<div>
-			<label>Outstanding Between</label> 
-			<input type="text" name="outstandingStart" id="outstandingStart" />
-			<input type="text" name="outstandingEnd" id="outstandingEnd" />
 		</div>
 		
 		<div>
@@ -110,24 +92,16 @@
 		</div>
 		
 		<div>
-			<label>Outstanding</label> 
-			<select id="selectOutstanding">
-				<option value="">ALL</option>
-				<option value="true">Greater Then 0</option>
-				<option value="false">Less Then 0</option>
-			</select>
-		</div>
-		
-		<div>
 			<label>Outstanding Between</label> 
 			<input type="text" name="outstandingStart" id="outstandingStart" />
 			<input type="text" name="outstandingEnd" id="outstandingEnd" />
 		</div>
 		
 		<div>
-			<label>Payment Day</label> 
-			<input type="text" name="paymentDayStart" id="paymentDayStart" />
-			<input type="text" name="paymentDayEnd" id="paymentDayEnd" />
+			<label>Customer Type</label> 
+			<select id="selectCustomerType">
+				<option value="">ALL</option>
+			</select>
 		</div>
 		
 		<div class="buttonPadding">
@@ -136,6 +110,10 @@
 		
 		<div class="buttonPadding">
 			<a id="downloadAnchor" class="btn btn-info" target="_blank" href="javascript(void);">Download Excel</a>
+		</div>
+		
+		<div class="buttonPadding">
+			<button type="button" class="btn btn-primary" id="deactivateSetTopBoxes">Deactivate</button>
 		</div>
 	</div>
 

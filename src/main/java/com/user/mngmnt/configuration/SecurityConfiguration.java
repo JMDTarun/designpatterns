@@ -38,40 +38,23 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 		auth.userDetailsService(userDetailsService).passwordEncoder(passwordencoder());
 	}
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		/*http
-			.authorizeRequests()
-			.antMatchers("/console/**").permitAll()
-			.antMatchers("/", "/addNewUser").authenticated()
-			.antMatchers("/getAllUser/**", "/removeAll/**").hasAuthority(RoleNames.ADMIN.name())
-			.antMatchers("/data/**","/removeAll/**", "/addNewUser/**", "/save/**", "/register/**", "/delete/**", "/page/**", "/next/**", "/search/**").hasAuthority(RoleNames.ADMIN.name())
-			.anyRequest().permitAll()
-			.and()
-				.formLogin().loginPage("/login")
-				.defaultSuccessUrl("/")
-				.usernameParameter("username")
-				.passwordParameter("password")
-			.and()
-				.logout().logoutSuccessUrl("/login")
-			.and()
-				.exceptionHandling().accessDeniedPage("/403")
-			.and()
-				.csrf().disable();
-		
-		http.sessionManagement()
-				.maximumSessions(1)
-				.maxSessionsPreventsLogin(true)
-				.expiredUrl("/login?error=You are already logged in from somewhere");*/
-		http.headers().frameOptions().disable();
-        http.authorizeRequests().antMatchers("/**").permitAll().anyRequest().authenticated().and().httpBasic().and()
-                .csrf().disable();
-	}
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.headers().frameOptions().disable();
+        http.authorizeRequests().antMatchers("/login", "/logout", "/h2-console/**").permitAll()
+                .antMatchers("/users", "/allUsers/**", "/user/**", "/revertUtility", "/runUtility", "/utility")
+                .hasAuthority(RoleNames.ADMIN.name()).anyRequest().authenticated().and().formLogin().loginPage("/login")
+                .defaultSuccessUrl("/").usernameParameter("username").passwordParameter("password").and().logout()
+                .logoutSuccessUrl("/login").and().exceptionHandling().accessDeniedPage("/403").and().csrf().disable();
 
-	/*@Bean
+        http.sessionManagement().maximumSessions(1).maxSessionsPreventsLogin(true)
+                .expiredUrl("/login?error=You are already logged in from somewhere");
+    }
+
+	@Bean
 	public ServletListenerRegistrationBean<HttpSessionEventPublisher> httpSessionEventPublisher() {
 		return new ServletListenerRegistrationBean<HttpSessionEventPublisher>(new HttpSessionEventPublisher());
-	}*/
+	}
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {

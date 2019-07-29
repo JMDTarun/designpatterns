@@ -11,9 +11,17 @@ body.my-login-page {
 	font-size: 12px;
 }
 
-ul {
+.navbar-collapse ul {
 	padding: 0;
 	list-style: none;
+	background: #007bff;
+}
+
+.navbar-collapse ul li {
+	display: inline-block;
+	position: relative;
+	line-height: 21px;
+	text-align: left;
 }
 
 ul li a {

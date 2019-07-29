@@ -5,9 +5,9 @@ import java.util.List;
 import org.springframework.data.domain.Pageable;
 
 import com.user.mngmnt.model.CustomerLedgre;
-import com.user.mngmnt.model.ResportSearchCriteria;
+import com.user.mngmnt.model.ReportSearchCriteria;
 
 public interface ReportsRepository {
     
-    List<CustomerLedgre> findAllWithPartialPayment(ResportSearchCriteria resportSearchCriteria, Pageable pageable);
+    List<CustomerLedgre> findAllWithPartialPayment(ReportSearchCriteria resportSearchCriteria, Pageable pageable);
 }

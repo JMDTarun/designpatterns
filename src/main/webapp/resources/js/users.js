@@ -1,22 +1,5 @@
 $(function() {
 
-	$(document).ready(function () {
-		var components = URI.parse(window.location.href);
-		var query = URI.parseQuery(components['query']);
-        if(query['errorSetTopBoxes']) {
-        	$("#errorDiv").text('Error! '+query['savedElements']+'/'+query['totalElements'] + ' Saved. Set Top Boxes which are not Saved(Already Exists) : '+query['errorSetTopBoxes']);
-        	$("#errorDiv").show();
-        	$("#successDiv").hide();
-        } else if(query['message']) {
-        	$("#successDiv").text('Success! '+query['message']);
-        	$("#errorDiv").hide();
-        	$("#successDiv").show();
-        } else {
-        	$("#errorDiv").hide();
-        	$("#successDiv").hide();
-        }
-    });
-	
 	$.extend($.jgrid.defaults, {
 				datatype: 'json',
 				jsonReader : {
@@ -35,11 +18,9 @@ $(function() {
 					rows: "size",
 					sort: "sort"
 				},
-				sortname: 'setTopBoxNumber',
+				sortname: 'firstName',
 				sortorder: 'asc',
 				height: 'auto',
-				forceFit: true,
-		        autowidth: true,
 				viewrecords: true,
 				rowList: [10, 20, 50, 100],
 				altRows: true,
@@ -55,9 +36,12 @@ $(function() {
 				mtype: 'POST',
 				serializeEditData: function(data) {
 					var url = Object.keys(data).map(function(k) {
+						console.info(k+"!!!"+data[k]);
 					    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k].replace("_empty", ""))
 					}).join('&');
 					return url;
+//					delete data.oper;
+//					return JSON.stringify(data);
 				},
 				errorTextFormat: function (response) {
 					if(response.responseText) {
@@ -77,25 +61,26 @@ $(function() {
 			});
 
 	var editOptions = {
-			width: 400,
+			width: 700,
 		onclickSubmit: function(params, postdata) {
-			params.url = 'setTopBox/' + postdata.id;
-		}
+			params.url = 'user/' + postdata.id;
+		},
+		mtype: "POST"
 	};
 	var addOptions = {
-			width: 400,
+			width: 700,
 		onclickSubmit: function(params, postdata) {
-			params.url = 'setTopBox';
+			params.url = 'user';
 		},
 		mtype: "POST"
 	};
 	var delOptions = {
 		onclickSubmit: function(params, postdata) {
-			params.url = 'setTopBox/' + postdata;
+			params.url = 'user/' + postdata;
 		}
 	};
 
-	var URL = '/allSetTopBoxes';
+	var URL = '/allUsers';
 	var options = {
 		url: URL,
 		editurl: URL,
@@ -115,54 +100,63 @@ $(function() {
 				editrules: { edithidden: false }
 			},
 			{
-				name:'setTopBoxNumber',
-				label: 'Set Top Box Number',
-				index: 'setTopBoxNumber',
+				name:'firstName',
+				label: 'First Name',
+				index: 'firstName',
 				editable: true,
 				editrules: {required: true}
 			},
 			{
-				name:'cardNumber',
-				label: 'Card Number',
-				index: 'cardNumber',
+				name:'lastName',
+				label: 'Last Name',
+				index: 'lastName',
 				editable: true,
 				editrules: {required: true}
 			},
 			{
-				name:'safeCode',
-				label: 'Safe Code',
-				index: 'safeCode',
+				name:'email',
+				label: 'Email',
+				index: 'email',
 				editable: true,
 				editrules: {required: true}
 			},
 			{
-				name:'setTopBoxStatus',
-				label: 'Status',
-				index: 'setTopBoxStatus',
+				name:'password',
+				label: 'Password',
+				index: 'password',
+				editable: true,
+				editrules: {required: true}
+			},
+			{
+				name:'roleName',
+				label: 'Role',
+				index: 'roleName',
 				editable: true,
 				edittype:"select",
-		        editoptions:{ value: 'FREE:FREE;FAULTY:FAULTY;BLOCK:BLOCK;ALLOTED:ALLOTED;ACTIVATE:ACTIVATE;DE_ACTIVATE:DE ACTIVATE' },
+		        editoptions:{ value: 'ADMIN:ADMIN;USER:USER' },
 				editrules: {required: true}
 			}
 		],
-		caption: "Set Top Boxes",
-		pager : '#pagerSetTopBoxes',
+		caption: "Users",
+		pager : '#pagerUsers',
 		height: 'auto',
 		ondblClickRow: function(id) {
 			jQuery(this).jqGrid('editGridRow', id, editOptions);
 		}
 	};
 
-	$("#setTopBoxes")
+	$("#users")
 			.jqGrid(options)
-			.navGrid('#pagerSetTopBoxes',
-			{addtext: 'Add', edittext: 'Edit',deltext: 'Delete'}, //options
+			.navGrid('#pagerUsers',
+			{addtext: 'Add', search:false, edittext: 'Edit',deltext: 'Delete'}, //options
 			editOptions,
 			addOptions,
 			delOptions,
 			{} // search options
 	);
 
-	$("#setTopBoxes").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
+	$("#pagerUsers").css({"height":"55"});
+	
+	$("#users").jqGrid('filterToolbar', { stringResult: true, searchOnEnter: false });
 
 });

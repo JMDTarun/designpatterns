@@ -10,20 +10,6 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta http-equiv="Expires" content="Sat, 01 Dec 2001 00:00:00 GMT">
 <title>Books</title>
-<script
-		src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
-	<script
-		src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/jquery-ui.min.js"></script>
-	<script src="/resources/js/lib/grid.locale-en.js"></script>
-	<script src="/resources/js/lib/jquery.jqGrid.src.js"></script>
-<link rel="stylesheet" type="text/css" media="screen"
-	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/base/jquery.ui.base.css" />
-<link rel="stylesheet" type="text/css" media="screen"
-	href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.13/themes/redmond/jquery-ui.css" />
-<link rel="stylesheet" type="text/css" media="screen"
-	href="/resources/css/ui.jqgrid.css" />
-<link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
 <link rel="stylesheet" type="text/css" media="screen"
 	href="/resources/css/customerReport.css" />
 </head>

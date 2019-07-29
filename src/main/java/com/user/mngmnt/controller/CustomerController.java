@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
-import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.time.Duration;
 import java.time.Instant;
@@ -28,11 +27,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVRecord;
-import org.apache.poi.hpsf.Array;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -324,11 +323,17 @@ public class CustomerController {
 		if (isPrepaid) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.MONTHLY_PACK_PRICE, packPrice, CreditDebit.DEBIT,
 					customerSetTopBox, null, null));
+            planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+                    .serialNumber(setTopBox.getSetTopBoxNumber())
+                    .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
 		}
 		
 		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
                 .serialNumber(setTopBox.getSetTopBoxNumber())
                 .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
+		
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
+                .serialNumber(setTopBox.getSetTopBoxNumber()).build());
 		
 		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
@@ -339,7 +344,7 @@ public class CustomerController {
 					CreditDebit.CREDIT, customerSetTopBox, null, null));
 		}
 		
-		if(customerSetTopBox.getSetTopBoxPrice() > 0) {
+		if(customerSetTopBox.getSetTopBoxPrice() != null && customerSetTopBox.getSetTopBoxPrice() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.SET_TOP_BOX_PRICE, customerSetTopBox.getSetTopBoxPrice(),
 					CreditDebit.DEBIT, customerSetTopBox, null, null));
 		}
@@ -677,6 +682,17 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
+	@GetMapping("/retrackSetTopBox")
+	@Transactional
+	public @ResponseBody ResponseEntity<ResponseHandler> retrackSetTopBox(
+			@RequestParam Long customerSetTopBoxId, HttpServletResponse response)
+			throws ParseException, NoSuchFieldException, IOException {
+		CustomerSetTopBox customerSetTopBox = customerSetTopBoxRepository.getOne(customerSetTopBoxId);
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.RETRACK)
+                .serialNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber()).build());
+		return new ResponseEntity<>(HttpStatus.OK);
+	}
+	
 	@RequestMapping(value = "/activateSetTopBox/{id}", method = POST)
 	@Transactional
 	public ResponseEntity<String> activateSetTopBox(@PathVariable("id") Long id, HttpServletRequest request,
@@ -688,11 +704,24 @@ public class CustomerController {
 			dbCstb.setUpdatedAt(Instant.now());
 			dbCstb.setActivateDate(setTopBoxActivateDeavtivate.getDate());
 			dbCstb.setActive(true);
+			dbCstb.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.ACTIVE);
 			dbCstb.setActivateReason(setTopBoxActivateDeavtivate.getReason());
 			customerSetTopBoxRepository.save(dbCstb);
 			
 			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
                     .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
+			
+            planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+                    .plans(dbCstb.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+            
+            dbCstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+            	planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+	                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(cnc.getNetworkChannel().getName())
+	                    .listName(cnc.getNetworkChannel().getNetwork().getName())
+	                    .build());
+            });
 			
 			customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
                     .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.ACTIVATE).build());
@@ -752,11 +781,14 @@ public class CustomerController {
 				updateSetTopBoxStatus(setTopBoxReplacement.getReplacedSetTopBox().getId(), SetTopBoxStatus.ALLOTED,
 						"Assigned To Customer");
 				
+				SetTopBox replacedBox = setTopBoxRepository.getOne(setTopBoxReplacement.getOldSetTopBox().getId());
+				SetTopBox replacedWithBox = setTopBoxRepository.getOne(setTopBoxReplacement.getReplacedSetTopBox().getId());
+				
 				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
-                        .serialNumber(setTopBoxReplacement.getReplacedSetTopBox().getSetTopBoxNumber()).build());
+                        .serialNumber(replacedWithBox.getSetTopBoxNumber()).build());
                 
                 planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
-                        .serialNumber(setTopBoxReplacement.getOldSetTopBox().getSetTopBoxNumber()).build());
+                        .serialNumber(replacedBox.getSetTopBoxNumber()).build());
 				
 				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 				final HttpHeaders headers = new HttpHeaders();
@@ -779,11 +811,24 @@ public class CustomerController {
 			dbCstb.setDeactivateDate(setTopBoxActivateDeavtivate.getDate());
 			dbCstb.setDeactivateReason(setTopBoxActivateDeavtivate.getReason());
 			dbCstb.setActive(false);
+			dbCstb.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.DEACTIVE);
 			customerSetTopBoxRepository.save(dbCstb);
 			
             planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
                     .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
-			
+            
+            planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+                    .plans(dbCstb.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+            
+            dbCstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+            	planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+	                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(cnc.getNetworkChannel().getName())
+	                    .listName(cnc.getNetworkChannel().getNetwork().getName())
+	                    .build());
+            });
+            
             customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
                     .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.DE_ACTIVATE).build());
 			
@@ -856,6 +901,7 @@ public class CustomerController {
         if (customer.getCustomerSetTopBoxes() != null && customer.getCustomerSetTopBoxes().size() > 0) {
             List<CustomerSetTopBox> customerSetTopBoxes = customer.getCustomerSetTopBoxes().stream()
                     .filter(box -> CustomerSetTopBoxStatus.ACTIVE.equals(box.getCustomerSetTopBoxStatus()))
+                    .filter(box -> !box.isDeleted())
                     .collect(Collectors.toList());
 
             Double sumMonthlyRent = customerSetTopBoxes.stream().map(box -> box.getPackPrice()).reduce(0.0,

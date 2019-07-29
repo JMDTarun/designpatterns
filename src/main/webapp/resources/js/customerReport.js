@@ -211,11 +211,47 @@ $(function() {
 		});
 	  }});
 	
+	$.ajax({url: "getAllCustomerTypes", success: function(result){
+		$("#selectCustomerType").addClass("ui-widget ui-jqdialog");
+		$("#selectCustomerType").select2();
+		for (var key in result) {
+	    	$("#selectCustomerType").append('<option value="'+key+'">'+result[key].customerType+'</option>')
+	    }
+	  }});
+	
 	$("#selectCustomerStatus").addClass("ui-widget ui-jqdialog");
 	$("#selectCustomerStatus").select2();
 	
+	$("#selectOutstanding").addClass("ui-widget ui-jqdialog");
+	$("#selectOutstanding").select2();
+	
 	$("#selectAssignedSetTopBoxes").addClass("ui-widget ui-jqdialog");
 	$("#selectAssignedSetTopBoxes").select2();
+	
+	$("#deactivateSetTopBoxes").attr("disabled", "disabled");
+	
+	$("#selectCustomerType").change(function() {
+		if($(this).val() != '') {
+			$("#deactivateSetTopBoxes").removeAttr("disabled");
+		} else {
+			$("#deactivateSetTopBoxes").attr("disabled", "disabled");
+		}
+	});
+	
+	$("#successDiv").hide();
+	$("#errorDiv").hide();
+	
+	$("#deactivateSetTopBoxes").click(function() {
+		$("#deactivateSetTopBoxes").attr("disabled", "disabled");
+		$.ajax({url: "deactivateCustomerSetTopBox?"+getUrlParams(), success: function(result){
+			$("#successDiv").text("Successfully deactivated Set top boxes.");
+			$("#successDiv").show();
+			setTimeout(function() {
+		        $("#successDiv").hide('blind', {}, 500)
+		    }, 5000);
+			$("#errorDiv").hide();
+		}});
+	});
 	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadCustomerReport?'+getUrlParams();
@@ -254,7 +290,7 @@ $(function() {
         	urlStr += encodeURIComponent("packPrice") + '=' + encodeURIComponent($("#selectRent").val()) + "&";
         }
         if($("#selectOutstanding").val() !== "") {
-        	urlStr += encodeURIComponent("isGreaterThenZero") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
+        	urlStr += encodeURIComponent("outstandingValue") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
         }
         if($("#outstandingStart").val() !== "") {
         	urlStr += encodeURIComponent("rangeStart") + '=' + encodeURIComponent($("#outstandingStart").val()) + "&";
@@ -278,7 +314,7 @@ $(function() {
         	urlStr += encodeURIComponent("packPrice") + '=' + encodeURIComponent($("#selectRent").val()) + "&";
         }
         if($("#selectOutstanding").val() !== "") {
-        	urlStr += encodeURIComponent("isGreaterThenZero") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
+        	urlStr += encodeURIComponent("outstandingValue") + '=' + encodeURIComponent($("#selectOutstanding").val()) + "&";
         }
         if($("#outstandingStart").val() !== "") {
         	urlStr += encodeURIComponent("rangeStart") + '=' + encodeURIComponent($("#outstandingStart").val()) + "&";
@@ -291,6 +327,9 @@ $(function() {
         }
         if($("#paymentDayEnd").val() !== "") {
         	urlStr += encodeURIComponent("paymentDayEnd") + '=' + encodeURIComponent($("#paymentDayEnd").val()) + "&";
+        }
+        if($("#selectCustomerType").val() !== "") {
+        	urlStr += encodeURIComponent("customerType") + '=' + encodeURIComponent($("#selectCustomerType").val()) + "&";
         }
         return urlStr;
 	}

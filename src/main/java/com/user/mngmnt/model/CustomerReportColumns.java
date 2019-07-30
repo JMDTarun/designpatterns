@@ -30,5 +30,6 @@ public class CustomerReportColumns {
 	private Double outstanding;
 	private Date entryDate;
 	private String setTopBoxNumber;
+	private String setTopBoxes;
 	private List<String> networkChannels;
 }

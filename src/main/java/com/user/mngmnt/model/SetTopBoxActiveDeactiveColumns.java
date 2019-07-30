@@ -11,18 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class PaymentReceiptColumns {
+public class SetTopBoxActiveDeactiveColumns {
 
     private String customerName;
     private String customerCode;
     private String area;
     private String subArea;
     private String street;
-	private Double amount;
-	private String chequeNumber;
-	private Date chequeDate;
-	private Date paymentDate;
-	private String paymentMode;
-	private String paymentType;
-	
+    private Date dateTime;
+    private String setTopBoxStatus;
 }

@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletResponse;
 
+import com.user.mngmnt.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.PageRequest;
@@ -28,20 +29,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.user.mngmnt.enums.CustomerSetTopBoxStatus;
-import com.user.mngmnt.model.Customer;
-import com.user.mngmnt.model.CustomerLedgre;
-import com.user.mngmnt.model.CustomerLedgreReport;
-import com.user.mngmnt.model.CustomerNetworkChannel;
-import com.user.mngmnt.model.CustomerPartialPaymentColumns;
-import com.user.mngmnt.model.CustomerReport;
-import com.user.mngmnt.model.CustomerReportColumns;
-import com.user.mngmnt.model.CustomerSetTopBox;
-import com.user.mngmnt.model.PaymentReceiptColumns;
-import com.user.mngmnt.model.PlanChangeControl;
-import com.user.mngmnt.model.PlanChangeControlAction;
-import com.user.mngmnt.model.ReportSearchCriteria;
-import com.user.mngmnt.model.ResponseHandler;
-import com.user.mngmnt.model.ViewPage;
+import com.user.mngmnt.repository.CustomerRepository;
 import com.user.mngmnt.repository.GenericRepository;
 import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.repository.ReportsRepository;
@@ -59,6 +47,9 @@ public class ReportController {
 	
 	@Autowired
 	private PlanChangeControlRepository planChangeControlRepository;
+	
+	@Autowired
+	private CustomerRepository customerRepository;
 
 	private static final Integer MAX_RECORDS = 1000000;
 	
@@ -138,6 +129,8 @@ public class ReportController {
 			.channelTotal(cr.getChannelTotal())
 			.totalSetTopBoxes(cr.getTotalSetTopBoxes())
 			.totalChannels(cr.getTotalChannels())
+			.setTopBoxes(cr.getSetTopBoxes())
+			.networkChannels(Arrays.asList(cr.getNetworkChannels().split(",")))
 			.outstanding(cr.getCustomer().getBalance())
 			.build());
 		}
@@ -154,36 +147,27 @@ public class ReportController {
 			
 			List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes().stream()
                     .filter(box -> !box.isDeleted()).collect(Collectors.toList());
-			
-            if (resportSearchCriteria.getPackPrice() != null) {
-                customerSetTopBoxes = customerSetTopBoxes.stream().filter(
-                        cstb -> cstb.getPackPrice().doubleValue() == resportSearchCriteria.getPackPrice().doubleValue())
-                        .collect(Collectors.toList());
-            }
-            
-            if (resportSearchCriteria.getPackId() != null) {
-                customerSetTopBoxes = customerSetTopBoxes.stream().filter(
-                        cstb -> cstb.getPack().getId().longValue() == resportSearchCriteria.getPackId().doubleValue())
-                        .collect(Collectors.toList());
-            }
-            
-            if (resportSearchCriteria.getCustomerStatus() != null) {
-                customerSetTopBoxes = customerSetTopBoxes.stream().filter(cstb -> cstb.getCustomerSetTopBoxStatus()
-                        .toString().equals(resportSearchCriteria.getCustomerStatus())).collect(Collectors.toList());
-            }
-			
-            Double sumMonthlyRent = customerSetTopBoxes.stream()
+
+			customerSetTopBoxes = getCustomerSetTopBoxes(resportSearchCriteria, customerSetTopBoxes);
+
+			Double sumMonthlyRent = customerSetTopBoxes.stream()
                     .map(box -> box.getPackPrice()).reduce(0.0, Double::sum);
             
 			boolean isActive = customerSetTopBoxes.size() > 0 ? customerSetTopBoxes.stream()
 					.anyMatch(stb -> CustomerSetTopBoxStatus.ACTIVE.equals(stb.getCustomerSetTopBoxStatus())) : true;
 			Double networkChannelPrice = 0.0;
 			Integer networkChannelsCount = 0;
+			String networks = "";
+			String setTopBoxes = "";
 			for (CustomerSetTopBox cstb : customerSetTopBoxes) {
+				setTopBoxes = setTopBoxes.concat(cstb.getSetTopBox().getSetTopBoxNumber()).concat(", ");
 				Set<CustomerNetworkChannel> customerNetworkChannels = cstb.getCustomerNetworkChannels();
 				networkChannelsCount += customerNetworkChannels.size();
-				networkChannelPrice += customerNetworkChannels.stream().filter(nc -> !nc.isDeleted())
-						.map(nc -> nc.getNetworkChannel().getTotal()).reduce(0.0, Double::sum);
+
+				List<CustomerNetworkChannel> cncs = customerNetworkChannels.stream().filter(nc -> !nc.isDeleted()).collect(Collectors.toList());
+				networks = networks.concat(cncs.stream().map(nc -> nc.getNetworkChannel().getName()).collect(Collectors.joining(",")));
+
+				networkChannelPrice += cncs.stream().map(nc -> nc.getNetworkChannel().getTotal()).reduce(0.0, Double::sum);
 			}
 			Double partialPayment = 0.0;
 			String creditOrDebit = "";
@@ -201,6 +185,8 @@ public class ReportController {
 					.monthlyTotal(sumMonthlyRent).channelTotal(networkChannelPrice)
 					.balance(Math.abs(round(partialPayment, 2)))
 					.creditOrDebit(creditOrDebit)
+					.setTopBoxes(setTopBoxes)
+					.networkChannels(networks)
 					.totalSetTopBoxes(customerSetTopBoxes.size()).totalChannels(networkChannelsCount).build();
 		}).collect(Collectors.toList());
 	}
@@ -233,19 +219,9 @@ public class ReportController {
 
         for (Customer c : customers) {
             List<CustomerSetTopBox> customerSetTopBoxes = c.getCustomerSetTopBoxes();
-            if (resportSearchCriteria.getPackPrice() != null) {
-                customerSetTopBoxes = customerSetTopBoxes.stream().filter(
-                        cstb -> cstb.getPackPrice().doubleValue() == resportSearchCriteria.getPackPrice().doubleValue())
-                        .collect(Collectors.toList());
-            }
+			customerSetTopBoxes = getCustomerSetTopBoxes(resportSearchCriteria, customerSetTopBoxes);
 
-            if (resportSearchCriteria.getPackId() != null) {
-                customerSetTopBoxes = customerSetTopBoxes.stream().filter(
-                        cstb -> cstb.getPack().getId().longValue() == resportSearchCriteria.getPackId().doubleValue())
-                        .collect(Collectors.toList());
-            }
-
-            boolean isActive = customerSetTopBoxes.size() > 0 ? customerSetTopBoxes.stream()
+			boolean isActive = customerSetTopBoxes.size() > 0 ? customerSetTopBoxes.stream()
                     .anyMatch(stb -> CustomerSetTopBoxStatus.ACTIVE.equals(stb.getCustomerSetTopBoxStatus())) : true;
             for (CustomerSetTopBox cstb : customerSetTopBoxes) {
                 Set<CustomerNetworkChannel> customerNetworkChannels = cstb.getCustomerNetworkChannels();
@@ -260,22 +236,43 @@ public class ReportController {
                         .networkChannels(networks)
                         .channelTotal(networkChannelPrice)
                         .totalSetTopBoxes(customerSetTopBoxes.size()).totalChannels(customerNetworkChannels.size())
-                        .customerSetTopBox(cstb).build());
+                        .customerSetTopBox(cstb)
+						.build());
             }
         }
         return customerReports;
     }
-    
-    @SuppressWarnings("unchecked")
+
+	private List<CustomerSetTopBox> getCustomerSetTopBoxes(ReportSearchCriteria resportSearchCriteria, List<CustomerSetTopBox> customerSetTopBoxes) {
+		if (resportSearchCriteria.getPackPrice() != null) {
+			customerSetTopBoxes = customerSetTopBoxes.stream().filter(
+					cstb -> cstb.getPackPrice().doubleValue() == resportSearchCriteria.getPackPrice().doubleValue())
+					.collect(Collectors.toList());
+		}
+
+		if (resportSearchCriteria.getPackId() != null) {
+			customerSetTopBoxes = customerSetTopBoxes.stream().filter(
+					cstb -> cstb.getPack().getId().longValue() == resportSearchCriteria.getPackId().doubleValue())
+					.collect(Collectors.toList());
+		}
+
+		if (resportSearchCriteria.getCustomerStatus() != null) {
+			customerSetTopBoxes = customerSetTopBoxes.stream().filter(cstb -> cstb.getCustomerSetTopBoxStatus()
+					.toString().equals(resportSearchCriteria.getCustomerStatus())).collect(Collectors.toList());
+		}
+		return customerSetTopBoxes;
+	}
+
+	@SuppressWarnings("unchecked")
     @GetMapping("/downloadCustomerOutstandingReport")
     public ResponseEntity<InputStreamResource> downloadCustomerOutstandingReport(@ModelAttribute ReportSearchCriteria resportSearchCriteria,
             HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
         List<Customer> customers = genericRepository.findAllWithCriteria(resportSearchCriteria, Customer.class, null);
         List<CustomerReport> cusstomerReports = mapCustomerToCustomerOutstandingReport(customers, resportSearchCriteria);
-        List<CustomerReportColumns> cutomerReportColumns = new ArrayList<>();
+        List<CustomerOutstandingReportColumns> cutomerReportColumns = new ArrayList<>();
         for(CustomerReport cr: cusstomerReports) {
             cutomerReportColumns.add(
-            CustomerReportColumns.builder().status(cr.getStatus())
+            CustomerOutstandingReportColumns.builder().status(cr.getStatus())
             .customerName(cr.getCustomer().getName())
             .customerCode(cr.getCustomer().getCustomerCode())
             .area(cr.getCustomer().getArea().getName())
@@ -286,9 +283,10 @@ public class ReportController {
             .monthlyTotal(cr.getMonthlyTotal()).channelTotal(cr.getChannelTotal())
             .totalSetTopBoxes(cr.getTotalSetTopBoxes()).totalChannels(cr.getTotalChannels())
             .outstanding(cr.getCustomer().getBalance())
+			.entryDate(cr.getCustomerSetTopBox().getEntryDate())
+			.setTopBoxNumber(cr.getCustomerSetTopBox().getSetTopBox().getSetTopBoxNumber())
+			.pack(cr.getCustomerSetTopBox().getPack().getName())
             .networkChannels(Arrays.asList(cr.getNetworkChannels().split(",")))
-            .entryDate(cr.getCustomerSetTopBox().getEntryDate())
-            .setTopBoxNumber(cr.getCustomerSetTopBox().getSetTopBox().getSetTopBoxNumber())
             .build());
         }
         
@@ -502,6 +500,11 @@ public class ReportController {
 		
 		List<PaymentReceiptColumns> paymentReceiptColumns = customerLedgres.stream().map(cl -> PaymentReceiptColumns
 				.builder()
+				.customerName(cl.getCustomer().getName())
+				.customerCode(cl.getCustomer().getCustomerCode())
+				.area(cl.getCustomer().getArea().getName())
+				.subArea(cl.getCustomer().getSubArea().getWardNumber())
+				.street(cl.getCustomer().getStreet().getStreetNumber())
 				.amount(cl.getAmountCredit())
 				.chequeDate(cl.getChequeDate())
 				.chequeNumber(cl.getChequeNumber())
@@ -517,5 +520,211 @@ public class ReportController {
 	    return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
 	}
     
+	@GetMapping("/setTopBoxReplacementReports")
+    public String setTopBoxReplacementReport() {
+        return "setTopBoxReplacementReport";
+    }
+
+    @SuppressWarnings("unchecked")
+    @GetMapping("/setTopBoxReplacementReport")
+    public @ResponseBody ViewPage<SetTopBoxReplacement> listSetTopBoxReplacement(
+            @RequestParam(value = "filters", required = false) String filters,
+            @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+            @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+            @RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
+            @ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
+        List<SetTopBoxReplacement> setTopBoxReplacements = getReplacedSetTopBoxes(resportSearchCriteria, pageRequest);
+        Integer count = getReplacedSetTopBoxesCount(resportSearchCriteria);
+        return ViewPage.<SetTopBoxReplacement>builder().rows(setTopBoxReplacements).max(pageRequest.getPageSize())
+                .page(pageRequest.getPageNumber() + 1).total(count).build();
+    }
+
+    private List<SetTopBoxReplacement> getReplacedSetTopBoxes(ReportSearchCriteria reportSearchCriteria, PageRequest pageRequest) {
+        String sql = "SELECT mo.* FROM SET_TOP_BOX_REPLACEMENT  mo join customer c on mo.replaced_for_customer_id = c.id "
+                + "join area a on a.id = c.area_id "
+                + "join sub_area sa on sa.id = c.sub_area_id "
+                + "join street st on st.id = c.street_id where true";
+        
+        List<Object> parameters = new ArrayList<>();
+        
+        sql = addConditionsToReplacementSquery(reportSearchCriteria, sql, parameters);
+        
+        return genericRepository.findAllWithSqlQuery(sql, SetTopBoxReplacement.class, parameters, pageRequest);
+    }
+
+    private String addConditionsToReplacementSquery(ReportSearchCriteria reportSearchCriteria, String sql,
+            List<Object> parameters) {
+        if (reportSearchCriteria.getCustomerId() != null) {
+            parameters.add(reportSearchCriteria.getCustomerId());
+            sql = sql.concat(" and c.id = ?");
+        }
+
+        if (reportSearchCriteria.getAreaId() != null) {
+            parameters.add(reportSearchCriteria.getAreaId());
+            sql = sql.concat(" and a.id = ?");
+        }
+
+        if (reportSearchCriteria.getSubAreaId() != null) {
+            parameters.add(reportSearchCriteria.getSubAreaId());
+            sql = sql.concat(" and sa.id = ?");
+        }
+
+        if (reportSearchCriteria.getStreetId() != null) {
+            parameters.add(reportSearchCriteria.getStreetId());
+            sql = sql.concat(" and st.id = ?");
+        }
+
+        if (reportSearchCriteria.getReplacementReason() != null) {
+            parameters.add(reportSearchCriteria.getReplacementReason());
+            sql = sql.concat(" and mo.replacement_reason = ?");
+        }
+
+        if (reportSearchCriteria.getReplacementType() != null) {
+            parameters.add(reportSearchCriteria.getReplacementType());
+            sql = sql.concat(" and mo.replacement_type = ?");
+        }
+
+        if (reportSearchCriteria.getReplacementAmountStart() != null) {
+            parameters.add(reportSearchCriteria.getReplacementAmountStart());
+            sql = sql.concat(" and mo.replacement_charge >= ?");
+        }
+
+        if (reportSearchCriteria.getReplacementAmountEnd() != null) {
+            parameters.add(reportSearchCriteria.getReplacementAmountEnd());
+            sql = sql.concat(" and mo.replacement_charge <= ?");
+        }
+        
+		if (reportSearchCriteria.getSetTopBoxStatus() != null) {
+			parameters.add(reportSearchCriteria.getSetTopBoxStatus());
+			sql = sql.concat(" and mo.set_top_box_status = ?");
+		}
+
+		if (reportSearchCriteria.getStartDate() != null) {
+			parameters.add(reportSearchCriteria.getStartDate());
+			sql = sql.concat(" and mo.date_time >= ?");
+		}
+
+		if (reportSearchCriteria.getEndDate() != null) {
+			parameters.add(reportSearchCriteria.getEndDate());
+			sql = sql.concat(" and mo.date_time <= ?");
+		}
+        
+        return sql;
+    }
     
+    private Integer getReplacedSetTopBoxesCount(ReportSearchCriteria reportSearchCriteria) {
+        String sql = "SELECT count(distinct mo.id) FROM SET_TOP_BOX_REPLACEMENT  mo join customer c on mo.replaced_for_customer_id = c.id "
+                + "join area a on a.id = c.area_id "
+                + "join sub_area sa on sa.id = c.sub_area_id "
+                + "join street st on st.id = c.street_id where true";
+        
+        List<Object> parameters = new ArrayList<>();
+        
+        sql = addConditionsToReplacementSquery(reportSearchCriteria, sql, parameters);
+        
+        return genericRepository.findCountWithSqlQuery(sql, parameters);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @GetMapping("/downloadSetTopBoxReplacementReport")
+    public ResponseEntity<InputStreamResource> downloadSetTopBoxReplacementReport(@ModelAttribute ReportSearchCriteria reportSearchCriteria,
+            HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
+        List<SetTopBoxReplacement> setTopBoxReplacements = getReplacedSetTopBoxes(reportSearchCriteria, null);
+        
+        List<SetTopBoxReplacementColumns> setTopBoxReplacementsList = setTopBoxReplacements.stream().map(cl -> SetTopBoxReplacementColumns
+                .builder()
+                .customerName(cl.getReplacedForCustomer().getName())
+                .customerCode(cl.getReplacedForCustomer().getCustomerCode())
+                .area(cl.getReplacedForCustomer().getArea().getName())
+                .subArea(cl.getReplacedForCustomer().getSubArea().getWardNumber())
+                .street(cl.getReplacedForCustomer().getStreet().getStreetNumber())
+                .replacementCharge(cl.getReplacementCharge())
+                .replacementReason(cl.getReplacementReason().toString())
+                .replacementType(cl.getReplacementType().toString())
+                .oldSetTopBoxNumber(cl.getOldSetTopBox().getSetTopBoxNumber())
+                .replacedSetTopBoxNumber(cl.getReplacedSetTopBox().getSetTopBoxNumber())
+                .build()).collect(Collectors.toList());
+        
+        ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(setTopBoxReplacementsList);
+        HttpHeaders headers = new HttpHeaders();
+        // set filename in header
+        headers.add("Content-Disposition", "attachment; filename=PaymentReceiptReport.xlsx");
+        return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
+    }
+    
+ 
+    @GetMapping("/setTopBoxActiveDeactiveReports")
+    public String setTopBoxActiveDeactiveReports() {
+        return "setTopBoxActiveDeactiveReport";
+    }
+
+    @SuppressWarnings("unchecked")
+    @GetMapping("/setTopBoxActiveDeactiveReport")
+    public @ResponseBody ViewPage<SetTopBoxActiveDeactiveColumns> listSetTopBoxBoxActiveDeactive(
+            @RequestParam(value = "filters", required = false) String filters,
+            @RequestParam(value = "page", defaultValue = "0", required = false) Integer page,
+            @RequestParam(value = "size", defaultValue = "2", required = false) Integer size,
+            @RequestParam(value = "sort", defaultValue = "name", required = false) String sort,
+            @ModelAttribute ReportSearchCriteria resportSearchCriteria) throws ParseException, NoSuchFieldException {
+        PageRequest pageRequest = PageRequest.of(page - 1, size, Direction.ASC, sort);
+        List<CustomerSetTopBoxHistory> activeDeactiveSetTopBoxes = getActiveDeactiveSetTopBoxes(resportSearchCriteria, pageRequest);
+        List<SetTopBoxActiveDeactiveColumns> activeDeactiveSetTopBoxesList = buildSetTopBoxActiveDeactiveHistoryColumns(
+				activeDeactiveSetTopBoxes);
+        Integer count = getSetTopBoxActiveDeactiveCount(resportSearchCriteria);
+        return ViewPage.<SetTopBoxActiveDeactiveColumns>builder().rows(activeDeactiveSetTopBoxesList).max(pageRequest.getPageSize())
+                .page(pageRequest.getPageNumber() + 1).total(count).build();
+    }
+
+    private List<CustomerSetTopBoxHistory> getActiveDeactiveSetTopBoxes(ReportSearchCriteria reportSearchCriteria, PageRequest pageRequest) {
+        String sql = "SELECT mo.* FROM SET_TOP_BOX_HISTORY mo join customer c on mo.customer_id = c.id "
+                + "join area a on a.id = c.area_id "
+                + "join sub_area sa on sa.id = c.sub_area_id "
+                + "join street st on st.id = c.street_id where true";
+        
+        List<Object> parameters = new ArrayList<>();
+        sql = addConditionsToReplacementSquery(reportSearchCriteria, sql, parameters);
+        return genericRepository.findAllWithSqlQuery(sql, CustomerSetTopBoxHistory.class, parameters, pageRequest);
+    }
+    
+    private Integer getSetTopBoxActiveDeactiveCount(ReportSearchCriteria reportSearchCriteria) {
+        String sql = "SELECT count(distinct mo.id) FROM SET_TOP_BOX_HISTORY  mo join customer c on mo.customer_id = c.id "
+                + "join area a on a.id = c.area_id "
+                + "join sub_area sa on sa.id = c.sub_area_id "
+                + "join street st on st.id = c.street_id where true";
+        List<Object> parameters = new ArrayList<>();
+        sql = addConditionsToReplacementSquery(reportSearchCriteria, sql, parameters);
+        return genericRepository.findCountWithSqlQuery(sql, parameters);
+    }
+    
+    @SuppressWarnings("unchecked")
+    @GetMapping("/downloadSetTopBoxActiveDeactiveReport")
+    public ResponseEntity<InputStreamResource> downloadSetTopBoxActiveDeactiveReport(@ModelAttribute ReportSearchCriteria reportSearchCriteria,
+            HttpServletResponse response) throws ParseException, NoSuchFieldException, IOException {
+        List<CustomerSetTopBoxHistory> activeDeactiveSetTopBoxes = getActiveDeactiveSetTopBoxes(reportSearchCriteria, null);
+        
+        List<SetTopBoxActiveDeactiveColumns> activeDeactiveSetTopBoxesList = buildSetTopBoxActiveDeactiveHistoryColumns(
+				activeDeactiveSetTopBoxes);
+        
+        ByteArrayInputStream in = ExcelUtils.writeToExcelInMultiSheets(activeDeactiveSetTopBoxesList);
+        HttpHeaders headers = new HttpHeaders();
+        // set filename in header
+        headers.add("Content-Disposition", "attachment; filename=PaymentReceiptReport.xlsx");
+        return ResponseEntity.ok().headers(headers).body(new InputStreamResource(in));
+    }
+
+	private List<SetTopBoxActiveDeactiveColumns> buildSetTopBoxActiveDeactiveHistoryColumns(
+			List<CustomerSetTopBoxHistory> activeDeactiveSetTopBoxes) {
+		List<SetTopBoxActiveDeactiveColumns> activeDeactiveSetTopBoxesList = activeDeactiveSetTopBoxes.stream().map(cl -> SetTopBoxActiveDeactiveColumns
+                .builder()
+                .customerName(cl.getCustomer().getName())
+                .customerCode(cl.getCustomer().getCustomerCode())
+                .area(cl.getCustomer().getArea().getName())
+                .subArea(cl.getCustomer().getSubArea().getWardNumber())
+                .street(cl.getCustomer().getStreet().getStreetNumber())
+                .setTopBoxStatus(cl.getSetTopBoxStatus().toString())
+                .dateTime(Date.from(cl.getDateTime()))
+                .build()).collect(Collectors.toList());
+		return activeDeactiveSetTopBoxesList;
+	}
 }

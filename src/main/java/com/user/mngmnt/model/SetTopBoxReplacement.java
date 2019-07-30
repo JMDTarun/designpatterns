@@ -1,14 +1,6 @@
 package com.user.mngmnt.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import javax.persistence.*;
 
 import com.user.mngmnt.enums.SetTopBoxReplacementStatus;
 import com.user.mngmnt.enums.SetTopBoxStatus;
@@ -35,9 +27,14 @@ public class SetTopBoxReplacement {
 	@ManyToOne
 	@JoinColumn(name = "replacedSetTopBoxId", referencedColumnName = "id")
 	private SetTopBox replacedSetTopBox;
+	@Enumerated(EnumType.STRING)
 	private SetTopBoxReplacementStatus replacementType;
+	@Enumerated(EnumType.STRING)
 	private SetTopBoxStatus replacementReason;
 	private Double replacementCharge;
+	@ManyToOne
+    @JoinColumn(name = "replacedForCustomerId", referencedColumnName = "id")
+    private Customer replacedForCustomer;
 	@Transient
 	private Long customerSetTopBoxId;
 }

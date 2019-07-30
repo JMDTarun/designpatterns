@@ -89,6 +89,11 @@ $(function() {
 				index: 'customerSetTopBox.setTopBox.setTopBoxNumber'
 			},
 			{
+				name:'customerSetTopBox.pack.name',
+				label: 'Pack',
+				index: 'customerSetTopBox.pack.name'
+			},
+			{
 				name:'networkChannels',
 				label: 'Channels',
 				index: 'networkChannels'

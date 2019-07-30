@@ -1,7 +1,5 @@
 package com.user.mngmnt.model;
 
-import java.util.Date;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,18 +9,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Builder
 @Data
-public class PaymentReceiptColumns {
+public class SetTopBoxReplacementColumns {
 
     private String customerName;
     private String customerCode;
     private String area;
     private String subArea;
     private String street;
-	private Double amount;
-	private String chequeNumber;
-	private Date chequeDate;
-	private Date paymentDate;
-	private String paymentMode;
-	private String paymentType;
-	
+    private String oldSetTopBoxNumber;
+	private String replacedSetTopBoxNumber;
+	private String replacementReason;
+	private String replacementType;
+	private Double replacementCharge;
 }

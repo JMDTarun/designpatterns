@@ -42,6 +42,31 @@ $(function() {
         rowNum: 10,
 		colModel:[
 			{
+				name:'customer.name',
+				label: 'Customer Name',
+				index: 'customer.name'
+			},
+			{
+				name:'customer.customerCode',
+				label: 'Customer Code',
+				index: 'customer.customerCode'
+			},
+			{
+				name:'customer.area.name',
+				label: 'Area',
+				index: 'customer.area.name'
+			},
+			{
+				name:'customer.street.streetNumber',
+				label: 'Street',
+				index: 'customer.street.streetNumber'
+			},
+			{
+				name:'customer.subArea.wardNumber',
+				label: 'Sub Area',
+				index: 'customer.subArea.wardNumber'
+			},
+			{
 				name:'amountCredit',
 				label: 'Amount',
 				index: 'amountCredit'

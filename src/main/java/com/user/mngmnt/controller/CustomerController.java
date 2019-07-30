@@ -215,6 +215,7 @@ public class CustomerController {
 			c.setArea(customer.getArea());
 			c.setSubArea(customer.getSubArea());
 			c.setStreet(customer.getStreet());
+			c.setCustomerType(customer.getCustomerType());
 			saveCustomer(c);
 		}
 		return new ResponseEntity<>(HttpStatus.CREATED);
@@ -271,6 +272,7 @@ public class CustomerController {
 				manageTransactionForPakChange(customerSetTopBox, dbCstb, n);
 				manageTransactionForBillingCycleChange(customerSetTopBox, dbCstb, n);
 				manageTransactionForBoxPriceChange(customerSetTopBox, dbCstb, n);
+				customerSetTopBox.setActive(true);
 				customerSetTopBox.setCustomerNetworkChannels(dbCstb.getCustomerNetworkChannels());
 				BeanUtils.copyProperties(customerSetTopBox, dbCstb);
 				saveCustomer(n);	
@@ -288,6 +290,7 @@ public class CustomerController {
 			customerSetTopBox.setCreatedAt(Instant.now());
 			customerSetTopBox.setCustomerSetTopBoxStatus(CustomerSetTopBoxStatus.ACTIVE);
 			customerSetTopBox.setBillingDay(isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth());
+			customerSetTopBox.setActive(true);
 			customerSetTopBoxRepository.save(customerSetTopBox);
 			customer.getCustomerSetTopBoxes().add(customerSetTopBox);
 			manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
@@ -461,20 +464,24 @@ public class CustomerController {
 
 	private CustomerLedgre buildCustomerLedgre(Customer customer, Action action, Double price, CreditDebit creditDebit,
 			CustomerSetTopBox customerSetTopBox, CustomerNetworkChannel custpomerNetworkChannel, String reason) {
-	    
-		boolean isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
-		if(isPrepaid) {
-			if(creditDebit.equals(CreditDebit.CREDIT)) {
-				customer.setAmountCreditTemp(customer.getAmountCreditTemp() == null ? price : customer.getAmountCreditTemp() + price);
-			} else {
-				customer.setAmountDebitTemp(customer.getAmountDebitTemp() == null ? price: customer.getAmountDebitTemp() + price);
-			}
-		}
-		
-		Calendar cal = Calendar.getInstance();
-		cal.setTime(customerSetTopBox.getEntryDate());
-		
-		
+        Boolean isPrepaid = null;
+        Calendar cal = Calendar.getInstance();
+        Integer paymentDay = null;
+
+        if (customerSetTopBox != null) {
+            isPrepaid = customerSetTopBox.getPaymentMode().equals(PaymentMode.PREPAID);
+            if (isPrepaid) {
+                if (creditDebit.equals(CreditDebit.CREDIT)) {
+                    customer.setAmountCreditTemp(
+                            customer.getAmountCreditTemp() == null ? price : customer.getAmountCreditTemp() + price);
+                } else {
+                    customer.setAmountDebitTemp(
+                            customer.getAmountDebitTemp() == null ? price : customer.getAmountDebitTemp() + price);
+                }
+            }
+            cal.setTime(customerSetTopBox.getEntryDate());
+            paymentDay = isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth();
+        }
 		
 		return CustomerLedgre.builder()
 				.action(action)
@@ -484,11 +491,11 @@ public class CustomerController {
 				.month(Month.of(cal.get(Calendar.MONTH)+1).toString())
 				.creditDebit(creditDebit)
 				.customer(customer)
-                .paymentDay(isPrepaid ? 1 : getLocalDate(customerSetTopBox.getBillingCycle()).getDayOfMonth())
+                .paymentDay(paymentDay)
 				.customerSetTopBox(customerSetTopBox)
 				.customerNetworkChannel(custpomerNetworkChannel)
 				.reason(reason)
-				.isOnHold(!isPrepaid)
+				.isOnHold(isPrepaid == null ? false : !isPrepaid)
 				.customerLedgreEntry(CustomerLedgreEntry.SOFTWARE)
 				.build();
 	}
@@ -721,7 +728,7 @@ public class CustomerController {
             });
 			
 			customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
-                    .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.ACTIVATE).build());
+                    .customer(customer).dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.ACTIVATE).build());
 			
 			Double price = dbCstb.getPackPrice();
 			if (dbCstb.getCustomerNetworkChannels() != null
@@ -761,6 +768,7 @@ public class CustomerController {
 			Optional<SetTopBoxReplacement> setTopBoxReplacementObj = cstb.getCustomerSetTopBoxReplacements().stream()
 					.filter(nc -> nc.getId().longValue() == setTopBoxReplacement.getId().longValue()).findAny();
 			if (setTopBoxReplacementObj == null || !setTopBoxReplacementObj.isPresent()) {
+			    setTopBoxReplacement.setReplacedForCustomer(customer);
 				SetTopBoxReplacement stbr = setTopBoxReplacementRepository.save(setTopBoxReplacement);
 				cstb.getCustomerSetTopBoxReplacements().add(stbr);
 				cstb.setSetTopBox(setTopBoxReplacement.getReplacedSetTopBox());
@@ -826,8 +834,8 @@ public class CustomerController {
 	                    .build());
             });
             
-            customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
-                    .dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.DE_ACTIVATE).build());
+			customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
+					.customer(customer).dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.DE_ACTIVATE).build());
 			
 			Double price = dbCstb.getPackPrice();
 			if (dbCstb.getCustomerNetworkChannels() != null

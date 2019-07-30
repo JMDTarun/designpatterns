@@ -51,4 +51,9 @@ public class ReportSearchCriteria {
 	private String prPaymentType;
 	private boolean isPaymentReceiptReport = false;
 	private Integer customerType;
+	private String replacementReason;
+	private String replacementType;
+	private String replacementAmountStart;
+	private String replacementAmountEnd;
+	private String setTopBoxStatus;
 }

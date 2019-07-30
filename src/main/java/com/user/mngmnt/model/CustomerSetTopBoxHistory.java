@@ -40,4 +40,7 @@ public class CustomerSetTopBoxHistory {
     @JoinColumn(name = "customerSetTopBoxId", referencedColumnName = "id")
     private CustomerSetTopBox customerSetTopBox;
     private Instant dateTime;
+    @ManyToOne
+    @JoinColumn(name = "customerId", referencedColumnName = "id")
+    private Customer customer;
 }

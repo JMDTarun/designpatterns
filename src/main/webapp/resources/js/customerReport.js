@@ -151,6 +151,16 @@ $(function() {
 				index: 'totalChannels'
 			},
 			{
+				name:'setTopBoxes',
+				label: 'Set Top Boxes',
+				index: 'setTopBoxes'
+			},
+			{
+				name:'networkChannels',
+				label: 'Network Channels',
+				index: 'networkChannels'
+			},
+			{
 				name:'customer.balance',
 				label: 'Outstanding',
 				index: 'customer.balance'

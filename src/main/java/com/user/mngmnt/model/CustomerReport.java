@@ -19,5 +19,6 @@ public class CustomerReport {
 	private Integer totalChannels;
 	private Double balance;
     private String creditOrDebit;
+    private String setTopBoxes;
 	private CustomerSetTopBox customerSetTopBox;
 }

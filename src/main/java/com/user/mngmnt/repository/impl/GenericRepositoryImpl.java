@@ -146,6 +146,7 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
 						if(field != null) {
 							int setTopBoxesAssigned = Integer.parseInt(fieldValue);
 							if (setTopBoxesAssigned > 0) {
+							    predicatesList.add(builder.isFalse(root.join(field).get("isDeleted")));
 								predicatesList.add(builder.ge(builder.size(root.get(field)), Integer.parseInt(fieldValue)));
 							} else {
 								predicatesList.add(builder.le(builder.size(root.get(field)), Integer.parseInt(fieldValue)));

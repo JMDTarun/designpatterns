@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +60,14 @@ public class SetTopBoxController {
 		return "setTopBox";
 	}
 
+	private static List<SetTopBoxStatus> statusList = new ArrayList<>();
+
+	static {
+		statusList.add(SetTopBoxStatus.FREE);
+		statusList.add(SetTopBoxStatus.FAULTY);
+		statusList.add(SetTopBoxStatus.BLOCK);
+	}
+
 	@GetMapping("/allSetTopBoxes")
 	public @ResponseBody ViewPage<SetTopBox> listSetTopBoxes(@RequestParam("_search") Boolean search,
 			@RequestParam(value = "filters", required = false) String filters,
@@ -82,16 +91,31 @@ public class SetTopBoxController {
 
 	@RequestMapping(value = "/setTopBox/{id}", method = POST)
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	public void updateArea(@PathVariable("id") Long id, @ModelAttribute SetTopBox setTopBox) {
-		setTopBoxRepository.findById(id).ifPresent(n -> {
-			setTopBox.setUpdatedAt(Instant.now());
-			setTopBox.setId(n.getId());
-			setTopBoxRepository.save(setTopBox);
-		});
-	}
+	@Transactional
+    public ResponseEntity<ResponseHandler> updateSetTopBox(HttpServletRequest request, @PathVariable("id") Long id,
+            @ModelAttribute SetTopBox setTopBox) {
+        SetTopBox dbSetTopBox = setTopBoxRepository.getOne(id);
+        if (dbSetTopBox != null) {
+            if (setTopBox.getSetTopBoxStatus() != dbSetTopBox.getSetTopBoxStatus()) {
+                if (statusList.contains(dbSetTopBox.getSetTopBoxStatus())) {
+                    setTopBox.setUpdatedAt(Instant.now());
+                    setTopBox.setId(dbSetTopBox.getId());
+                    setTopBoxRepository.save(setTopBox);
+                } else {
+                    return new ResponseEntity<>(ResponseHandler.builder().errorCode(HttpStatus.CONFLICT.value())
+                            .errorCause("Only change set top box status when its FREE or FAULTY or BLOCK").build(),
+                            HttpStatus.CONFLICT);
+                }
+            }
+        }
+        URI uri = new UriTemplate("{requestUrl}/{id}").expand(request.getRequestURL().toString(), dbSetTopBox.getId());
+        final HttpHeaders headers = new HttpHeaders();
+        headers.put("Location", singletonList(uri.toASCIIString()));
+        return new ResponseEntity<>(headers, HttpStatus.OK);
+    }
 
 	@RequestMapping(value = "/setTopBox", method = POST)
-	public ResponseEntity<ResponseHandler> createArea(HttpServletRequest request, @ModelAttribute SetTopBox setTopBox) {
+	public ResponseEntity<ResponseHandler> createSetTopBox(HttpServletRequest request, @ModelAttribute SetTopBox setTopBox) {
 		SetTopBox findBySetTopBoxNumber = setTopBoxRepository.findBySetTopBoxNumber(setTopBox.getSetTopBoxNumber());
 		SetTopBox findByCardNumber = setTopBoxRepository.findByCardNumber(setTopBox.getCardNumber());
 		SetTopBox findBySafeCode = setTopBoxRepository.findBySafeCode(setTopBox.getSafeCode());
@@ -112,7 +136,7 @@ public class SetTopBoxController {
 		} else {
 			rootCause = "Set Top Box with safe code already exists";
 		}
-		return new ResponseEntity<ResponseHandler>(ResponseHandler.builder()
+		return new ResponseEntity<>(ResponseHandler.builder()
 				.errorCode(HttpStatus.CONFLICT.value())
 				.errorCause(rootCause)
 				.build(), HttpStatus.CONFLICT);

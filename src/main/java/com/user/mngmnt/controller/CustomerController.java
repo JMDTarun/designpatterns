@@ -1109,6 +1109,39 @@ public class CustomerController {
 		List<Customer> errorCutomers = new ArrayList<>();
 		for(Customer customer: customers){
 			try{
+				if(!customer.getCustomerSetTopBoxes().isEmpty()){
+					for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
+						Pack pack = packMap.get(customerSetTopBox.getPack().getName());
+						if(pack == null) {
+							pack = packRepository.findByName(customerSetTopBox.getPack().getName());
+							if(pack == null) {
+								throw new NotFoundException("Pack not found : "+customerSetTopBox.getPack().getName());
+							}
+							packMap.put(pack.getName(), pack);
+						}
+						customerSetTopBox.setPack(pack);
+						SetTopBox setTopBox = setTopBoxMap.get(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+						if(setTopBox == null) {
+							setTopBox = setTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+							if(setTopBox == null) {
+								SetTopBox box = customerSetTopBox.getSetTopBox();
+								box.setSetTopBoxStatus(SetTopBoxStatus.ALLOTED);
+								box.setReason("Alloted To Customer");
+								setTopBox = setTopBoxRepository.save(customerSetTopBox.getSetTopBox());
+								setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+							} else {
+								if(SetTopBoxStatus.FREE.equals(setTopBox.getSetTopBoxStatus())) {
+									setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
+								} else {
+									throw new Exception("Set Top Box Already Alloted : "+customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
+								}
+							}
+
+						}
+						customerSetTopBox.setSetTopBox(setTopBox);
+
+					}
+				}
 			Area area = areaMap.get(customer.getArea().getName());
 			if(area == null) {
 				area = areaRepository.findByName(customer.getArea().getName());
@@ -1147,38 +1180,7 @@ public class CustomerController {
 				customerTypeMap.put(type.getCustomerType(), type);
 			}
 			customer.setCustomerType(type);
-			if(!customer.getCustomerSetTopBoxes().isEmpty()){
-				for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
-					SetTopBox setTopBox = setTopBoxMap.get(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
-					if(setTopBox == null) {
-						setTopBox = setTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
-						if(setTopBox == null) {
-							SetTopBox box = customerSetTopBox.getSetTopBox();
-							box.setSetTopBoxStatus(SetTopBoxStatus.ALLOTED);
-							box.setReason("Alloted To Customer");
-							setTopBox = setTopBoxRepository.save(customerSetTopBox.getSetTopBox());
-							setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
-						} else {
-							if(SetTopBoxStatus.FREE.equals(setTopBox.getSetTopBoxStatus())) {
-								setTopBoxMap.put(setTopBox.getSetTopBoxNumber(), setTopBox);
-							} else {
-								throw new Exception("Set Top Box Already Alloted");
-							}
-						}
-						
-					}
-					customerSetTopBox.setSetTopBox(setTopBox);
-					Pack pack = packMap.get(customerSetTopBox.getPack().getName());
-					if(pack == null) {
-						pack = packRepository.findByName(customerSetTopBox.getPack().getName());
-						if(pack == null) {
-							throw new NotFoundException("Pack not found");
-						}
-						packMap.put(pack.getName(), pack);
-					}
-					customerSetTopBox.setPack(pack);
-				}
-			}
+
 			customer = customerRepository.save(customer);
 			for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
 				manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);

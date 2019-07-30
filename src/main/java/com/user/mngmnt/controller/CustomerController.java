@@ -43,6 +43,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -946,7 +947,7 @@ public class CustomerController {
 
 		public String get(String name) {
 			try {
-				return record.get(name);
+				return record.get(name).trim();
 			}
 			catch (Exception e) {
 				System.out.println("No column mapped for "+ name);
@@ -956,7 +957,7 @@ public class CustomerController {
 
 		public Date getDate(String name) {
 			try {
-				return stringToDate(record.get(name));
+				return stringToDate(record.get(name).trim());
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -966,7 +967,7 @@ public class CustomerController {
 
 		public Double getDouble(String name) {
 			try {
-				return Double.valueOf(record.get(name));
+				return Double.valueOf(record.get(name).trim());
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -976,7 +977,7 @@ public class CustomerController {
 
 		public Boolean getBoolean(String name) {
 			try {
-				return Boolean.parseBoolean(record.get(name));
+				return Boolean.parseBoolean(record.get(name).trim());
 			}
 			catch (Exception e) {
 				e.printStackTrace();
@@ -1015,7 +1016,7 @@ public class CustomerController {
 	private List<CustomerSetTopBox> parseCustomerSetopBox(CSVRecordWrapper record) {
 		int index =1;
 		List<CustomerSetTopBox> customerSetTopBoxes = new ArrayList<>();
-		while (record.isSet(getIndexedColumn("number", index))){
+		while (record.isSet(getIndexedColumn("number", index)) && !StringUtils.isEmpty(record.get(getIndexedColumn("number", index)))){
 			try {
 				customerSetTopBoxes.add(CustomerSetTopBox.builder()
 					.paymentMode(record.getEnum(getIndexedColumn("payment mode", index), PaymentMode.class))

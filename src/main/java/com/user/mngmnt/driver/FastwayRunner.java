@@ -1,9 +1,11 @@
 package com.user.mngmnt.driver;
 
 import com.github.loyada.jdollarx.Path;
+import com.user.mngmnt.model.FastwayCredentials;
 import com.user.mngmnt.model.PlanChangeControl;
 import com.user.mngmnt.model.RunnerExecution;
 import com.user.mngmnt.model.RunnerExecutionStatus;
+import com.user.mngmnt.repository.FastwayCredentialRepository;
 import com.user.mngmnt.repository.PlanChangeControlRepository;
 import com.user.mngmnt.repository.RunnerExecutionRepository;
 import org.apache.commons.collections4.CollectionUtils;
@@ -26,6 +28,7 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.transaction.Transactional;
@@ -69,7 +72,6 @@ import static com.user.mngmnt.model.PlanChangeControlStatus.PROCESSED;
 public class FastwayRunner {
 
     public static final String URL = "http://bssnew.myfastway.in:9003/oapservice";
-    public static final String USERNAME = "KAMALJIT.SINGH";
     public static final String PASSWORD = "Kamal@123";
 
     @Autowired
@@ -80,6 +82,9 @@ public class FastwayRunner {
 
     @Autowired
     private PlanChangeControlRepository planChangeControlRepository;
+
+    @Autowired
+    private FastwayCredentialRepository fastwayCredentialRepository;
 
     @Scheduled(fixedDelay = 120000)
     public void run() {
@@ -151,7 +156,7 @@ public class FastwayRunner {
         } finally {
             planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
             runnerExecutionRepository.save(currentExecution);
-            if(markedRecord > 0) {
+            if(markedRecord > 0 && driver!=null) {
             	logout();
                 close();
             }
@@ -222,11 +227,15 @@ public class FastwayRunner {
         return msg.length() < 256 ?  msg : msg.substring(0, 255);
     }
 
-    private void login() throws IOException, URISyntaxException {
+    private void login() throws IOException {
+        Optional<FastwayCredentials> credential = fastwayCredentialRepository.findById(1l);
+        if(!credential.isPresent()){
+            throw new RuntimeException("Credentials not availlable");
+        }
         driver = driverConfig.driver();
         driver.get(URL);
-        sendKeys(USERNAME).to(input.that(hasName("username")));
-        sendKeys(PASSWORD).to(input.that(hasName("password")));
+        sendKeys(credential.get().getUsername()).to(input.that(hasName("username")));
+        sendKeys(credential.get().getPassword()).to(input.that(hasName("password")));
         clickAt(input.that(hasAttribute("type", "submit")));
     }
 
@@ -255,7 +264,7 @@ public class FastwayRunner {
     }
 
     public static  void perform(Runnable action){
-        doWithRetries(action, 5, 250);
+        doWithRetries(action, 10, 250);
     }
 
     public static void selectDropdown(Path path, String keys) throws OperationFailedException {

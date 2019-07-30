@@ -46,8 +46,6 @@
 				</a></li>
 				<li class="nav-item active"><a class="nav-link"
 					href="/users">User</a></li>
-				<li class="nav-item active"><a class="nav-link"
-					href="/users">User</a></li>
 				<li class="nav-item active"><a class="nav-link" href="/area">Area</a>
 				</li>
 				<li class="nav-item active"><a class="nav-link" href="/network">Network</a>
@@ -79,7 +77,10 @@
 								Utility</a></li>
 					</ul></li>
 				<li class="nav-item active"><a class="nav-link"
-					href="/utility">Utility</a></li>	
+					href="/utility">Utility</a></li>
+				<li class="nav-item active"><a class="nav-link"
+                					href="/manageCredentials">Manage Fastway Credentials</a></li>
+
 			</ul>
 			<div>
 				<a style="text-align: right; color: #fff;"

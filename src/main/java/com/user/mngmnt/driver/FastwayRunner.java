@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.PostConstruct;
 import javax.transaction.Transactional;
 
 import static com.github.loyada.jdollarx.BasicPath.anchor;
@@ -86,7 +87,12 @@ public class FastwayRunner {
     @Autowired
     private FastwayCredentialRepository fastwayCredentialRepository;
 
-    @Scheduled(fixedDelay = 120000)
+    @PostConstruct
+    public void init(){
+        runnerExecutionRepository.updatePlanChangeControlStatusByStatus(RunnerExecutionStatus.IN_PROGRESS, RunnerExecutionStatus.COMPLETED);
+    }
+
+    @Scheduled(fixedDelay = 120000, initialDelay = 30000)
     public void run() {
         List<RunnerExecution> executions = runnerExecutionRepository.findByStatus(RunnerExecutionStatus.IN_PROGRESS);
         if (CollectionUtils.isNotEmpty(executions)) {

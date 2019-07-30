@@ -45,6 +45,7 @@ import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
@@ -56,12 +57,11 @@ public class ManageCredentialsController {
 	private FastwayCredentialRepository fastwayCredentialRepository;
 	
 	@GetMapping("/manageCredentials")
-	@Transactional
 	public String utility(HttpServletRequest request) {
-		FastwayCredentials credential = fastwayCredentialRepository.getOne(1l);
-		if(credential!=null){
-			request.setAttribute("username", credential.getUsername());
-			request.setAttribute("password", credential.getPassword());
+		Optional<FastwayCredentials> credential = fastwayCredentialRepository.findById(1l);
+		if(credential.isPresent()){
+			request.setAttribute("username", credential.get().getUsername());
+			request.setAttribute("password", credential.get().getPassword());
 		}
 		return "manageCredentials";
 	}

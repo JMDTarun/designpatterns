@@ -73,8 +73,7 @@
 								Partial Payment Report</a></li>
 						<li><a class="nav-link" href="/paymentReceipts">Payment
 								Receipt</a></li>
-						<li><a class="nav-link" href="/setTopBoxReplacementReport">Set Top Box Replacement
-								Receipt</a></li>
+						<li><a class="nav-link" href="/setTopBoxReplacementReports">Set Top Box Replacement</a></li>
 						<li><a class="nav-link" href="/setTopBoxActiveDeactiveReports">Set Top Box Report</a></li>				
 						<li><a class="nav-link" target="_blank" href="/uploadActions">Fastway
 								Utility</a></li>

@@ -20,10 +20,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -1069,7 +1071,7 @@ public class CustomerController {
 				.withIgnoreSurroundingSpaces()
 				.withIgnoreHeaderCase()
 				.parse(in);
-		List<Customer> customers = new ArrayList<>();
+		List<Customer> customers = new CopyOnWriteArrayList<>();
 			records.forEach(record -> {
 				CSVRecordWrapper customer = new CSVRecordWrapper(record);
 				customers.add(Customer.builder()
@@ -1182,9 +1184,14 @@ public class CustomerController {
 			}
 			customer.setCustomerType(type);
 
-			customer = customerRepository.save(customer);
-			for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
+			customer = saveCustomer(customer);
+			
+
+			List<CustomerSetTopBox> s = new CopyOnWriteArrayList<>(customer.getCustomerSetTopBoxes());
+			
+			for(CustomerSetTopBox customerSetTopBox: s){
 				manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
+				customer = saveCustomer(customer);
 			}
 			}catch (Exception e){
 				e.printStackTrace();

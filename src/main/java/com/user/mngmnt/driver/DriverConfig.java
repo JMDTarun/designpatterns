@@ -46,7 +46,7 @@ public class DriverConfig {
       System.setProperty("webdriver.chrome.driver", "chromedriver.exe");
 
       ChromeOptions chromeOptions = new ChromeOptions();
-      chromeOptions.addArguments("headless");
+//      chromeOptions.addArguments("headless");
       chromeOptions.addArguments(
         format("--window-size=%s,%s", 1280, 1024)
       );

@@ -67,6 +67,7 @@ import static com.user.mngmnt.model.PlanChangeControlAction.REMOVE;
 import static com.user.mngmnt.model.PlanChangeControlAction.RETRACK;
 import static com.user.mngmnt.model.PlanChangeControlStatus.ERROR;
 import static com.user.mngmnt.model.PlanChangeControlStatus.IN_PROGRESS;
+import static com.user.mngmnt.model.PlanChangeControlStatus.NOT_PROCESSED;
 import static com.user.mngmnt.model.PlanChangeControlStatus.PROCESSED;
 
 @Component
@@ -160,7 +161,7 @@ public class FastwayRunner {
             currentExecution.setStatus(RunnerExecutionStatus.ERROR);
             currentExecution.setErrorMsg(truncateErrorMsg(e.getMessage()));
         } finally {
-            planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, ERROR);
+            planChangeControlRepository.updatePlanChangeControlStatus(currentExecution.getId(), IN_PROGRESS, NOT_PROCESSED);
             runnerExecutionRepository.save(currentExecution);
             if(markedRecord > 0 && driver!=null) {
             	logout();

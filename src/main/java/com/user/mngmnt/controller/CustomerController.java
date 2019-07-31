@@ -1123,6 +1123,9 @@ public class CustomerController {
 							packMap.put(pack.getName(), pack);
 						}
 						customerSetTopBox.setPack(pack);
+					}
+
+					for(CustomerSetTopBox customerSetTopBox: customer.getCustomerSetTopBoxes()){
 						SetTopBox setTopBox = setTopBoxMap.get(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());
 						if(setTopBox == null) {
 							setTopBox = setTopBoxRepository.findBySetTopBoxNumber(customerSetTopBox.getSetTopBox().getSetTopBoxNumber());

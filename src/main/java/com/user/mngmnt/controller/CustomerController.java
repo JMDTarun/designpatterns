@@ -1184,12 +1184,14 @@ public class CustomerController {
 			}
 			customer.setCustomerType(type);
 
-			customer = saveCustomer(customer);
+			customer = customerRepository.save(customer);
 			
 
 			List<CustomerSetTopBox> s = new CopyOnWriteArrayList<>(customer.getCustomerSetTopBoxes());
 			
 			for(CustomerSetTopBox customerSetTopBox: s){
+				customer.setAmountDebitTemp(0.0);
+				customer.setAmountCreditTemp(0.0);
 				manageTransactionForNewCustomerSetTopBox(customerSetTopBox, customer);
 				customer = saveCustomer(customer);
 			}

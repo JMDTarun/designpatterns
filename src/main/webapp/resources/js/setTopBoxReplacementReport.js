@@ -144,6 +144,9 @@ $(function() {
 	$("#selectReplacementType").addClass("ui-widget ui-jqdialog");
 	$("#selectReplacementType").select2();
 	
+	$("#startDate").datepicker({ defaultDate: new Date() });
+	$("#endDate").datepicker({ defaultDate: new Date() });
+	
 	$("#downloadAnchor").click(function(){
 		var urlStr = 'downloadSetTopBoxReplacementReport?'+getUrlParams();
 		$(this).attr("href", urlStr);
@@ -182,6 +185,12 @@ $(function() {
         }
         if($("#chargeEnd").val() !== "") {
         	urlStr += encodeURIComponent("replacementAmountEnd") + '=' + encodeURIComponent($("#chargeEnd").val()) + "&";
+        }
+        if($("#startDate").val() !== "") {
+        	urlStr += encodeURIComponent("start") + '=' + encodeURIComponent($("#startDate").val()) + "&";
+        }
+        if($("#endDate").val() !== "") {
+        	urlStr += encodeURIComponent("end") + '=' + encodeURIComponent($("#endDate").val()) + "&";
         }
         return urlStr;
 	}

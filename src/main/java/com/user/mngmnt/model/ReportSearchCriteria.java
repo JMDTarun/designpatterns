@@ -56,4 +56,5 @@ public class ReportSearchCriteria {
 	private String replacementAmountStart;
 	private String replacementAmountEnd;
 	private String setTopBoxStatus;
+	private boolean isExcludeOnHold;
 }

@@ -1022,7 +1022,7 @@ $(function() {
 			    type: 'get',
 			    async: false,
 			    success: function( data, textStatus, jQxhr) {
-	    		    $("#customerCode").val(parseInt(data)  +1);
+	    		    $("#customerCode").val(parseInt(data));
 			    },
 			    error: function( jqXhr, textStatus, errorThrown ){
 			    	alert("Something Went Wrong");

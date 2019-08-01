@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CustomerReportColumns {
 	private String customerName;
-	private String customerCode;
+	private Long customerCode;
 	private String area;
 	private String street;
 	private String subArea;

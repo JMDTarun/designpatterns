@@ -37,7 +37,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     Integer getCustomerCount();
 
     @Query(value = "SELECT c FROM Customer c WHERE c.deleted = 'false' and c.customerCode = :customerCode")
-    Customer findByCustomerCode(@Param("customerCode") String customerCode);
+    Customer findByCustomerCode(@Param("customerCode") Long customerCode);
 
     @Query(value = "SELECT distinct rp FROM Customer c inner join c.customerSetTopBoxes s inner join s.customerSetTopBoxReplacements rp ")
     List<SetTopBoxReplacement> getCustomerSetTopBoxReplacements(Pageable pageRequest);

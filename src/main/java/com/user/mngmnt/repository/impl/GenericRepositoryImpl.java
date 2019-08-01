@@ -238,6 +238,9 @@ public class GenericRepositoryImpl<T> implements GenericRepository<T> {
             if(resportSearchCriteria.getCustomerType() != null) {
             	predicates.add(builder.equal(root.join("customerType").get("id"), resportSearchCriteria.getCustomerType()));
             }
+            if(resportSearchCriteria.isExcludeOnHold()) {
+            	predicates.add(builder.equal(root.get("isOnHold"), false));
+            }
 	    }
     }
 	

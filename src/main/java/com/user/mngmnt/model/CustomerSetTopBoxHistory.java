@@ -43,4 +43,6 @@ public class CustomerSetTopBoxHistory {
     @ManyToOne
     @JoinColumn(name = "customerId", referencedColumnName = "id")
     private Customer customer;
+    @Default
+    private boolean isReActivated = false;
 }

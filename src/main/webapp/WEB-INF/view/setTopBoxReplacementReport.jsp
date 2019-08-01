@@ -48,6 +48,12 @@
 			<input type="text" name="chargeEnd" id="chargeEnd" />
 		</div>
 		
+		<div class="reportFiltersWidth">
+			<label>Date Between</label>
+			<input type="text" name="startDate" id="startDate" />
+			<input type="text" name="endDate" id="endDate" />
+		</div>
+		
 		<div>
 			<label>Replacement Reason</label> 
 			<select id="selectReplacementReason">

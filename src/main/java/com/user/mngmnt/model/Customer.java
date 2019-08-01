@@ -38,7 +38,7 @@ public class Customer extends Auditable{
 
 	private String name;
 	
-	private String customerCode;
+	private Long customerCode;
 
 	private String address;
 

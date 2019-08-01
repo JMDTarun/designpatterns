@@ -67,6 +67,7 @@ import com.user.mngmnt.enums.PaymentMode;
 import com.user.mngmnt.enums.SetTopBoxStatus;
 import com.user.mngmnt.model.Area;
 import com.user.mngmnt.model.Customer;
+import com.user.mngmnt.model.CustomerCode;
 import com.user.mngmnt.model.CustomerLedgre;
 import com.user.mngmnt.model.CustomerNetworkChannel;
 import com.user.mngmnt.model.CustomerSetTopBox;
@@ -86,6 +87,7 @@ import com.user.mngmnt.model.Street;
 import com.user.mngmnt.model.SubArea;
 import com.user.mngmnt.model.ViewPage;
 import com.user.mngmnt.repository.AreaRepository;
+import com.user.mngmnt.repository.CustomerCodeRepository;
 import com.user.mngmnt.repository.CustomerLedgreRepository;
 import com.user.mngmnt.repository.CustomerNetworkChannelRepository;
 import com.user.mngmnt.repository.CustomerRepository;
@@ -151,6 +153,9 @@ public class CustomerController {
 	
 	@Autowired
 	private PlanChangeControlRepository planChangeControlRepository;
+	
+	@Autowired
+	private CustomerCodeRepository customerCodeRepository;
 
 	private static List<Action> actions = new ArrayList<>();
 
@@ -331,12 +336,12 @@ public class CustomerController {
 					customerSetTopBox, null, null));
 		}
 		
+		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
+                .serialNumber(setTopBox.getSetTopBoxNumber()).build());
+		
 		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
                 .serialNumber(setTopBox.getSetTopBoxNumber())
                 .plans(pack.getName()).listName("SUGGESTIVE PACKS").build());
-		
-		planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
-                .serialNumber(setTopBox.getSetTopBoxNumber()).build());
 		
 		if (customerSetTopBox.getOpeningBalance() != null && customerSetTopBox.getOpeningBalance() > 0) {
 			customerLedgres.add(buildCustomerLedgre(customer, Action.OPENING_BALANCE,
@@ -592,6 +597,18 @@ public class CustomerController {
 			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
                     .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber()).build());
 			
+			planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+                    .plans(dbCstb.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+            
+            dbCstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+            	planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+	                    .serialNumber(dbCstb.getSetTopBox().getSetTopBoxNumber())
+	                    .plans(cnc.getNetworkChannel().getName())
+	                    .listName(cnc.getNetworkChannel().getNetwork().getName())
+	                    .build());
+            });
+			
 			updateSetTopBoxStatus(dbCstb.getSetTopBox().getId(), removeCustomerSetTopBox.getSetTopBoxStatus(),
 					removeCustomerSetTopBox.getReason());
 			if (removeCustomerSetTopBox.getAmount() != null && removeCustomerSetTopBox.getAmount().doubleValue() > 0) {
@@ -730,6 +747,11 @@ public class CustomerController {
 	                    .build());
             });
 			
+			CustomerSetTopBoxHistory findByCustomerSetTopBoxAndIsReActivated = customerSetTopBoxHistoryRepository
+					.findByCustomerSetTopBoxAndSetTopBoxStatusAndIsReActivated(dbCstb, SetTopBoxStatus.DE_ACTIVATE,
+							false);
+            findByCustomerSetTopBoxAndIsReActivated.setReActivated(true);
+            customerSetTopBoxHistoryRepository.save(findByCustomerSetTopBoxAndIsReActivated);
 			customerSetTopBoxHistoryRepository.save(CustomerSetTopBoxHistory.builder().customerSetTopBox(dbCstb)
                     .customer(customer).dateTime(Instant.now()).setTopBoxStatus(SetTopBoxStatus.ACTIVATE).build());
 			
@@ -772,6 +794,7 @@ public class CustomerController {
 					.filter(nc -> nc.getId().longValue() == setTopBoxReplacement.getId().longValue()).findAny();
 			if (setTopBoxReplacementObj == null || !setTopBoxReplacementObj.isPresent()) {
 			    setTopBoxReplacement.setReplacedForCustomer(customer);
+			    setTopBoxReplacement.setDate(Calendar.getInstance().getTime());
 				SetTopBoxReplacement stbr = setTopBoxReplacementRepository.save(setTopBoxReplacement);
 				cstb.getCustomerSetTopBoxReplacements().add(stbr);
 				cstb.setSetTopBox(setTopBoxReplacement.getReplacedSetTopBox());
@@ -795,8 +818,33 @@ public class CustomerController {
 				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ACTIVATE)
                         .serialNumber(replacedWithBox.getSetTopBoxNumber()).build());
                 
+				
+				planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+	                    .serialNumber(replacedWithBox.getSetTopBoxNumber())
+	                    .plans(cstb.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+
+				cstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+					planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.ADD)
+							.serialNumber(replacedWithBox.getSetTopBoxNumber())
+							.plans(cnc.getNetworkChannel().getName())
+							.listName(cnc.getNetworkChannel().getNetwork().getName())
+							.build());
+				});
+				
                 planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.DEACTIVATE)
                         .serialNumber(replacedBox.getSetTopBoxNumber()).build());
+                
+                planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+	                    .serialNumber(replacedBox.getSetTopBoxNumber())
+	                    .plans(cstb.getPack().getName()).listName("SUGGESTIVE PACKS").build());
+
+				cstb.getCustomerNetworkChannels().stream().forEach(cnc -> {
+					planChangeControlRepository.save(PlanChangeControl.builder().action(PlanChangeControlAction.REMOVE)
+							.serialNumber(replacedBox.getSetTopBoxNumber())
+							.plans(cnc.getNetworkChannel().getName())
+							.listName(cnc.getNetworkChannel().getNetwork().getName())
+							.build());
+				});
 				
 				URI uri = new UriTemplate("{requestUrl}").expand(request.getRequestURL().toString());
 				final HttpHeaders headers = new HttpHeaders();
@@ -865,10 +913,10 @@ public class CustomerController {
 		return new ResponseEntity<>(HttpStatus.CONFLICT);
 	}
 
-	@GetMapping("/getCustomerCode")
-	public @ResponseBody Long getCustomerCode() {
-		return customerRepository.count();
-	}
+//	@GetMapping("/getCustomerCode")
+//	public @ResponseBody Long getCustomerCode() {
+//		return customerRepository.count();
+//	}
 	
 	@GetMapping("/getAllCustomers")
 	public @ResponseBody Map<Long, Customer> getAllCustomers() {
@@ -931,6 +979,14 @@ public class CustomerController {
             }
             customer.setMonthlyTotal(sumMonthlyRent + networkChannelTotal);
         }
+        
+        Optional<CustomerCode> customerCode = customerCodeRepository.findById(1l);
+		if (customerCode.isPresent()) {
+			if (customer.getCustomerCode() > customerCode.get().getCustomerCode()) {
+				customerCodeRepository
+						.save(CustomerCode.builder().id(1l).customerCode(customer.getCustomerCode()).build());
+			}
+		}
         
 		return customerRepository.save(customer);
 	}
@@ -1081,7 +1137,7 @@ public class CustomerController {
 					//.amountDebit(customer.getDouble("amount debit"))
 					//.balance(customer.getDouble("balance"))
 					.city(customer.get("city"))
-					.customerCode(customer.get("code"))
+					.customerCode(Long.parseLong(customer.get("code")))
 					.customerType(CustomerType.builder()
 						.customerType(customer.get("type"))
 						.maxAmount(customer.getDouble("max amount"))
@@ -1302,5 +1358,14 @@ public class CustomerController {
     public @ResponseBody List<Double> getDistinctPackPrices() {
         return customerSetTopBoxRepository.findDistinctPackPrices();
     }
+
+	@GetMapping("/getCustomerCode")
+    public @ResponseBody Long getCustoerCode() {
+		Optional<CustomerCode> customerCode = customerCodeRepository.findById(1l);
+		if (customerCode.isPresent()) {
+			return customerCode.get().getCustomerCode() + 1;
+		}
+		return 1l;
+	}
 	
 }

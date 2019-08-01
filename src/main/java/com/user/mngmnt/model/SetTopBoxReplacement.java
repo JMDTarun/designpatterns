@@ -1,5 +1,7 @@
 package com.user.mngmnt.model;
 
+import java.util.Date;
+
 import javax.persistence.*;
 
 import com.user.mngmnt.enums.SetTopBoxReplacementStatus;
@@ -31,6 +33,7 @@ public class SetTopBoxReplacement {
 	private SetTopBoxReplacementStatus replacementType;
 	@Enumerated(EnumType.STRING)
 	private SetTopBoxStatus replacementReason;
+	private Date date;
 	private Double replacementCharge;
 	@ManyToOne
     @JoinColumn(name = "replacedForCustomerId", referencedColumnName = "id")

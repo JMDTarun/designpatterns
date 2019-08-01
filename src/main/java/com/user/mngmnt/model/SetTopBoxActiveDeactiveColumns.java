@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class SetTopBoxActiveDeactiveColumns {
 
     private String customerName;
-    private String customerCode;
+    private Long customerCode;
     private String area;
     private String subArea;
     private String street;

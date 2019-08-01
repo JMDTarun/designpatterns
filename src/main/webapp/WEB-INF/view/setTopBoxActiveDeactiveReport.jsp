@@ -54,6 +54,7 @@
 				<option value="">Select Set Top Box Status</option>
 				<option value="ACTIVATE">ACTIVATE</option>
 				<option value="DE_ACTIVATE">DE ACTIVATE</option>
+				<option value="NOT_REACTIVATED">NOT RE ACTIVATE</option>
 			</select>
 		</div>
 		

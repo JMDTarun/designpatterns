@@ -315,6 +315,7 @@ public class ReportController {
         
         List<CustomerLedgreReport> customerLedgreReports = new ArrayList<>();
         if(resportSearchCriteria.getCustomerId() != null) {
+        	resportSearchCriteria.setExcludeOnHold(true);
             PageRequest pageRequest = PageRequest.of(0, MAX_RECORDS, Direction.ASC, "createdAt");
             List<CustomerLedgre> customerLedgres = genericRepository.findAllWithCriteria(resportSearchCriteria, CustomerLedgre.class,
                     pageRequest);
@@ -541,7 +542,7 @@ public class ReportController {
     }
 
     private List<SetTopBoxReplacement> getReplacedSetTopBoxes(ReportSearchCriteria reportSearchCriteria, PageRequest pageRequest) {
-        String sql = "SELECT mo.* FROM SET_TOP_BOX_REPLACEMENT  mo join customer c on mo.replaced_for_customer_id = c.id "
+        String sql = "SELECT mo.* FROM set_top_box_replacement  mo join customer c on mo.replaced_for_customer_id = c.id "
                 + "join area a on a.id = c.area_id "
                 + "join sub_area sa on sa.id = c.sub_area_id "
                 + "join street st on st.id = c.street_id where true";
@@ -596,8 +597,12 @@ public class ReportController {
         }
         
 		if (reportSearchCriteria.getSetTopBoxStatus() != null) {
-			parameters.add(reportSearchCriteria.getSetTopBoxStatus());
-			sql = sql.concat(" and mo.set_top_box_status = ?");
+			if(reportSearchCriteria.getSetTopBoxStatus().equals("NOT_REACTIVATED")) {
+				sql = sql.concat(" and mo.is_re_activated = false and mo.set_top_box_status = 'DE_ACTIVATE'");
+			} else {
+				parameters.add(reportSearchCriteria.getSetTopBoxStatus());
+				sql = sql.concat(" and mo.set_top_box_status = ?");	
+			}
 		}
 
 		if (reportSearchCriteria.getStartDate() != null) {
@@ -610,11 +615,21 @@ public class ReportController {
 			sql = sql.concat(" and mo.date_time <= ?");
 		}
         
+		if (reportSearchCriteria.getStart() != null) {
+			parameters.add(reportSearchCriteria.getStart());
+			sql = sql.concat(" and mo.date >= ?");
+		}
+		
+		if (reportSearchCriteria.getEnd() != null) {
+			parameters.add(reportSearchCriteria.getEnd());
+			sql = sql.concat(" and mo.date <= ?");
+		}
+		
         return sql;
     }
     
     private Integer getReplacedSetTopBoxesCount(ReportSearchCriteria reportSearchCriteria) {
-        String sql = "SELECT count(distinct mo.id) FROM SET_TOP_BOX_REPLACEMENT  mo join customer c on mo.replaced_for_customer_id = c.id "
+        String sql = "SELECT count(distinct mo.id) FROM set_top_box_replacement  mo join customer c on mo.replaced_for_customer_id = c.id "
                 + "join area a on a.id = c.area_id "
                 + "join sub_area sa on sa.id = c.sub_area_id "
                 + "join street st on st.id = c.street_id where true";
@@ -677,7 +692,7 @@ public class ReportController {
     }
 
     private List<CustomerSetTopBoxHistory> getActiveDeactiveSetTopBoxes(ReportSearchCriteria reportSearchCriteria, PageRequest pageRequest) {
-        String sql = "SELECT mo.* FROM SET_TOP_BOX_HISTORY mo join customer c on mo.customer_id = c.id "
+        String sql = "SELECT mo.* FROM set_top_box_history mo join customer c on mo.customer_id = c.id "
                 + "join area a on a.id = c.area_id "
                 + "join sub_area sa on sa.id = c.sub_area_id "
                 + "join street st on st.id = c.street_id where true";
@@ -688,7 +703,7 @@ public class ReportController {
     }
     
     private Integer getSetTopBoxActiveDeactiveCount(ReportSearchCriteria reportSearchCriteria) {
-        String sql = "SELECT count(distinct mo.id) FROM SET_TOP_BOX_HISTORY  mo join customer c on mo.customer_id = c.id "
+        String sql = "SELECT count(distinct mo.id) FROM set_top_box_history  mo join customer c on mo.customer_id = c.id "
                 + "join area a on a.id = c.area_id "
                 + "join sub_area sa on sa.id = c.sub_area_id "
                 + "join street st on st.id = c.street_id where true";
